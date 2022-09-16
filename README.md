@@ -6,7 +6,7 @@ TuringX is a next-generation platform for neuromorphic computing based on a new 
 
 TuringX has also developed a proprietary circuit design, the TuringX Neuromorphic Chip, that complements the TuringX ecosystem and turns any modern field programmable gate array (FPGA) based chip into a neuromorphic computing chip that can perform orders of magnitude faster than classical or quantum methodologies for a wide range of applications. Due to the dominance of ASICs in the proof-of-work token mining industry, there is a large amount of dormant FPGA infrastructure available which can be converted into high performance next-generation neuromorphic computing clusters.
 
-[TuringX White Paper](https://turingx.org/wp-content/uploads/2022/09/whitepaper.pdf)
+For more information, read our [TuringX White Paper](https://turingx.org/wp-content/uploads/2022/09/whitepaper.pdf)
 
 ## The TuringX mainnet is live!
 We are working hard on releasing all repositories. In the meantime you can connect to the mainnet by using our pre-compiled releases:
@@ -32,4 +32,6 @@ Then just follow the commands (open an existing wallet or generate a new one).
 You can also start minig from within the wallet. Type the command "start_mining <number_of_threads>" to start mining TRGX. The command "stop_mining" will stop the mining procedure. You can follow your hashrate in the main service daemon with the command "show_hr".
 
 Typing "help" (both in the wallet and in the main service daemon) displays all available functions and features. Please make sure you exit these gracefully by typing in the command "exit".
+
+There's also an App to manage your wallet and your transactions, you can find it [here](https://github.com/TuringXplatform/TuringX-Wallet-App).
 
