@@ -9,19 +9,28 @@ TuringX has also developed a proprietary circuit design, the TuringX Neuromorphi
 For more information, read our [TuringX White Paper](https://github.com/TuringXplatform/TuringX-Whitepaper)
 
 ## The TuringX mainnet is live!
-Starting from September 16th 2022, the TuringX mainnet has been live. We are working hard on releasing all repositories, in the meantime you can connect to the mainnet by using our pre-compiled releases:
+Starting from September 16th 2022, the TuringX mainnet has been live. Everyone is welcome to join!
 
-Requirements: You need to have the [Boost library](https://www.boost.org) (Version 1.74.0 or better) installed: 
+## Using the TuringX application to manage your TRGX
+
+Users who want to use the TuringX wallet functionality to create wallets, send and receive TRGX are recommended to use the convenient GUI based app. You can find it in the dedicated repository: https://github.com/TuringXplatform/TuringX-Wallet-App 
+
+## Mining TRGX and managing TRGX from the command line (precompiled binaries)
+
+The easiest way to start minging TRGX or to manage TRGX wallet(s) from the command line in the terminal is by using our precompiled binaries. Download the version matching your operating system:
+
+Microsoft Windows: https://github.com/TuringXplatform/TuringX/blob/main/Windows_x64_executeables.zip
+
+Apple MacOS: https://github.com/TuringXplatform/TuringX/blob/main/MacOS_M1_executeables.zip
+
+Linux: https://github.com/TuringXplatform/TuringX/blob/main/Ubuntu_22.04.1_executables.tar.xz
+
+Please note that Linux users are required to have the [Boost library](https://www.boost.org) (Version 1.74.0 or better) installed: 
 ```
 sudo apt-get install libboost-all-dev (Ubuntu Linux)
 ```
 
-Download the repository using the following command. Then unzip the executables (choose the correct zip file depending on your operating system: Windows, Linux, MacOS) 
-```
-git clone https://github.com/TuringXplatform/TuringX.git
-```
-
-To run a full Node in the TuringX blockchain, run the main service (=daemon) with the following command and wait until your node is fully synchronised with the network:
+After downloading the precompiled binary, unzip the executable on your machine. To run a full Node in the TuringX blockchain, run the main service (=daemon) with the following command and wait until your node is fully synchronised with the network:
 ```
 ./turingxd
 ```
@@ -32,11 +41,67 @@ From the command line, you can also create and manage your personal wallet to mi
 ./simplewallet
 ```
 
-Then just follow the commands (open an existing wallet or generate a new one).
+Then just follow the commands (use "O" to open an existing wallet or "G" to generate a new wallet for your TRGX).
 
-You can also start minig from within the wallet. Type the command "start_mining <number_of_threads>" to start mining TRGX. The command "stop_mining" will stop the mining procedure. You can follow your hashrate in the main service daemon with the command "show_hr".
+You can also start minig from within the wallet: type the command "start_mining <number_of_threads>" to start mining TRGX. The command "stop_mining" will stop the mining procedure. You can follow your hashrate in the main service daemon with the command "show_hr".
 
 Typing "help" (both in the wallet and in the main service daemon) displays all available functions and features. Please make sure you exit these gracefully by typing in the command "exit".
 
-There's also an App to manage your wallet and your transactions, you can find it [here](https://github.com/TuringXplatform/TuringX-Wallet-App).
+## Mining TRGX and managing TRGX from the command line (compile from source)
+
+You can also entirely build all binaries from the source. First, clone the repository:
+```
+git clone https://github.com/TuringXplatform/TuringX.git
+```
+
+### Linux
+
+It is required to have the [Boost library](https://www.boost.org) (Version 1.74.0 or better) installed: 
+```
+sudo apt-get install libboost-all-dev (Ubuntu Linux)
+```
+
+To compile and build:
+```
+mkdir build 
+cd build
+cmake ..
+make
+```
+
+### MacOS
+
+It is required to have the [Boost library](https://www.boost.org) (Version 1.74.0 or better) installed: 
+```
+sudo apt-get install libboost-all-dev (Ubuntu Linux)
+```
+
+To compile and build:
+```
+mkdir build 
+cd build
+cmake ..
+make
+```
+
+### Windows
+
+1. It is required to have the [Boost library](https://www.boost.org) (Version 1.74.0 or better) installed: 
+```
+sudo apt-get install libboost-all-dev (Ubuntu Linux)
+```
+
+2. It is required to have [cmake](https://cmake.org/) for windows installed.
+3. You also need [Microsoft Visual Studio](https://visualstudio.microsoft.com) (2017 or later) installed for the build process.
+
+To compile and build:
+```
+mkdir build 
+cd build
+cmake ..
+```
+Then open Visual Studio. Make sure you have set Solution->Configuration to "Release". You also need to add "bcrypt.lib" to P2P->Properties->Configuration Properties->Librarian->Additional Dependencies. This is necessary to build boost's cryptographic randomizer functions. Once these settings are done, proceed a full build to generate your binaries.
+
+
+
 
