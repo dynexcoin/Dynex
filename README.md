@@ -1,4 +1,4 @@
-# TuringX - Next Generation Platform for Neuromorphic Computing
+# TuringX [TRGX] - Next Generation Blockchain for Neuromorphic Computing
 
 With the end of Moore’s law approaching and Dennard scaling ending, the computing community is increasingly looking at new technologies to enable continued performance improvements. A neuromorphic computer is a nonvon Neumann computer whose structure and function are inspired by biology and physics. Today, such systems can be built and operated using existing technology, even at scale, and are capable of outperforming current quantum computers.
 
@@ -37,11 +37,15 @@ After downloading the precompiled binary, unzip the executable on your machine. 
 ./turingxd
 ```
 
+![TuringX-Daemon](https://github.com/TuringXplatform/TuringX/blob/main/turingxd.jpg)
+
 From the command line, you can also create and manage your personal wallet to mine and transact your TRGX tokens (make sure you have the main service daemon running):
 
 ```
 ./simplewallet
 ```
+
+![TuringX-Daemon](https://github.com/TuringXplatform/TuringX/blob/main/simplewallet.jpg)
 
 Then just follow the commands (use "O" to open an existing wallet or "G" to generate a new wallet for your TRGX).
 
