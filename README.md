@@ -9,7 +9,7 @@ TuringX has also developed a proprietary circuit design, the TuringX Neuromorphi
 For more information, read our [TuringX White Paper](https://github.com/TuringXplatform/TuringX-Whitepaper)
 
 ## The TuringX mainnet is live!
-We are working hard on releasing all repositories. In the meantime you can connect to the mainnet by using our pre-compiled releases:
+Starting from September 16th 2022, the TuringX mainnet has been live. We are working hard on releasing all repositories, in the meantime you can connect to the mainnet by using our pre-compiled releases:
 
 You need to have the [Boost library](https://www.boost.org) (Version 1.74.0) installed: 
 ```
