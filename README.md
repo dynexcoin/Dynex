@@ -9,7 +9,7 @@ TuringX has also developed a proprietary circuit design, the TuringX Neuromorphi
 For more information, read our [TuringX White Paper](https://github.com/TuringXplatform/TuringX-Whitepaper)
 
 ## The TuringX mainnet is live!
-Starting from September 16th 2022, the TuringX mainnet has been live. Everyone is welcome to join!
+Starting from September 16th 2022, the TuringX mainnet is live. Everyone is welcome to join!
 
 ## Using the TuringX-App to manage your TRGX
 
