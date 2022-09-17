@@ -11,9 +11,9 @@ For more information, read our [TuringX White Paper](https://github.com/TuringXp
 ## The TuringX mainnet is live!
 Starting from September 16th 2022, the TuringX mainnet has been live. Everyone is welcome to join!
 
-## Using the TuringX application to manage your TRGX
+## Using the TuringX-App to manage your TRGX
 
-Users who want to use the TuringX wallet functionality to create wallets, send and receive TRGX are recommended to use the convenient GUI based app. You can find it in the dedicated repository: https://github.com/TuringXplatform/TuringX-Wallet-App 
+Users who just want to use the TuringX wallet functionality to create wallets or send and receive TRGX are recommended to use the convenient GUI based app. You can find it in the dedicated repository: https://github.com/TuringXplatform/TuringX-Wallet-App 
 
 ## Mining TRGX and managing TRGX from the command line (precompiled binaries)
 
