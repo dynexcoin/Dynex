@@ -16,7 +16,7 @@ Requirements: You need to have the [Boost library](https://www.boost.org) (Versi
 sudo apt-get install libboost-all-dev
 ```
 
-Download and extract the executables from this repository: 
+Download the repository using the following command. Then unzip the executables (choose the correct zip file depending on your operating system: Windows, Linux, MacOS) 
 ```
 git clone https://github.com/TuringXplatform/TuringX.git
 ```
