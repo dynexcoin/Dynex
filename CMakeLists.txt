@@ -1,7 +1,5 @@
-   cmake_minimum_required(VERSION 2.8.6)
-
+cmake_minimum_required(VERSION 2.8.6)
 set(VERSION "0.1")
-# $Format:Packaged from commit %H%nset(COMMIT %h)%nset(REFS "%d")$
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set(CMAKE_CONFIGURATION_TYPES Debug RelWithDebInfo Release CACHE TYPE INTERNAL)
@@ -9,7 +7,6 @@ set(CMAKE_SKIP_INSTALL_RULES ON)
 set(CMAKE_SKIP_PACKAGE_ALL_DEPENDENCY ON)
 set(CMAKE_SUPPRESS_REGENERATION ON)
 enable_testing()
-# copy CTestCustom.cmake to build dir to disable long running tests in 'make test'
 configure_file(${CMAKE_SOURCE_DIR}/CTestCustom.cmake ${CMAKE_BINARY_DIR})
 
 project(CryptoNote)
@@ -49,7 +46,7 @@ else()
   if("${ARCH}" STREQUAL "default")
     set(ARCH_FLAG "")
   else()
-    set(ARCH_FLAG "-march=${ARCH}")# "-mcpu=${ARCH}")
+    set(ARCH_FLAG "-march=${ARCH}")
   endif()
   #set(WARNINGS "-Wall -Wextra -Wpointer-arith -Wundef -Wvla -Wwrite-strings -Werror -Wno-error=extra -Wno-error=unused-function -Wno-error=deprecated-declarations -Wno-error=sign-compare -Wno-error=strict-aliasing -Wno-error=type-limits -Wno-unused-parameter -Wno-error=unused-variable -Wno-error=undef -Wno-error=uninitialized -Wno-error=unused-result")
 
