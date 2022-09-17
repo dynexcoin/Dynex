@@ -53,7 +53,7 @@ You can also start minig from within the wallet: type the command "start_mining 
 
 Typing "help" (both in the wallet and in the main service daemon) displays all available functions and features. Please make sure you exit these gracefully by typing in the command "exit".
 
-## Mining TRGX and managing TRGX from the command line (compile from source)
+## Mining TRGX and managing TRGX from the command line (build from source)
 
 You can also entirely build all binaries from the source. First, clone the repository:
 ```
