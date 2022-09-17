@@ -11,12 +11,17 @@ For more information, read our [TuringX White Paper](https://turingx.org/wp-cont
 ## The TuringX mainnet is live!
 We are working hard on releasing all repositories. In the meantime you can connect to the mainnet by using our pre-compiled releases:
 
-You need to have the Boost library (Version 1.74.0) installed: 
+You need to have the [Boost library](https://www.boost.org) (Version 1.74.0) installed: 
 ```
 sudo apt-get install libboost-all-dev
 ```
 
-Download and extract the executables from this repository. To become a full Node in the blockchain, run the main service (=daemon) with the following command and wait until your node is fully synchronised with the network:
+Download and extract the executables from this repository: 
+```
+git clone https://github.com/TuringXplatform/TuringX.git
+```
+
+To run a full Node in the TuringX blockchain, run the main service (=daemon) with the following command and wait until your node is fully synchronised with the network:
 ```
 ./turingxd
 ```
