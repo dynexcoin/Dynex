@@ -13,7 +13,7 @@ Starting from September 16th 2022, the TuringX mainnet has been live. We are wor
 
 Requirements: You need to have the [Boost library](https://www.boost.org) (Version 1.74.0 or better) installed: 
 ```
-sudo apt-get install libboost-all-dev
+sudo apt-get install libboost-all-dev (Ubuntu Linux)
 ```
 
 Download the repository using the following command. Then unzip the executables (choose the correct zip file depending on your operating system: Windows, Linux, MacOS) 
