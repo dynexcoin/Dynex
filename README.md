@@ -11,7 +11,7 @@ For more information, read our [TuringX White Paper](https://github.com/TuringXp
 ## The TuringX mainnet is live!
 Starting from September 16th 2022, the TuringX mainnet has been live. We are working hard on releasing all repositories, in the meantime you can connect to the mainnet by using our pre-compiled releases:
 
-Requirements: You need to have the [Boost library](https://www.boost.org) (Version 1.74.0) installed: 
+Requirements: You need to have the [Boost library](https://www.boost.org) (Version 1.74.0 or better) installed: 
 ```
 sudo apt-get install libboost-all-dev
 ```
