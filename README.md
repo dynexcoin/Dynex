@@ -15,6 +15,8 @@ Starting from September 16th 2022, the TuringX mainnet has been live. Everyone i
 
 Users who just want to use the TuringX wallet functionality to create wallets or send and receive TRGX are recommended to use the convenient GUI based app. You can find it in the dedicated repository: https://github.com/TuringXplatform/TuringX-Wallet-App 
 
+![TuringX-Wallet-App](https://github.com/TuringXplatform/TuringX-Wallet-App/blob/main/wallet-app-screen.jpg "TuringX Wallet App")
+
 ## Mining TRGX and managing TRGX from the command line (precompiled binaries)
 
 The easiest way to start minging TRGX or to manage TRGX wallet(s) from the command line in the terminal is by using our precompiled binaries. Download the version matching your operating system:
