@@ -6,7 +6,7 @@ TuringX is a next-generation platform for neuromorphic computing based on a new 
 
 TuringX has also developed a proprietary circuit design, the TuringX Neuromorphic Chip, that complements the TuringX ecosystem and turns any modern field programmable gate array (FPGA) based chip into a neuromorphic computing chip that can perform orders of magnitude faster than classical or quantum methodologies for a wide range of applications. Due to the dominance of ASICs in the proof-of-work token mining industry, there is a large amount of dormant FPGA infrastructure available which can be converted into high performance next-generation neuromorphic computing clusters.
 
-For more information, read our [TuringX White Paper](https://turingx.org/wp-content/uploads/2022/09/whitepaper.pdf)
+For more information, read our [TuringX White Paper](https://github.com/TuringXplatform/TuringX-Whitepaper)
 
 ## The TuringX mainnet is live!
 We are working hard on releasing all repositories. In the meantime you can connect to the mainnet by using our pre-compiled releases:
