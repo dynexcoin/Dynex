@@ -92,7 +92,7 @@
 
 // The probing method
 // Linear probing
-// #define JUMP_(key, num_probes)    ( 1 )
+// #define JUMP_(key, num_probes)    ( 1, [100] )
 // Quadratic probing
 #define JUMP_(key, num_probes)    ( num_probes )
 
