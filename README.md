@@ -91,7 +91,9 @@ make
 
 It is required to have the [Boost library](https://www.boost.org) (Version 1.74.0 or better) installed: 
 ```
-brew install boost (macOS)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+brew install boost
 ```
 
 To compile and build:
