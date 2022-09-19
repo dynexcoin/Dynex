@@ -21,11 +21,11 @@ Users who just want to use the TuringX wallet functionality to create wallets or
 
 The easiest way to start minging TRGX or to manage TRGX wallet(s) from the command line in the terminal is by using our precompiled binaries. Download the version matching your operating system:
 
-Microsoft Windows: https://github.com/TuringXplatform/TuringX/blob/main/Windows_x64_executeables.zip
+Microsoft Windows: https://github.com/TuringXplatform/TuringX/raw/main/Windows_x64_executeables.zip
 
-Apple MacOS: https://github.com/TuringXplatform/TuringX/blob/main/MacOS_M1_executeables.zip
+Apple MacOS: https://github.com/TuringXplatform/TuringX/raw/main/MacOS_M1_executeables.zip
 
-Linux: https://github.com/TuringXplatform/TuringX/blob/main/Ubuntu_22.04.1_executables.tar.xz
+Linux: https://github.com/TuringXplatform/TuringX/raw/main/Ubuntu_22.04.1_executables.tar.xz
 
 Please note that Linux users are required to have the [Boost library](https://www.boost.org) (Version 1.74.0 or better) installed: 
 ```
