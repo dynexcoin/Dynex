@@ -39,7 +39,8 @@ sudo apt-get install libboost-all-dev
 
 MacOS:
 ```
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" (if you don't have brew installed)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
 brew install boost
 ```
 
