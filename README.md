@@ -30,9 +30,10 @@ https://github.com/TuringXplatform/TuringX/raw/main/MacOS_M1_executeables.zip
 Linux: 
 https://github.com/TuringXplatform/TuringX/raw/main/Ubuntu_22.04.1_executables.tar.xz
 
-Please note that Linux users are required to have the [Boost library](https://www.boost.org) (Version 1.74.0 or better) installed: 
+Please note that Linux and MacOS users are required to have the [Boost library](https://www.boost.org) (Version 1.74.0 or better) installed: 
 ```
 sudo apt-get install libboost-all-dev (Ubuntu Linux)
+brew install boost (macOS)
 ```
 
 After downloading the precompiled binary, unzip the executable on your machine. To run a full Node in the TuringX blockchain, run the main service (=daemon) with the following command and wait until your node is fully synchronised with the network:
@@ -82,7 +83,7 @@ make
 
 It is required to have the [Boost library](https://www.boost.org) (Version 1.74.0 or better) installed: 
 ```
-sudo apt-get install libboost-all-dev (Ubuntu Linux)
+brew install boost (macOS)
 ```
 
 To compile and build:
