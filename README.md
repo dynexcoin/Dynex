@@ -23,7 +23,7 @@ Microsoft Windows:
 coming soon - please build from source as described below
 
 Apple MacOS: 
-coming soon - please build from source as described below
+https://github.com/dynexcoin/Dynex/raw/main/MacOS_M1_executables.zip
 
 Linux: 
 https://github.com/dynexcoin/Dynex/raw/main/Ubuntu_22.04.1_executables.tar.xz
