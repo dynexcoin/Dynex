@@ -78,7 +78,7 @@ const char     CRYPTONOTE_BLOCKCHAIN_INDICES_FILENAME[]      = "blockchainindice
 const char     MINER_CONFIG_FILE_NAME[]                      = "miner_conf.json";
 } // parameters
 
-const char     CRYPTONOTE_NAME[]                             = "TuringX";
+const char     CRYPTONOTE_NAME[]                             = "DYNEX";
 const char     GENESIS_COINBASE_TX_HEX[]                     = "013c01ff0001e2aef88a8d0b029b2e4c0281c0b02e7c53291a94d1d0cbff8883f8024f5142ee494ffbbd08807121017aaaaafc6f441e95b7311cf9b0e6a78a64d8ed87a7d7ddec07afeb098ecf4c78";
 const uint8_t  CURRENT_TRANSACTION_VERSION                   =  1;
 const uint8_t  BLOCK_MAJOR_VERSION_1                         =  1;
@@ -104,6 +104,9 @@ const char     P2P_STAT_TRUSTED_PUB_KEY[]                    = "8f80f9a5a434a9f1
 
 const std::initializer_list<const char*> SEED_NODES = {
   "95.179.252.220:17333",
+  //"turingx.dyndns.org:17333", //disabled when I'm the seed
+  //"your_seed_ip1.com:8080",
+  //"your_seed_ip2.com:8080",
 };
 
 struct CheckpointData {
