@@ -1,25 +1,25 @@
-# TuringX [TRGX] - Next Generation Blockchain for Neuromorphic Computing
+# Dynex [DNX] - Next Generation Blockchain for Neuromorphic Computing
 
 With the end of Moore’s law approaching and Dennard scaling ending, the computing community is increasingly looking at new technologies to enable continued performance improvements. A neuromorphic computer is a nonvon Neumann computer whose structure and function are inspired by biology and physics. Today, such systems can be built and operated using existing technology, even at scale, and are capable of outperforming current quantum computers.
 
-TuringX is a next-generation platform for neuromorphic computing based on a new flexible blockchain protocol. It is designed for the development of software applications and algorithms that utilize neuromorphic hardware and are capable of accelerating computation. To accomplish this goal, the platform connects hosts that are running clusters of neuromorphic chips with users and applications that utilize this next-generation hardware. On the TuringX platform, computation time is exchanged for the TuringX native token. 
+Dynex is a next-generation platform for neuromorphic computing based on a new flexible blockchain protocol. It is designed for the development of software applications and algorithms that utilize neuromorphic hardware and are capable of accelerating computation. To accomplish this goal, the platform connects hosts that are running clusters of neuromorphic chips with users and applications that utilize this next-generation hardware. On the Dynex platform, computation time is exchanged for the Dynex native token. 
 
-TuringX has also developed a proprietary circuit design, the TuringX Neuromorphic Chip, that complements the TuringX ecosystem and turns any modern field programmable gate array (FPGA) based chip into a neuromorphic computing chip that can perform orders of magnitude faster than classical or quantum methodologies for a wide range of applications. Due to the dominance of ASICs in the proof-of-work token mining industry, there is a large amount of dormant FPGA infrastructure available which can be converted into high performance next-generation neuromorphic computing clusters.
+Dynex has also developed a proprietary circuit design, the Dynex Neuromorphic Chip, that complements the Dynex ecosystem and turns any modern field programmable gate array (FPGA) based chip into a neuromorphic computing chip that can perform orders of magnitude faster than classical or quantum methodologies for a wide range of applications. Due to the dominance of ASICs in the proof-of-work token mining industry, there is a large amount of dormant FPGA infrastructure available which can be converted into high performance next-generation neuromorphic computing clusters.
 
-For more information, read our [TuringX White Paper](https://github.com/TuringXplatform/TuringX-Whitepaper)
+For more information, read our [Dynex White Paper](https://github.com/TuringXplatform/TuringX-Whitepaper)
 
-## The TuringX mainnet is live!
-Starting from September 16th 2022, the TuringX mainnet is live. Everyone is welcome to join!
+## The Dynex mainnet is live!
+Starting from September 16th 2022, the Dynex mainnet is live. Everyone is welcome to join!
 
-## Using the TuringX-App to manage your TRGX
+## Using the Dynex-App to manage your DNX
 
-Users who just want to use the TuringX wallet functionality to create wallets or send and receive TRGX are recommended to use the convenient GUI based app. You can find it in the dedicated repository: https://github.com/TuringXplatform/TuringX-Wallet-App 
+Users who just want to use the Dynex wallet functionality to create wallets or send and receive DNX are recommended to use the convenient GUI based app. You can find it in the dedicated repository: https://github.com/TuringXplatform/TuringX-Wallet-App 
 
 ![TuringX-Wallet-App](https://github.com/TuringXplatform/TuringX-Wallet-App/blob/main/wallet-app-screen.jpg "TuringX Wallet App")
 
-## Mining TRGX and managing TRGX from the command line (precompiled binaries)
+## Mining DNX and managing DNX from the command line (precompiled binaries)
 
-The easiest way to start minging TRGX or to manage TRGX wallet(s) from the command line in the terminal is by using our precompiled binaries. Download the version matching your operating system:
+The easiest way to start minging DNX or to manage DNX wallet(s) from the command line in the terminal is by using our precompiled binaries. Download the version matching your operating system:
 
 Microsoft Windows: 
 https://github.com/TuringXplatform/TuringX/raw/main/Windows_x64_executeables.zip
@@ -46,7 +46,7 @@ brew install boost
 
 After downloading the precompiled binary, unzip the executable on your machine. To run a full Node in the TuringX blockchain, run the main service (=daemon) with the following command and wait until your node is fully synchronised with the network:
 ```
-./turingxd
+./dynexd
 ```
 
 ![TuringX-Daemon](https://github.com/TuringXplatform/TuringX/blob/main/turingxd.jpg)
@@ -65,7 +65,7 @@ You can also start minig from within the wallet: type the command "start_mining 
 
 Typing "help" (both in the wallet and in the main service daemon) displays all available functions and features. Please make sure you exit these gracefully by typing in the command "exit".
 
-## Mining TRGX and managing TRGX from the command line (build from source)
+## Mining DNX and managing DNX from the command line (build from source)
 
 You can also entirely build all binaries from the source. First, clone the repository:
 ```
