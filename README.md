@@ -13,9 +13,7 @@ Starting from September 16th 2022, the Dynex mainnet is live. Everyone is welcom
 
 ## Using the Dynex-App to manage your DNX
 
-Users who just want to use the Dynex wallet functionality to create wallets or send and receive DNX are recommended to use the convenient GUI based app. You can find it in the dedicated repository: https://github.com/TuringXplatform/TuringX-Wallet-App 
-
-![TuringX-Wallet-App](https://github.com/TuringXplatform/TuringX-Wallet-App/blob/main/wallet-app-screen.jpg "TuringX Wallet App")
+Users who just want to use the Dynex wallet functionality to create wallets or send and receive DNX are recommended to use the convenient GUI based app. You can find it in the dedicated repository: https://github.com/dynexcoin/Dynex-Wallet-App 
 
 ## Mining DNX and managing DNX from the command line (precompiled binaries)
 
