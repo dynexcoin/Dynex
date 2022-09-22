@@ -6,7 +6,7 @@ Dynex is a next-generation platform for neuromorphic computing based on a new fl
 
 Dynex has also developed a proprietary circuit design, the Dynex Neuromorphic Chip, that complements the Dynex ecosystem and turns any modern field programmable gate array (FPGA) based chip into a neuromorphic computing chip that can perform orders of magnitude faster than classical or quantum methodologies for a wide range of applications. Due to the dominance of ASICs in the proof-of-work token mining industry, there is a large amount of dormant FPGA infrastructure available which can be converted into high performance next-generation neuromorphic computing clusters.
 
-For more information, read our [Dynex White Paper](https://github.com/TuringXplatform/TuringX-Whitepaper)
+For more information, read our [Dynex White Paper](https://github.com/dynexcoin/Dynex-Whitepaper)
 
 ## The Dynex mainnet is live!
 Starting from September 16th 2022, the Dynex mainnet is live. Everyone is welcome to join!
