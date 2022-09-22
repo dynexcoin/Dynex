@@ -20,13 +20,13 @@ Users who just want to use the Dynex wallet functionality to create wallets or s
 The easiest way to start minging DNX or to manage DNX wallet(s) from the command line in the terminal is by using our precompiled binaries. Download the version matching your operating system:
 
 Microsoft Windows: 
-https://github.com/TuringXplatform/TuringX/raw/main/Windows_x64_executeables.zip
+coming soon - please build from source as described below
 
 Apple MacOS: 
-https://github.com/TuringXplatform/TuringX/raw/main/MacOS_M1_executeables.zip
+coming soon - please build from source as described below
 
 Linux: 
-https://github.com/TuringXplatform/TuringX/raw/main/Ubuntu_22.04.1_executables.tar.xz
+https://github.com/dynexcoin/Dynex/raw/main/Ubuntu_22.04.1_executables.tar.xz
 
 Please note that Linux and MacOS users are required to have the [Boost library](https://www.boost.org) (Version 1.74.0 or better) installed: 
 
@@ -47,7 +47,7 @@ After downloading the precompiled binary, unzip the executable on your machine. 
 ./dynexd
 ```
 
-![TuringX-Daemon](https://github.com/TuringXplatform/TuringX/blob/main/turingxd.jpg)
+![TuringX-Daemon](https://github.com/dynexcoin/Dynex/raw/main/turingxd.jpg)
 
 From the command line, you can also create and manage your personal wallet to mine and transact your TRGX tokens (make sure you have the main service daemon running):
 
@@ -55,7 +55,7 @@ From the command line, you can also create and manage your personal wallet to mi
 ./simplewallet
 ```
 
-![TuringX-Daemon](https://github.com/TuringXplatform/TuringX/blob/main/simplewallet.jpg)
+![TuringX-Daemon](https://github.com/dynexcoin/Dynex/raw/main/simplewallet.jpg)
 
 Then just follow the commands (use "O" to open an existing wallet or "G" to generate a new wallet for your TRGX).
 
@@ -67,7 +67,7 @@ Typing "help" (both in the wallet and in the main service daemon) displays all a
 
 You can also entirely build all binaries from the source. First, clone the repository:
 ```
-git clone https://github.com/TuringXplatform/TuringX.git
+git clone https://github.com/dynexcoin/Dynex.git
 ```
 
 ### Linux
