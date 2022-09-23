@@ -29,6 +29,7 @@
 // Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
 
 #include "Dispatcher.h"
+#include <pthread.h>
 #include <cassert>
 #include <cstdint> //dm
 #include <stdexcept> //dm
