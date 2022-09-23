@@ -23,7 +23,7 @@ Microsoft Windows:
 coming soon - please build from source as described below
 
 Apple MacOS: 
-https://github.com/dynexcoin/Dynex/raw/main/MacOS_M1_executables.zip
+https://github.com/dynexcoin/Dynex/raw/main/MacOS_executables.zip
 
 Linux: 
 https://github.com/dynexcoin/Dynex/raw/main/Ubuntu_22.04.1_executables.tar.xz
@@ -41,6 +41,10 @@ MacOS:
 
 brew install boost
 ```
+
+MacOS Silicon M1/M2: You need x86-64 versions of the boost libraries, but Apple Silicon compiles for Arm. You can download and unzip the precompiled boost x86-64 runtime libraries to run Dynex on Apple Silicon. 
+
+
 
 After downloading the precompiled binary, unzip the executable on your machine. To run a full Node in the TuringX blockchain, run the main service (=daemon) with the following command and wait until your node is fully synchronised with the network:
 ```
