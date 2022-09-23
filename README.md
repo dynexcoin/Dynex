@@ -55,19 +55,19 @@ After downloading the precompiled binary, unzip the executable on your machine. 
 ./dynexd
 ```
 
-![TuringX-Daemon](https://github.com/dynexcoin/Dynex/raw/main/turingxd.jpg)
+![Dynex-Daemon](https://github.com/dynexcoin/Dynex/raw/main/turingxd.jpg)
 
-From the command line, you can also create and manage your personal wallet to mine and transact your TRGX tokens (make sure you have the main service daemon running):
+From the command line, you can also create and manage your personal wallet to mine and transact your DNX tokens (make sure you have the main service daemon running):
 
 ```
 ./simplewallet
 ```
 
-![TuringX-Daemon](https://github.com/dynexcoin/Dynex/raw/main/simplewallet.jpg)
+![Dynex-Daemon](https://github.com/dynexcoin/Dynex/raw/main/simplewallet.jpg)
 
-Then just follow the commands (use "O" to open an existing wallet or "G" to generate a new wallet for your TRGX).
+Then just follow the commands (use "O" to open an existing wallet or "G" to generate a new wallet for your DNX).
 
-You can also start minig from within the wallet: type the command "start_mining <number_of_threads>" to start mining TRGX. The command "stop_mining" will stop the mining procedure. You can follow your hashrate in the main service daemon with the command "show_hr".
+You can also start minig from within the wallet: type the command "start_mining <number_of_threads>" to start mining DNX. The command "stop_mining" will stop the mining procedure. You can follow your hashrate in the main service daemon with the command "show_hr".
 
 Typing "help" (both in the wallet and in the main service daemon) displays all available functions and features. Please make sure you exit these gracefully by typing in the command "exit".
 
