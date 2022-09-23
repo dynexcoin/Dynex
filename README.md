@@ -67,9 +67,31 @@ From the command line, you can also create and manage your personal wallet to mi
 
 Then just follow the commands (use "O" to open an existing wallet or "G" to generate a new wallet for your DNX).
 
-You can also start minig from within the wallet: type the command "start_mining <number_of_threads>" to start mining DNX. The command "stop_mining" will stop the mining procedure. You can follow your hashrate in the main service daemon with the command "show_hr".
+You start minig directly from within your wallet: type the command "start_mining <number_of_threads>" to start mining DNX. 
+
+``` 
+start_mining 8
+```
+
+The command "stop_mining" will stop the mining procedure. 
+
+```
+stop_mining
+```
+
+You can follow your hashrate in the main service daemon with the command "show_hr".
+
+```
+show_hr
+...
+hide_hr
+``` 
 
 Typing "help" (both in the wallet and in the main service daemon) displays all available functions and features. Please make sure you exit these gracefully by typing in the command "exit".
+
+``` 
+exit
+``` 
 
 ## Mining DNX and managing DNX from the command line (build from source)
 
