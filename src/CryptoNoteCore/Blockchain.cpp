@@ -28,6 +28,7 @@
 // 
 // Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
 
+#include <cstring>
 #include "Blockchain.h"
 
 #include <algorithm>
