@@ -42,9 +42,12 @@ MacOS:
 brew install boost
 ```
 
-Note for MacOS Silicon M1/M2 based machines: You need x86-64 versions of the boost libraries, but Apple Silicon compiles for Arm. You can download and unzip our precompiled [boost x86-64 runtime libraries](https://github.com/dynexcoin/Dynex/raw/main/libboost_x86-64.zip) to run Dynex on Apple Silicon. 
+Note only for MacOS Silicon M1/M2 based machines: 
+You need x86-64 versions of the boost libraries, but Apple Silicon compiles for Arm. You can download and unzip our precompiled [boost x86-64 runtime libraries](https://github.com/dynexcoin/Dynex/raw/main/libboost_x86-64.zip) to run Dynex on Apple Silicon. Then you need to set the environment variable for the dynamic boost libraries with
 
-
+```
+export DYLD_LIBRARY_PATH=/path/to/the/library/files/:$DYLD_LIBRARY_PATH
+```
 
 After downloading the precompiled binary, unzip the executable on your machine. To run a full Node in the TuringX blockchain, run the main service (=daemon) with the following command and wait until your node is fully synchronised with the network:
 ```
