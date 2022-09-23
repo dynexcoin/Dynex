@@ -42,7 +42,7 @@ MacOS:
 brew install boost
 ```
 
-MacOS Silicon M1/M2: You need x86-64 versions of the boost libraries, but Apple Silicon compiles for Arm. You can download and unzip the precompiled boost x86-64 runtime libraries to run Dynex on Apple Silicon. 
+Note for MacOS Silicon M1/M2 based machines: You need x86-64 versions of the boost libraries, but Apple Silicon compiles for Arm. You can download and unzip our precompiled [boost x86-64 runtime libraries](https://github.com/dynexcoin/Dynex/raw/main/libboost_x86-64.zip) to run Dynex on Apple Silicon. 
 
 
 
@@ -96,6 +96,11 @@ It is required to have the [Boost library](https://www.boost.org) (Version 1.74.
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
 brew install boost
+```
+
+You also need cmake:
+```
+brew install cmake
 ```
 
 To compile and build:
