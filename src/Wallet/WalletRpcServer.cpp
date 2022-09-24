@@ -148,6 +148,7 @@ bool wallet_rpc_server::on_getbalance(const wallet_rpc::COMMAND_RPC_GET_BALANCE:
 }
 //------------------------------------------------------------------------------------------------------------------------------
 bool wallet_rpc_server::on_transfer(const wallet_rpc::COMMAND_RPC_TRANSFER::request& req, wallet_rpc::COMMAND_RPC_TRANSFER::response& res) {
+  //std::cout<<"***DEBUG*** WalletRpcServer.cpp: on_transfer() "<<std::endl;
   std::vector<CryptoNote::WalletLegacyTransfer> transfers;
   for (auto it = req.destinations.begin(); it != req.destinations.end(); it++) {
     CryptoNote::WalletLegacyTransfer transfer;
@@ -180,7 +181,8 @@ bool wallet_rpc_server::on_transfer(const wallet_rpc::COMMAND_RPC_TRANSFER::requ
     CryptoNote::WalletHelper::SendCompleteResultObserver sent;
     WalletHelper::IWalletRemoveObserverGuard removeGuard(m_wallet, sent);
 
-    CryptoNote::TransactionId tx = m_wallet.sendTransaction(transfers, req.fee, extraString, req.mixin, req.unlock_time);
+    //std::cout<<"***DEBUG*** WalletRpcServer.cpp: unlock_time: "<<req.unlock_time<<std::endl;
+    CryptoNote::TransactionId tx = m_wallet.sendTransaction(transfers, req.fee, extraString, req.mixin, 0); //removed: RPC server sets unix timestamp instead of zero; req.unlock_time);
     if (tx == WALLET_LEGACY_INVALID_TRANSACTION_ID) {
       throw std::runtime_error("Couldn't send transaction");
     }
