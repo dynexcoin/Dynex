@@ -17,7 +17,7 @@ Starting from September 16th 2022, the Dynex mainnet is live. Everyone is welcom
 
 Users who just want to use the Dynex wallet functionality to create wallets or send and receive DNX are recommended to use the convenient GUI based app. You can find it in the dedicated repository: https://github.com/dynexcoin/Dynex-Wallet-App 
 
-## Mining DNX and managing DNX from the command line (precompiled binaries)
+## Run a Dynex node and mine DNX from the command line (precompiled binaries)
 
 The easiest way to start minging DNX or to manage DNX wallet(s) from the command line in the terminal is by using our precompiled binaries. Download the version matching your operating system:
 
@@ -95,7 +95,7 @@ Typing "help" (both in the wallet and in the main service daemon) displays all a
 exit
 ``` 
 
-## Mining DNX and managing DNX from the command line (build from source)
+## Run a Dynex node and mine DNX (build from source)
 
 You can also entirely build all binaries from the source. First, clone the repository:
 ```
