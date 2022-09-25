@@ -52,7 +52,7 @@ You need x86-64 versions of the boost libraries, but Apple Silicon compiles for 
 export DYLD_LIBRARY_PATH=/path/to/the/library/files/:$DYLD_LIBRARY_PATH
 ```
 
-After downloading the precompiled binary, unzip the executable on your machine. To run a full Node in the Dynex blockchain, run the main service (=daemon) with the following command and wait until your node is fully synchronised with the network:
+After downloading the precompiled binary, unzip the executable on your machine. To run a Dynex node, run the main service (=daemon) with the following command and wait until your node is fully synchronised with the network:
 ```
 ./dynexd
 ```
