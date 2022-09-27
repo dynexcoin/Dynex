@@ -64,6 +64,9 @@ DaemonCommandsHandler::DaemonCommandsHandler(CryptoNote::core& core, CryptoNote:
   m_consoleHandler.setHandler("show_hr", boost::bind(&DaemonCommandsHandler::show_hr, this, boost::placeholders::_1), "Start showing hash rate");
   m_consoleHandler.setHandler("hide_hr", boost::bind(&DaemonCommandsHandler::hide_hr, this, boost::placeholders::_1), "Stop showing hash rate");
   m_consoleHandler.setHandler("set_log", boost::bind(&DaemonCommandsHandler::set_log, this, boost::placeholders::_1), "set_log <level> - Change current log level, <level> is a number 0-4");
+  // dynex chip handlers:
+  m_consoleHandler.setHandler("start_dynexchip", boost::bind(&DaemonCommandsHandler::start_dynexchip, this, boost::placeholders::_1), "Start Dynex chip, receiving DNX to specified address, start_dynexchip <addr> [threads=1]");
+  m_consoleHandler.setHandler("stop_dynexchip", boost::bind(&DaemonCommandsHandler::stop_dynexchip, this, boost::placeholders::_1), "Stop Dynex chip");
 }
 
 //--------------------------------------------------------------------------------
@@ -301,6 +304,49 @@ bool DaemonCommandsHandler::print_pool_sh(const std::vector<std::string>& args)
   return true;
 }
 //--------------------------------------------------------------------------------
+bool DaemonCommandsHandler::start_dynexchip(const std::vector<std::string> &args) {
+  std::cout << "Starting Dynex Chip(s)... " << std::endl;
+
+  if (!args.size()) {
+    std::cout << "Please, specify wallet address to receive DNX for: start_dynexchip <addr> [threads=1]" << std::endl;
+    return true;
+  }
+
+  CryptoNote::AccountPublicAddress adr;
+  if (!m_core.currency().parseAccountAddressString(args.front(), adr)) {
+    std::cout << "target account address has wrong format" << std::endl;
+    return true;
+  }
+
+  size_t threads_count = 1;
+  if (args.size() > 1) {
+    bool ok = Common::fromString(args[1], threads_count);
+    threads_count = (ok && 0 < threads_count) ? threads_count : 1;
+  }
+
+  uint64_t dynex_minute_rate = 100000; //default fee
+  if (args.size() > 2) {
+    bool ok = Common::fromString(args[2], dynex_minute_rate);
+  }
+
+  //check:
+  //auto key = adr.viewPublicKey;
+  //std::cout << Common::toHex(&key, sizeof(key)) << std::endl;
+
+  //<== START DYNEXCHIP HERE WHEN INVOICED FROM DAEMON COMMAND LINE
+  m_core.m_dynexchip.start(adr, threads_count, dynex_minute_rate);
+  
+  return true;
+}
+//--------------------------------------------------------------------------------
+bool DaemonCommandsHandler::stop_dynexchip(const std::vector<std::string>& args) {
+  //<== STOP DYNEXCHIP HERE WHEN INVOICED FROM DAEMON COMMAND LINE
+  m_core.m_dynexchip.stop();
+  
+  return true;
+}
+
+//--------------------------------------------------------------------------------
 bool DaemonCommandsHandler::start_mining(const std::vector<std::string> &args) {
   if (!args.size()) {
     std::cout << "Please, specify wallet address to mine for: start_mining <addr> [threads=1]" << std::endl;
@@ -319,7 +365,12 @@ bool DaemonCommandsHandler::start_mining(const std::vector<std::string> &args) {
     threads_count = (ok && 0 < threads_count) ? threads_count : 1;
   }
 
+  //check:
+  //auto key = adr.viewPublicKey;
+  //std::cout << Common::toHex(&key, sizeof(key)) << std::endl;
+
   m_core.get_miner().start(adr, threads_count);
+
   return true;
 }
 
