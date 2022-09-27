@@ -53,11 +53,9 @@ uint64_t countNeededMoney(uint64_t fee, const std::vector<WalletLegacyTransfer>&
   for (auto& transfer: transfers) {
     throwIf(transfer.amount == 0, error::ZERO_DESTINATION);
     throwIf(transfer.amount < 0, error::WRONG_AMOUNT);
-
     needed_money += transfer.amount;
     throwIf(static_cast<int64_t>(needed_money) < transfer.amount, error::SUM_OVERFLOW);
   }
-
   return needed_money;
 }
 
@@ -119,15 +117,15 @@ std::shared_ptr<WalletRequest> WalletTransactionSender::makeSendRequest(Transact
     const std::vector<WalletLegacyTransfer>& transfers, uint64_t fee, const std::string& extra, uint64_t mixIn, uint64_t unlockTimestamp) {
 
   using namespace CryptoNote;
-
   throwIf(transfers.empty(), error::ZERO_DESTINATION);
   validateTransfersAddresses(transfers);
   uint64_t neededMoney = countNeededMoney(fee, transfers);
-
   std::shared_ptr<SendTransactionContext> context = std::make_shared<SendTransactionContext>();
-
+  //--
   context->foundMoney = selectTransfersToSend(neededMoney, 0 == mixIn, context->dustPolicy.dustThreshold, context->selectedTransfers);
   throwIf(context->foundMoney < neededMoney, error::WRONG_AMOUNT);
+
+  //std::cout<<"***DEBUG*** WalletTransactionSender.cpp unlockTimestamp: "<<unlockTimestamp<<std::endl;
 
   transactionId = m_transactionsCache.addNewTransaction(neededMoney, fee, extra, transfers, unlockTimestamp);
   context->transactionId = transactionId;

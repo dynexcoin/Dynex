@@ -449,18 +449,20 @@ TransactionId WalletLegacy::sendTransaction(const WalletLegacyTransfer& transfer
   std::vector<WalletLegacyTransfer> transfers;
   transfers.push_back(transfer);
   throwIfNotInitialised();
-
+  //std::cout<<"***DEBUG*** WalletRpcServer.cpp: 1- unlock_time: "<<unlockTimestamp<<std::endl;
   return sendTransaction(transfers, fee, extra, mixIn, unlockTimestamp);
 }
 
 TransactionId WalletLegacy::sendTransaction(const std::vector<WalletLegacyTransfer>& transfers, uint64_t fee, const std::string& extra, uint64_t mixIn, uint64_t unlockTimestamp) {
   TransactionId txId = 0;
+  //--
   std::shared_ptr<WalletRequest> request;
   std::deque<std::shared_ptr<WalletLegacyEvent>> events;
   throwIfNotInitialised();
 
   {
     std::unique_lock<std::mutex> lock(m_cacheMutex);
+    //std::cout<<"***DEBUG*** WalletLegacy.cpp 2- unlockTimestamp: "<<unlockTimestamp<<std::endl;
     request = m_sender->makeSendRequest(txId, events, transfers, fee, extra, mixIn, unlockTimestamp);
   }
 
