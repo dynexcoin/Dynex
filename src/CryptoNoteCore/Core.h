@@ -50,7 +50,11 @@
 
 #include <Logging/LoggerMessage.h>
 
+#include "../Dynexchip/Dynexchip.cpp"
+
 namespace CryptoNote {
+
+  
 
   struct core_stat_info;
   class miner;
@@ -67,14 +71,16 @@ namespace CryptoNote {
      virtual i_cryptonote_protocol* get_protocol() override {return m_pprotocol;}
      const Currency& currency() const { return m_currency; }
 
+     //-------------------- Dynex chip handler ------------------
+     Dynex::dynexchip m_dynexchip;
+
      //-------------------- IMinerHandler -----------------------
      virtual bool handle_block_found(Block& b) override;
      virtual bool get_block_template(Block& b, const AccountPublicAddress& adr, difficulty_type& diffic, uint32_t& height, const BinaryArray& ex_nonce) override;
-
      bool addObserver(ICoreObserver* observer) override;
      bool removeObserver(ICoreObserver* observer) override;
-
      miner& get_miner() { return *m_miner; }
+
      static void init_options(boost::program_options::options_description& desc);
      bool init(const CoreConfig& config, const MinerConfig& minerConfig, bool load_existing);
      bool set_genesis_block(const Block& b);
