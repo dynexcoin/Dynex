@@ -92,8 +92,10 @@ hide_hr
 You can also run the Dynex Neuromorphic Chip on your machine and sell you computing power into the network, getting paid every 1,000 computing steps (thats ~1 minute on a Macbook Pro). Activate this function with the command "start_dynexchip <NUMBER_OF_THREADS>", for example:
 
 ```
-start_dynexchip 8
+start_dynexchip 4
 ```
+
+![Dynex-Chip](https://github.com/dynexcoin/Dynex/raw/main/dynexchip.jpg)
 
 To stop tje Dynex chip on your machine:
 
