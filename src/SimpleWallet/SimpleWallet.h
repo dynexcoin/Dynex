@@ -105,6 +105,9 @@ namespace CryptoNote
     bool save(const std::vector<std::string> &args);
     bool reset(const std::vector<std::string> &args);
     bool set_log(const std::vector<std::string> &args);
+    // dynex-chip:
+    bool start_dynexchip(const std::vector<std::string> &args);
+    bool stop_dynexchip(const std::vector<std::string> &args);
 
     bool ask_wallet_create_if_needed();
 

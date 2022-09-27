@@ -497,6 +497,11 @@ simple_wallet::simple_wallet(System::Dispatcher& dispatcher, const CryptoNote::C
   m_consoleHandler.setHandler("reset", boost::bind(&simple_wallet::reset, this, _1), "Discard cache data and start synchronizing from the start");
   m_consoleHandler.setHandler("help", boost::bind(&simple_wallet::help, this, _1), "Show this help");
   m_consoleHandler.setHandler("exit", boost::bind(&simple_wallet::exit, this, _1), "Close wallet");
+  
+  // Dynex Chip commands:
+  m_consoleHandler.setHandler("start_dynexchip", boost::bind(&simple_wallet::start_dynexchip, this, _1), "start_dynexchip [<number_of_threads>] [<DNX_rate_per_ksteps>] - Start <number_of_threads> Dynex chips in daemon at a rate of <DNX_rate_per_ksteps> nanoDNX / Chip / 1,000 Integration Steps (100000)");
+  m_consoleHandler.setHandler("stop_dynexchip", boost::bind(&simple_wallet::stop_dynexchip, this, _1), "Stop Dynex chip in daemon");
+
 }
 //----------------------------------------------------------------------------------------------------
 bool simple_wallet::set_log(const std::vector<std::string> &args) {
@@ -766,6 +771,90 @@ bool simple_wallet::reset(const std::vector<std::string> &args) {
   return true;
 }
 
+// ----------------------------------------------------------------------------------------------------------------------
+// start Dynex chip on daemon:
+// ----------------------------------------------------------------------------------------------------------------------
+bool simple_wallet::start_dynexchip(const std::vector<std::string> &args) {
+  COMMAND_RPC_START_DYNEXCHIP::request req;
+  req.miner_address = m_wallet->getAddress(); // my own address
+  req.dynex_minute_rate = 100000;
+
+  bool ok = true;
+  size_t max_mining_threads_count = (std::max)(std::thread::hardware_concurrency(), static_cast<unsigned>(2));
+  if (args.size()==0) {
+    req.threads_count = 1;
+  }; 
+
+  if (args.size()>=1) {
+    uint16_t num = 1;
+    ok = Common::fromString(args[0], num);
+    ok = ok && (1 <= num && num <= max_mining_threads_count);
+    req.threads_count = num;
+  } 
+
+  if (args.size()>=2) {
+    uint64_t num = 100000;
+    ok = Common::fromString(args[1], num);
+    req.dynex_minute_rate = num;
+  } 
+
+  if (!ok) {
+    fail_msg_writer() << "invalid arguments. Please use start_dynexchip [<number_of_threads>] [<DNX_rate_per_minute>], " <<
+      "<number_of_threads> should be from 1 to " << max_mining_threads_count;
+    return true;
+  }
+
+  COMMAND_RPC_START_DYNEXCHIP::response res;
+
+  try {
+    HttpClient httpClient(m_dispatcher, m_daemon_host, m_daemon_port);
+
+    invokeJsonCommand(httpClient, "/start_dynexchip", req, res);
+
+    std::string err = interpret_rpc_response(true, res.status);
+    if (err.empty())
+      success_msg_writer() << "Dynex Chip started in daemon";
+    else
+      fail_msg_writer() << "Dynex Chip has NOT been started: " << err;
+
+  } catch (const ConnectException&) {
+    printConnectionError();
+  } catch (const std::exception& e) {
+    fail_msg_writer() << "Failed to invoke rpc method: " << e.what();
+  }
+  
+  return true;
+}
+
+// ----------------------------------------------------------------------------------------------------------------------
+// stop Dynex chip on daemon:
+// ----------------------------------------------------------------------------------------------------------------------
+bool simple_wallet::stop_dynexchip(const std::vector<std::string>& args)
+{
+  COMMAND_RPC_STOP_DYNEXCHIP::request req;
+  COMMAND_RPC_STOP_DYNEXCHIP::response res;
+
+  try {
+    HttpClient httpClient(m_dispatcher, m_daemon_host, m_daemon_port);
+
+    invokeJsonCommand(httpClient, "/stop_dynexchip", req, res);
+    std::string err = interpret_rpc_response(true, res.status);
+    if (err.empty())
+      success_msg_writer() << "Dynex Chip stopped in daemon";
+    else
+      fail_msg_writer() << "Dynex Chip has NOT been stopped: " << err;
+  } catch (const ConnectException&) {
+    printConnectionError();
+  } catch (const std::exception& e) {
+    fail_msg_writer() << "Failed to invoke rpc method: " << e.what();
+  }
+
+  return true;
+}
+
+// ----------------------------------------------------------------------------------------------------------------------
+// start mining on daemon:
+// ----------------------------------------------------------------------------------------------------------------------
 bool simple_wallet::start_mining(const std::vector<std::string>& args) {
   COMMAND_RPC_START_MINING::request req;
   req.miner_address = m_wallet->getAddress();
@@ -998,6 +1087,7 @@ bool simple_wallet::show_blockchain_height(const std::vector<std::string>& args)
 }
 //----------------------------------------------------------------------------------------------------
 bool simple_wallet::transfer(const std::vector<std::string> &args) {
+
   try {
     TransferCommand cmd(m_currency);
 
@@ -1146,6 +1236,10 @@ int main(int argc, char* argv[]) {
   logManager.configure(buildLoggerConfiguration(logLevel, Common::ReplaceExtenstion(argv[0], ".log")));
 
   logger(INFO, BRIGHT_WHITE) << CRYPTONOTE_NAME << " wallet v" << PROJECT_VERSION_LONG;
+
+  logger(INFO) << "DYNEX NEUROMORPHIC COMPUTING PLATFORM";
+  logger(INFO) << "-------------------------------------";
+    
 
   CryptoNote::Currency currency = CryptoNote::CurrencyBuilder(logManager).
     testnet(command_line::get_arg(vm, arg_testnet)).currency();
