@@ -81,6 +81,10 @@ private:
   bool on_stop_mining(const COMMAND_RPC_STOP_MINING::request& req, COMMAND_RPC_STOP_MINING::response& res);
   bool on_stop_daemon(const COMMAND_RPC_STOP_DAEMON::request& req, COMMAND_RPC_STOP_DAEMON::response& res);
 
+  // dynex chip handlers
+  bool on_start_dynexchip(const COMMAND_RPC_START_DYNEXCHIP::request& req, COMMAND_RPC_START_DYNEXCHIP::response& res);
+  bool on_stop_dynexchip(const COMMAND_RPC_STOP_DYNEXCHIP::request& req, COMMAND_RPC_STOP_DYNEXCHIP::response& res);
+
   // json rpc
   bool on_getblockcount(const COMMAND_RPC_GETBLOCKCOUNT::request& req, COMMAND_RPC_GETBLOCKCOUNT::response& res);
   bool on_getblockhash(const COMMAND_RPC_GETBLOCKHASH::request& req, COMMAND_RPC_GETBLOCKHASH::response& res);
