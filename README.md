@@ -97,7 +97,7 @@ start_dynexchip 4
 
 ![Dynex-Chip](https://github.com/dynexcoin/Dynex/raw/main/dynexchip.jpg)
 
-To stop tje Dynex chip on your machine:
+To stop the Dynex chip on your machine:
 
 ```
 stop_dynexchip
