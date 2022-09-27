@@ -22,13 +22,13 @@ Users who just want to use the Dynex wallet functionality to create wallets or s
 The easiest way to start minging DNX or to manage DNX wallet(s) from the command line in the terminal is by using our precompiled binaries. Download the version matching your operating system:
 
 Microsoft Windows: 
-coming soon - please build from source as described below
+https://github.com/dynexcoin/Dynex/releases/tag/Dynex_windows
 
 Apple MacOS: 
-https://github.com/dynexcoin/Dynex/raw/main/MacOS_executables.zip
+https://github.com/dynexcoin/Dynex/releases/tag/Dynex_macos
 
 Linux: 
-https://github.com/dynexcoin/Dynex/raw/main/Ubuntu_22.04.1_executables.tar.xz
+https://github.com/dynexcoin/Dynex/releases/tag/Dynex_linux
 
 Please note that Linux and MacOS users are required to have the [Boost library](https://www.boost.org) (Version 1.74.0 or better) installed: 
 
@@ -46,7 +46,7 @@ brew install boost
 
 Note: For MacOS Silicon M1/M2 based machines only: 
 
-You need x86-64 versions of the boost libraries, but Apple Silicon compiles for Arm. You can download and unzip our precompiled [boost x86-64 runtime libraries](https://github.com/dynexcoin/Dynex/raw/main/libboost_x86-64.zip) to run Dynex on Apple Silicon. Then you need to set the environment variable for the dynamic boost libraries with
+You need x86-64 versions of the boost libraries, but Apple Silicon compiles for Arm. You can download and unzip our precompiled [boost x86-64 runtime libraries](https://github.com/dynexcoin/Dynex/releases/download/Dynex_macos/libboost_x86-64.zip) to run Dynex on Apple Silicon. Then you need to set the environment variable for the dynamic boost libraries with
 
 ```
 export DYLD_LIBRARY_PATH=/path/to/the/library/files/:$DYLD_LIBRARY_PATH
