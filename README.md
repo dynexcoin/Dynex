@@ -69,7 +69,7 @@ From the command line, you can also create and manage your personal wallet to mi
 
 Then just follow the commands (use "O" to open an existing wallet or "G" to generate a new wallet for your DNX).
 
-You start minig directly from within your wallet: type the command "start_mining <number_of_threads>" to start mining DNX. 
+You can start minig directly from within your wallet: type the command "start_mining <number_of_threads>" to start mining DNX. 
 
 ``` 
 start_mining 8
@@ -88,6 +88,18 @@ show_hr
 ...
 hide_hr
 ``` 
+
+You can also run the Dynex Neuromorphic Chip on your machine and sell you computing power into the network, getting paid every 1,000 computing steps (thats ~1 minute on a Macbook Pro). Activate this function with the command "start_dynexchip <NUMBER_OF_THREADS>", for example:
+
+```
+start_dynexchip 8
+```
+
+To stop tje Dynex chip on your machine:
+
+```
+stop_dynexchip
+```
 
 Typing "help" (both in the wallet and in the main service daemon) displays all available functions and features. Please make sure you exit these gracefully by typing in the command "exit".
 
