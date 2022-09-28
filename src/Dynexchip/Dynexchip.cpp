@@ -102,6 +102,16 @@ typedef std::vector< value_type > state_type;
 #define FTP_PORT "21"
 
 // Dynex colors
+#ifdef WIN32
+#define TEXT_DEFAULT  ""
+#define TEXT_YELLOW   ""
+#define TEXT_GREEN    ""
+#define TEXT_RED      ""
+#define TEXT_BLUE     ""
+#define TEXT_CYAN     ""
+#define TEXT_WHITE    ""
+#define TEXT_SILVER   ""
+#else
 #define TEXT_DEFAULT  "\033[0m"
 #define TEXT_YELLOW   "\033[1;33m"
 #define TEXT_GREEN    "\033[1;32m"
@@ -109,7 +119,8 @@ typedef std::vector< value_type > state_type;
 #define TEXT_BLUE     "\033[1;34m"
 #define TEXT_CYAN     "\033[1;36m"
 #define TEXT_WHITE    "\033[1;37m"
-#define TEXT_SILVER   "\033[1;315m" 
+#define TEXT_SILVER   "\033[1;315m"
+#endif 
 
 
 #include "CryptoNoteCore/Currency.h" // CryptoNote::AccountPublicAddress
