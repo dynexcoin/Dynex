@@ -193,8 +193,11 @@ int main(int argc, char* argv[])
       }
     }
 
-    //Level cfgLogLevel = static_cast<Level>(static_cast<int>(Logging::ERROR) + command_line::get_arg(vm, arg_log_level));
+    #ifdef WIN32
     Level cfgLogLevel = static_cast<Level>(static_cast<int>(Logging::INFO + command_line::get_arg(vm, arg_log_level))); // dm:win32
+    #else
+    Level cfgLogLevel = static_cast<Level>(static_cast<int>(Logging::ERROR) + command_line::get_arg(vm, arg_log_level));
+    #endif
 
     // configure logging
     logManager.configure(buildLoggerConfiguration(cfgLogLevel, cfgLogFile));
@@ -268,7 +271,11 @@ int main(int argc, char* argv[])
     // initialize objects
     logger(INFO) << "Initializing p2p server...";
     if (!p2psrv.init(netNodeConfig)) {
+      #ifdef WIN32
       logger(INFO) << "Failed to initialize p2p server."; //dm:win64
+      #else
+      logger(ERROR) << "Failed to initialize p2p server."; //dm:win64
+      #endif
       return 1;
     }
     logger(INFO) << "P2p server initialized OK";
@@ -283,7 +290,11 @@ int main(int argc, char* argv[])
     // initialize core here
     logger(INFO) << "Initializing core...";
     if (!ccore.init(coreConfig, minerConfig, true)) {
+      #ifdef WIN32
       logger(INFO) << "Failed to initialize core"; //dm:win64
+      #else
+      logger(ERROR) << "Failed to initialize core"; //dm:win64
+      #endif
       return 1;
     }
     logger(INFO) << "Core initialized OK";
@@ -322,7 +333,12 @@ int main(int argc, char* argv[])
     cprotocol.set_p2p_endpoint(NULL);
 
   } catch (const std::exception& e) {
+
+    #ifdef WIN32
     logger(INFO) << "Exception: " << e.what(); //dm:win64
+    #else
+    logger(ERROR) << "Exception: " << e.what(); //dm:win64
+    #endif
     return 1;
   }
 
