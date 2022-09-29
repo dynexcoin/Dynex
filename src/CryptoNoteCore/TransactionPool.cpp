@@ -193,7 +193,7 @@ namespace CryptoNote {
     std::lock_guard<std::recursive_mutex> lock(m_transactions_lock);
 
     if (!keptByBlock && m_recentlyDeletedTransactions.find(id) != m_recentlyDeletedTransactions.end()) {
-      //logger(INFO) << "Trying to add recently deleted transaction. Ignore: " << id; //-dm not required
+      logger(INFO) << "Trying to add recently deleted transaction. Ignore: " << id; //-dm fix checkpoin
       tvc.m_verifivation_failed = false;
       tvc.m_should_be_relayed = false;
       tvc.m_added_to_pool = false;
