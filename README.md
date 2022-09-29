@@ -169,7 +169,18 @@ mkdir build
 cd build
 cmake ..
 ```
-Then open Visual Studio. Make sure you have set Solution->Configuration to "Release". You also need to add "bcrypt.lib" to P2P->Properties->Configuration Properties->Librarian->Additional Dependencies. This is necessary to build boost's cryptographic randomizer functions. Once these settings are done, proceed a full build to generate your binaries.
+Then open Visual Studio. Make sure you have set Solution->Configuration to "Release". You also need to add "bcrypt.lib" to P2P->Properties->Configuration Properties->Librarian->Additional Dependencies. This is necessary to build boost's cryptographic randomizer functions. Once these settings are done, proceed a full build to generate your binaries:
+
+1) download the cmakelists file for windows: https://github.com/dynexcoin/Dynex/blob/main/CMakeLists.windows.txt
+2) rename it to "CMakeLists.txt" (in the Dynex directory, on top of "src" etc.)
+3) install boost 
+4) make sure the path to the different boost directories are updated in your CMakeLists(!)
+5) make a folder "build"
+6) run "cmake .."
+7) now open the visual studio project file in the /build directory ("ALL_BUILD.vcxproj")
+8) make sure you have set Solution->Configuration to "Release" (for all of them - boost doesnt allow debug on windows)
+9) You also need to add "bcrypt.lib" to P2P->Properties->Configuration Properties->Librarian->Additional Dependencies
+10) build
 
 
 
