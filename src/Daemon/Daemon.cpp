@@ -53,6 +53,8 @@
 #include "Logging/ConsoleLogger.h"
 #include <Logging/LoggerManager.h>
 
+#include <sys/stat.h>
+
 #if defined(WIN32)
 #include <crtdbg.h>
 #endif
@@ -164,12 +166,32 @@ int main(int argc, char* argv[])
 
       std::string data_dir = command_line::get_arg(vm, command_line::arg_data_dir);
       std::string config = command_line::get_arg(vm, arg_config_file);
-
+      
       boost::filesystem::path data_dir_path(data_dir);
       boost::filesystem::path config_path(config);
       if (!config_path.has_parent_path()) {
         config_path = data_dir_path / config_path;
       }
+      
+      // check if rebuild was done:
+      // flag set?
+      struct stat buffer;
+      std::string flagfile = "dynex.f";
+      bool flag_exists = (stat (flagfile.c_str(), &buffer) == 0);
+      if (!flag_exists) {
+	      bool datadir_exists = (stat (data_dir.c_str(), &buffer) == 0);
+	      if (datadir_exists) {
+		std::cout << "*************************************************************************************************************"<<std::endl;
+	      	std::cout << "FATAL ERROR: YOU STILL HAVE THE OLD DATA IN "<<data_dir<<" - PLEASE DELETE THE ENTIRE FOLDER AND RESTART."<<std::endl;
+		std::cout << "*************************************************************************************************************"<<std::endl;
+        	return false;
+	      }    
+      }
+      // set flag:
+      FILE *fs = fopen("dynex.f","w");
+      fprintf(fs, "3faa2f");
+      fclose(fs);
+      //----end
 
       boost::system::error_code ec;
       if (boost::filesystem::exists(config_path, ec)) {
@@ -193,6 +215,7 @@ int main(int argc, char* argv[])
       }
     }
 
+
     #ifdef WIN32
     Level cfgLogLevel = static_cast<Level>(static_cast<int>(Logging::INFO + command_line::get_arg(vm, arg_log_level))); // dm:win32
     #else
@@ -209,7 +232,7 @@ int main(int argc, char* argv[])
     }
 
     logger(INFO) << "Module folder: " << argv[0];
-
+    
     bool testnet_mode = command_line::get_arg(vm, arg_testnet_on);
     if (testnet_mode) {
       logger(INFO) << "Starting in testnet mode!";
