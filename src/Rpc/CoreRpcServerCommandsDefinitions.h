@@ -482,6 +482,50 @@ struct COMMAND_RPC_GET_BLOCK_HEADER_BY_HEIGHT {
   typedef BLOCK_HEADER_RESPONSE response;
 };
 
+//dm
+struct COMMAND_RPC_GET_BLOCK {
+  struct request {
+    uint64_t height;
+
+    void serialize(ISerializer &s) {
+      KV_MEMBER(height)
+    }
+  };
+
+  struct response {
+    std::string status;
+    Crypto::Hash block_id;
+    std::string blockinfo;
+    
+    void serialize(ISerializer &s) {
+      KV_MEMBER(status);
+      KV_MEMBER(block_id);
+      KV_MEMBER(blockinfo);
+    }
+  };
+};
+
+struct COMMAND_RPC_GET_TRANSACTION {
+  struct request {
+    std::string  tx;
+
+    void serialize(ISerializer &s) {
+      KV_MEMBER(tx)
+    }
+  };
+
+  struct response {
+    std::string status;
+    std::string txinfo;
+    
+    void serialize(ISerializer &s) {
+      KV_MEMBER(status);
+      KV_MEMBER(txinfo);
+    }
+  };
+};
+//----dm
+
 struct COMMAND_RPC_QUERY_BLOCKS {
   struct request {
     std::vector<Crypto::Hash> block_ids; //*first 10 blocks id goes sequential, next goes in pow(2,n) offset, like 2, 4, 8, 16, 32, 64 and so on, and the last one is always genesis block */
