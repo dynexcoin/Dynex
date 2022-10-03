@@ -1098,8 +1098,92 @@ bool simple_wallet::transfer(const std::vector<std::string> &args) {
     std::string extraString;
     std::copy(cmd.extra.begin(), cmd.extra.end(), std::back_inserter(extraString));
 
-    WalletHelper::IWalletRemoveObserverGuard removeGuard(*m_wallet, sent);
+    //WalletHelper::IWalletRemoveObserverGuard removeGuard(*m_wallet, sent);
 
+    //dm: split payment if amount too large:
+    //  1000 => 1000000000000
+    // 10000 => 10000000000000
+    //std::cout << "*** DEBUG: transfer() - number of transfers:" << cmd.dsts.size() << std::endl;
+    // loop through each payment:
+    for(uint64_t i=0; i < cmd.dsts.size(); i++){
+       WalletLegacyTransfer order = cmd.dsts[i];
+       std::string order_addr = order.address;
+       uint64_t order_amount = order.amount;
+       //std::cout << "*** DEBUG: order_addr = " << order_addr << std::endl;
+       //std::cout << "*** DEBUG: order_amount = " << order_amount << std::endl;
+       // do we need to split?
+       if (order_amount>1000000000000) {
+          std::cout << "Info: Your transfer of " << order_amount/1000000000 << " exceeds the maximum (1000) - transfer will be split." << std::endl;
+
+          uint64_t chunks_to_send = std::round(order_amount/1000000000000);
+          uint64_t last_chunk = order_amount - (chunks_to_send*1000000000000);
+          std::cout << "Info: Splitting in " << chunks_to_send << " transactions a 1000 and one transaction of " << last_chunk/1000000000 << std::endl;
+          uint64_t total_sent = 0;
+          for (uint64_t q=0; q<=chunks_to_send; q++) {
+             WalletLegacyTransfer order_chunk;
+             order_chunk.address = order_addr;
+             if (q<chunks_to_send) {
+                order_chunk.amount  = 1000000000000;
+             } else {
+                order_chunk.amount = last_chunk;
+             }
+             if (order_chunk.amount>0) {
+                   // SEND BLOCK ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                   WalletHelper::IWalletRemoveObserverGuard removeGuard(*m_wallet, sent);
+                   CryptoNote::TransactionId tx = m_wallet->sendTransaction(order_chunk, cmd.fee, extraString, cmd.fake_outs_count, 0);
+                  if (tx == WALLET_LEGACY_INVALID_TRANSACTION_ID) {
+                    fail_msg_writer() << "Can't send money";
+                    return true;
+                  }
+                  std::error_code sendError = sent.wait(tx);
+                  removeGuard.removeObserver();
+                  if (sendError) {
+                    fail_msg_writer() << sendError.message();
+                    return true;
+                  }
+                  CryptoNote::WalletLegacyTransaction txInfo;
+                  m_wallet->getTransaction(tx, txInfo);
+                  success_msg_writer(true) << "Money successfully sent, transaction " << Common::podToHex(txInfo.hash);
+                  try {
+                    CryptoNote::WalletHelper::storeWallet(*m_wallet, m_wallet_file);
+                  } catch (const std::exception& e) {
+                    fail_msg_writer() << e.what();
+                    return true;
+                  }
+                  // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ 
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));            
+          }
+       } else {
+            //amount ok, no need to split:
+            // SEND BLOCK ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            WalletHelper::IWalletRemoveObserverGuard removeGuard(*m_wallet, sent);
+             CryptoNote::TransactionId tx = m_wallet->sendTransaction(order, cmd.fee, extraString, cmd.fake_outs_count, 0);
+            if (tx == WALLET_LEGACY_INVALID_TRANSACTION_ID) {
+              fail_msg_writer() << "Can't send money";
+              return true;
+            }
+            std::error_code sendError = sent.wait(tx);
+            removeGuard.removeObserver();
+            if (sendError) {
+              fail_msg_writer() << sendError.message();
+              return true;
+            }
+            CryptoNote::WalletLegacyTransaction txInfo;
+            m_wallet->getTransaction(tx, txInfo);
+            success_msg_writer(true) << "Money successfully sent, transaction " << Common::podToHex(txInfo.hash);
+            try {
+              CryptoNote::WalletHelper::storeWallet(*m_wallet, m_wallet_file);
+            } catch (const std::exception& e) {
+              fail_msg_writer() << e.what();
+              return true;
+            }
+            // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+       }
+    }
+    //---
+    
+    /*
     CryptoNote::TransactionId tx = m_wallet->sendTransaction(cmd.dsts, cmd.fee, extraString, cmd.fake_outs_count, 0);
     if (tx == WALLET_LEGACY_INVALID_TRANSACTION_ID) {
       fail_msg_writer() << "Can't send money";
@@ -1124,6 +1208,7 @@ bool simple_wallet::transfer(const std::vector<std::string> &args) {
       fail_msg_writer() << e.what();
       return true;
     }
+    */
   } catch (const std::system_error& e) {
     fail_msg_writer() << e.what();
   } catch (const std::exception& e) {
