@@ -1098,8 +1098,7 @@ bool simple_wallet::transfer(const std::vector<std::string> &args) {
     std::string extraString;
     std::copy(cmd.extra.begin(), cmd.extra.end(), std::back_inserter(extraString));
 
-    //WalletHelper::IWalletRemoveObserverGuard removeGuard(*m_wallet, sent);
-
+    /* currently disabled
     //dm: split payment if amount too large:
     //  1000 => 1000000000000
     // 10000 => 10000000000000
@@ -1182,8 +1181,10 @@ bool simple_wallet::transfer(const std::vector<std::string> &args) {
        }
     }
     //---
+    */
     
-    /*
+    WalletHelper::IWalletRemoveObserverGuard removeGuard(*m_wallet, sent);
+    
     CryptoNote::TransactionId tx = m_wallet->sendTransaction(cmd.dsts, cmd.fee, extraString, cmd.fake_outs_count, 0);
     if (tx == WALLET_LEGACY_INVALID_TRANSACTION_ID) {
       fail_msg_writer() << "Can't send money";
@@ -1208,7 +1209,7 @@ bool simple_wallet::transfer(const std::vector<std::string> &args) {
       fail_msg_writer() << e.what();
       return true;
     }
-    */
+    
   } catch (const std::system_error& e) {
     fail_msg_writer() << e.what();
   } catch (const std::exception& e) {
