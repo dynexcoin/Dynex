@@ -75,6 +75,9 @@ void constructTx(const AccountKeys keys, const std::vector<TransactionSourceEntr
   Logging::LoggerGroup nullLog;
   bool r = constructTransaction(keys, sources, splittedDests, extraVec, tx, unlockTimestamp, nullLog);
 
+  std::cout << "Info: This transaction used " << getObjectBinarySize(tx) << " bytes ";
+  std::cout << "(maximum " << sizeLimit << ")" << std::endl;
+
   throwIf(!r, error::INTERNAL_WALLET_ERROR);
   throwIf(getObjectBinarySize(tx) >= sizeLimit, error::TRANSACTION_SIZE_TOO_BIG);
 }
@@ -121,17 +124,19 @@ std::shared_ptr<WalletRequest> WalletTransactionSender::makeSendRequest(Transact
   validateTransfersAddresses(transfers);
   uint64_t neededMoney = countNeededMoney(fee, transfers);
   std::shared_ptr<SendTransactionContext> context = std::make_shared<SendTransactionContext>();
-  //--
-  context->foundMoney = selectTransfersToSend(neededMoney, 0 == mixIn, context->dustPolicy.dustThreshold, context->selectedTransfers);
-  throwIf(context->foundMoney < neededMoney, error::WRONG_AMOUNT);
 
-  //std::cout<<"***DEBUG*** WalletTransactionSender.cpp unlockTimestamp: "<<unlockTimestamp<<std::endl;
+  //neededMoney = transfer amount + fee
+  //here the random inputs are being created
+  //context->foundMoney = selectTransfersToSend(neededMoney, 0 == mixIn, context->dustPolicy.dustThreshold, context->selectedTransfers);
+  context->foundMoney = selectTransfersToSend(neededMoney, 0 == mixIn, context->dustPolicy.dustThreshold, context->selectedTransfers, fee, neededMoney-fee, mixIn); //dm sending original amount, fee and mixIn
+  throwIf(context->foundMoney < neededMoney, error::WRONG_AMOUNT);
 
   transactionId = m_transactionsCache.addNewTransaction(neededMoney, fee, extra, transfers, unlockTimestamp);
   context->transactionId = transactionId;
   context->mixIn = mixIn;
 
-  if(context->mixIn) {
+  if(context->mixIn && context->mixIn>0) {
+  //if(context->mixIn) { //dm
     std::shared_ptr<WalletRequest> request = makeGetRandomOutsRequest(context);
     return request;
   }
@@ -154,6 +159,8 @@ std::shared_ptr<WalletRequest> WalletTransactionSender::makeGetRandomOutsRequest
 void WalletTransactionSender::sendTransactionRandomOutsByAmount(std::shared_ptr<SendTransactionContext> context, std::deque<std::shared_ptr<WalletLegacyEvent>>& events,
     boost::optional<std::shared_ptr<WalletRequest> >& nextRequest, std::error_code ec) {
   
+  //std::cout << "*** DEBUG sendTransactionRandomOutsByAmount *** mixIn=" << context->mixIn << std::endl;
+
   if (m_isStoping) {
     ec = make_error_code(error::TX_CANCELLED);
   }
@@ -185,6 +192,11 @@ std::shared_ptr<WalletRequest> WalletTransactionSender::doSendTransaction(std::s
   try
   {
     WalletLegacyTransaction& transaction = m_transactionsCache.getTransaction(context->transactionId);
+
+    /*std::cout << "*** DEBUG *** doSendTransaction " << std::endl;
+    for (const auto& td: context->selectedTransfers) {
+      std::cout << "   -> selectedTransfers amount=" << td.amount << std::endl;
+    }*/
 
     std::vector<TransactionSourceEntry> sources;
     prepareInputs(context->selectedTransfers, context->outs, sources, context->mixIn);
@@ -281,7 +293,9 @@ void WalletTransactionSender::prepareInputs(
     src.amount = td.amount;
 
     //paste mixin transaction
-    if(outs.size()) {
+    //std::cout << "*** DEBUG prepareInputs mixIn=" << mixIn << std::endl;
+    if(outs.size() && mixIn>0) {
+    //if(outs.size()) {
       std::sort(outs[i].outs.begin(), outs[i].outs.end(),
         [](const COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::out_entry& a, const COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::out_entry& b){return a.global_amount_index < b.global_amount_index;});
       for (auto& daemon_oe: outs[i].outs) {
@@ -348,7 +362,16 @@ T popRandomValue(URNG& randomGenerator, std::vector<T>& vec) {
 }
 
 
-uint64_t WalletTransactionSender::selectTransfersToSend(uint64_t neededMoney, bool addDust, uint64_t dust, std::list<TransactionOutputInformation>& selectedTransfers) {
+//uint64_t WalletTransactionSender::selectTransfersToSend(uint64_t neededMoney, bool addDust, uint64_t dust, std::list<TransactionOutputInformation>& selectedTransfers) { //dm
+
+uint64_t WalletTransactionSender::selectTransfersToSend(uint64_t neededMoney, bool addDust, uint64_t dust, std::list<TransactionOutputInformation>& selectedTransfers, uint64_t orig_amount, uint64_t orig_fee, uint64_t mixIn) { //dm
+
+  // info: neededMoney = transfer amount + fee
+  /*std::cout << "*** DEBUG *** selectTransfersToSend. amount=" << orig_amount << " fee=" << orig_fee << " mixIn=" << mixIn << std::endl;
+  std::cout << "*** DEBUG *** selectTransfersToSend. selectedTransfers:" << std::endl;
+  for (const auto& td: selectedTransfers) {
+      std::cout << "   pre: -> selectedTransfers amount=" << td.amount << std::endl;
+  }*/
 
   std::vector<size_t> unusedTransfers;
   std::vector<size_t> unusedDust;
@@ -356,34 +379,66 @@ uint64_t WalletTransactionSender::selectTransfersToSend(uint64_t neededMoney, bo
   std::vector<TransactionOutputInformation> outputs;
   m_transferDetails.getOutputs(outputs, ITransfersContainer::IncludeKeyUnlocked);
 
-  for (size_t i = 0; i < outputs.size(); ++i) {
-    const auto& out = outputs[i];
-    if (!m_transactionsCache.isUsed(out)) {
-      if (dust < out.amount)
-        unusedTransfers.push_back(i);
-      else
-        unusedDust.push_back(i);
-    }
+  //dm: do we have matching outs?
+  int idx_amount = -1;
+  int idx_fee    = -1;
+  if (mixIn==0) {
+      for (size_t i = 0; i < outputs.size(); ++i) {
+          const auto& out = outputs[i];
+          if (!m_transactionsCache.isUsed(out) && out.amount==orig_amount) idx_amount = i;
+          if (!m_transactionsCache.isUsed(out) && out.amount==orig_fee) idx_fee = i;
+          if (idx_amount!=-1 && idx_fee!=-1) break;
+      }
   }
 
-  std::default_random_engine randomGenerator(Crypto::rand<std::default_random_engine::result_type>());
-  bool selectOneDust = addDust && !unusedDust.empty();
-  uint64_t foundMoney = 0;
+  //std::cout << "*** DEBUG *** -> found amount idx=" << idx_amount << " fee idx=" << idx_fee << std::endl;
 
-  while (foundMoney < neededMoney && (!unusedTransfers.empty() || !unusedDust.empty())) {
-    size_t idx;
-    if (selectOneDust) {
-      idx = popRandomValue(randomGenerator, unusedDust);
-      selectOneDust = false;
-    } else {
-      idx = !unusedTransfers.empty() ? popRandomValue(randomGenerator, unusedTransfers) : popRandomValue(randomGenerator, unusedDust);
-    }
+  // mixin=0? then we send unobfuscated amounts: +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  if (mixIn==0 && idx_amount!=-1 && idx_fee !=-1) {
+        uint64_t foundMoney = 0;
+        //amount:
+        selectedTransfers.push_back(outputs[idx_amount]);
+        //std::cout << "*** DEBUG: unobfuscated selectedTransfers.push_back(): " << outputs[idx_amount].amount << std::endl;
+        foundMoney += outputs[idx_amount].amount;
+        //fee:
+        selectedTransfers.push_back(outputs[idx_fee]);
+        //std::cout << "*** DEBUG: unobfuscated selectedTransfers.push_back(): " << outputs[idx_fee].amount << std::endl;
+        foundMoney += outputs[idx_fee].amount;
+        return foundMoney;
 
-    selectedTransfers.push_back(outputs[idx]);
-    foundMoney += outputs[idx].amount;
+  } else { //otherwise apply mixin: ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        // retrieve list of all unused outputs (random amounts), from which we choose later:
+        for (size_t i = 0; i < outputs.size(); ++i) {
+          const auto& out = outputs[i];
+          if (!m_transactionsCache.isUsed(out)) {
+            if (dust < out.amount)
+              unusedTransfers.push_back(i);
+            else
+              unusedDust.push_back(i);
+          }
+        }
+
+        std::default_random_engine randomGenerator(Crypto::rand<std::default_random_engine::result_type>());
+        bool selectOneDust = addDust && !unusedDust.empty();
+        uint64_t foundMoney = 0;
+
+        while (foundMoney < neededMoney && (!unusedTransfers.empty() || !unusedDust.empty())) {
+          size_t idx;
+          if (selectOneDust) {
+            idx = popRandomValue(randomGenerator, unusedDust);
+            selectOneDust = false;
+          } else {
+            idx = !unusedTransfers.empty() ? popRandomValue(randomGenerator, unusedTransfers) : popRandomValue(randomGenerator, unusedDust);
+          }
+
+          selectedTransfers.push_back(outputs[idx]);
+          std::cout << "*** DEBUG: selectedTransfers.push_back(): " << outputs[idx].amount << std::endl;
+          foundMoney += outputs[idx].amount;
+        }
+        return foundMoney;
   }
 
-  return foundMoney;
+  
 
 }
 
