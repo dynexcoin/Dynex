@@ -517,10 +517,14 @@ struct COMMAND_RPC_GET_TRANSACTION {
   struct response {
     std::string status;
     std::string txinfo;
+    uint64_t height;
+    uint64_t current_height;
     
     void serialize(ISerializer &s) {
       KV_MEMBER(status);
       KV_MEMBER(txinfo);
+      KV_MEMBER(height);
+      KV_MEMBER(current_height);
     }
   };
 };
