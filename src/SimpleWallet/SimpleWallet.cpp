@@ -77,6 +77,8 @@ namespace po = boost::program_options;
 #define EXTENDED_LOGS_FILE "wallet_details.log"
 #undef ERROR
 
+#define SPLIT_ABOUNT_TH 100000000000 // 100 DNX
+
 namespace {
 
 const command_line::arg_descriptor<std::string> arg_wallet_file = { "wallet-file", "Use wallet <arg>", "" };
@@ -1098,7 +1100,8 @@ bool simple_wallet::transfer(const std::vector<std::string> &args) {
     std::string extraString;
     std::copy(cmd.extra.begin(), cmd.extra.end(), std::back_inserter(extraString));
 
-    /* currently disabled
+    // disabled - not required anymore; large amounts can be send with mixin=0
+    /*
     //dm: split payment if amount too large:
     //  1000 => 1000000000000
     // 10000 => 10000000000000
@@ -1108,21 +1111,18 @@ bool simple_wallet::transfer(const std::vector<std::string> &args) {
        WalletLegacyTransfer order = cmd.dsts[i];
        std::string order_addr = order.address;
        uint64_t order_amount = order.amount;
-       //std::cout << "*** DEBUG: order_addr = " << order_addr << std::endl;
-       //std::cout << "*** DEBUG: order_amount = " << order_amount << std::endl;
-       // do we need to split?
-       if (order_amount>1000000000000) {
-          std::cout << "Info: Your transfer of " << order_amount/1000000000 << " exceeds the maximum (1000) - transfer will be split." << std::endl;
+       if (order_amount>SPLIT_ABOUNT_TH) {
+          std::cout << "Info: Your transfer of " << order_amount/1000000000 << " exceeds the maximum ("<< SPLIT_ABOUNT_TH/1000000000 <<") - transfer will be split." << std::endl;
 
-          uint64_t chunks_to_send = std::round(order_amount/1000000000000);
-          uint64_t last_chunk = order_amount - (chunks_to_send*1000000000000);
+          uint64_t chunks_to_send = std::round(order_amount/SPLIT_ABOUNT_TH);
+          uint64_t last_chunk = order_amount - (chunks_to_send*SPLIT_ABOUNT_TH);
           std::cout << "Info: Splitting in " << chunks_to_send << " transactions a 1000 and one transaction of " << last_chunk/1000000000 << std::endl;
           uint64_t total_sent = 0;
           for (uint64_t q=0; q<=chunks_to_send; q++) {
              WalletLegacyTransfer order_chunk;
              order_chunk.address = order_addr;
              if (q<chunks_to_send) {
-                order_chunk.amount  = 1000000000000;
+                order_chunk.amount  = SPLIT_ABOUNT_TH;
              } else {
                 order_chunk.amount = last_chunk;
              }
@@ -1151,8 +1151,9 @@ bool simple_wallet::transfer(const std::vector<std::string> &args) {
                   }
                   // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ 
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));            
+            std::this_thread::sleep_for(std::chrono::milliseconds(5000)); //5s wait time between sends           
           }
+          std::cout << "Info: All split payment sent." << std::endl;
        } else {
             //amount ok, no need to split:
             // SEND BLOCK ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1182,6 +1183,7 @@ bool simple_wallet::transfer(const std::vector<std::string> &args) {
     }
     //---
     */
+    
     
     WalletHelper::IWalletRemoveObserverGuard removeGuard(*m_wallet, sent);
     
