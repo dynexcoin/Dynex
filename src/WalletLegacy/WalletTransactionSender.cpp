@@ -128,7 +128,7 @@ std::shared_ptr<WalletRequest> WalletTransactionSender::makeSendRequest(Transact
   //neededMoney = transfer amount + fee
   //here the random inputs are being created
   //context->foundMoney = selectTransfersToSend(neededMoney, 0 == mixIn, context->dustPolicy.dustThreshold, context->selectedTransfers);
-  context->foundMoney = selectTransfersToSend(neededMoney, 0 == mixIn, context->dustPolicy.dustThreshold, context->selectedTransfers, fee, neededMoney-fee, mixIn); //dm sending original amount, fee and mixIn
+  context->foundMoney = selectTransfersToSend(neededMoney, 0 == mixIn, context->dustPolicy.dustThreshold, context->selectedTransfers, neededMoney-fee, fee, mixIn); //dm sending original amount, fee and mixIn
   throwIf(context->foundMoney < neededMoney, error::WRONG_AMOUNT);
 
   transactionId = m_transactionsCache.addNewTransaction(neededMoney, fee, extra, transfers, unlockTimestamp);
@@ -284,6 +284,8 @@ void WalletTransactionSender::prepareInputs(
   std::vector<COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount>& outs,
   std::vector<TransactionSourceEntry>& sources, uint64_t mixIn) {
 
+  //std::cout << "*** DEBUG *** prepareInputs" << std::endl;
+
   size_t i = 0;
 
   for (const auto& td: selectedTransfers) {
@@ -291,11 +293,10 @@ void WalletTransactionSender::prepareInputs(
     TransactionSourceEntry& src = sources.back();
 
     src.amount = td.amount;
-
+    
     //paste mixin transaction
-    //std::cout << "*** DEBUG prepareInputs mixIn=" << mixIn << std::endl;
     if(outs.size() && mixIn>0) {
-    //if(outs.size()) {
+    //if(outs.size()) { //dm
       std::sort(outs[i].outs.begin(), outs[i].outs.end(),
         [](const COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::out_entry& a, const COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::out_entry& b){return a.global_amount_index < b.global_amount_index;});
       for (auto& daemon_oe: outs[i].outs) {
@@ -380,26 +381,65 @@ uint64_t WalletTransactionSender::selectTransfersToSend(uint64_t neededMoney, bo
   m_transferDetails.getOutputs(outputs, ITransfersContainer::IncludeKeyUnlocked);
 
   //dm: do we have matching outs?
-  int idx_amount = -1;
+  std::vector<size_t> idx_amount;
   int idx_fee    = -1;
   if (mixIn==0) {
       for (size_t i = 0; i < outputs.size(); ++i) {
           const auto& out = outputs[i];
-          if (!m_transactionsCache.isUsed(out) && out.amount==orig_amount) idx_amount = i;
+          if (!m_transactionsCache.isUsed(out) && out.amount==orig_amount) idx_amount.push_back(i);
           if (!m_transactionsCache.isUsed(out) && out.amount==orig_fee) idx_fee = i;
-          if (idx_amount!=-1 && idx_fee!=-1) break;
+          if (idx_amount.size()>0 && idx_fee!=-1) break;
       }
+          // amount not found? well then we also need to split (largest(!) together to save blob size):
+          if (idx_amount.size()==0) {
+              
+              uint64_t found = 0;
+              uint64_t cnt = 0;
+              while (found < orig_amount && cnt < outputs.size()) {
+                    uint64_t amount_remaining = orig_amount-found;
+                    uint64_t largest_avail     = 0;
+                    int      largest_avail_idx = -1;
+                    for (size_t i = 0; i < outputs.size(); ++i) {
+                        const auto& out = outputs[i];
+                        if (!m_transactionsCache.isUsed(out) && out.amount>largest_avail && out.amount<=amount_remaining) {
+                              //alredy used?
+                              bool used = false;
+                              for (size_t x=0; x<idx_amount.size(); x++) {
+                                if (idx_amount[x]==i) used = true;
+                              }
+                              if (!used) {
+                                  largest_avail = out.amount;
+                                  largest_avail_idx = i;
+                              } 
+                        }
+                    }
+                    // found?
+                    if (largest_avail_idx!=-1) {
+                          found = found + largest_avail;
+                          idx_amount.push_back(largest_avail_idx);
+                          //std::cout << "*** DEBUG *** idx="<< largest_avail_idx << " found " << largest_avail << " -> total = " << found << std::endl;
+                    }
+                    cnt++;
+                    
+              }
+              if (found != orig_amount) {
+                idx_amount.clear();
+              }
+          }
   }
 
-  //std::cout << "*** DEBUG *** -> found amount idx=" << idx_amount << " fee idx=" << idx_fee << std::endl;
+  //std::cout << "*** DEBUG *** -> amount=" << orig_amount << " fee=" << orig_fee << " neededMoney=" << neededMoney << std::endl;
+  //std::cout << "*** DEBUG *** -> found amount idx=" << idx_amount.size() << " fee idx=" << idx_fee << std::endl;
 
   // mixin=0? then we send unobfuscated amounts: +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  if (mixIn==0 && idx_amount!=-1 && idx_fee !=-1) {
+  if (mixIn==0 && idx_amount.size()>0 && idx_fee !=-1) {
         uint64_t foundMoney = 0;
-        //amount:
-        selectedTransfers.push_back(outputs[idx_amount]);
-        //std::cout << "*** DEBUG: unobfuscated selectedTransfers.push_back(): " << outputs[idx_amount].amount << std::endl;
-        foundMoney += outputs[idx_amount].amount;
+        //amount(s):
+        for (uint64_t i=0; i<idx_amount.size(); i++) {
+            selectedTransfers.push_back(outputs[idx_amount[i]]);
+            //std::cout << "*** DEBUG: unobfuscated selectedTransfers.push_back(): " << outputs[idx_amount[i]].amount << std::endl;
+            foundMoney += outputs[idx_amount[i]].amount;
+        }
         //fee:
         selectedTransfers.push_back(outputs[idx_fee]);
         //std::cout << "*** DEBUG: unobfuscated selectedTransfers.push_back(): " << outputs[idx_fee].amount << std::endl;
@@ -432,7 +472,7 @@ uint64_t WalletTransactionSender::selectTransfersToSend(uint64_t neededMoney, bo
           }
 
           selectedTransfers.push_back(outputs[idx]);
-          std::cout << "*** DEBUG: selectedTransfers.push_back(): " << outputs[idx].amount << std::endl;
+          //std::cout << "*** DEBUG: selectedTransfers.push_back(): " << outputs[idx].amount << std::endl;
           foundMoney += outputs[idx].amount;
         }
         return foundMoney;
