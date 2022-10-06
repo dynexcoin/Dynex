@@ -858,7 +858,13 @@ std::error_code WalletService::sendTransaction(const SendTransaction::Request& r
     sendParams.unlockTimestamp = request.unlockTime;
     sendParams.changeDestination = request.changeAddress;
 
-    size_t transactionId = wallet.transfer(sendParams);
+    //std::cout << "*** DEBUG ***: fee:" << sendParams.fee << std::endl;
+    //std::cout << "*** DEBUG ***: sendParams.mixIn:" << sendParams.mixIn << std::endl;
+    //std::cout << "*** DEBUG ***: sendParams.unlockTimestamp:" << sendParams.unlockTimestamp << std::endl;
+    //dm force mixIn:
+    sendParams.mixIn = 0;
+    
+    size_t transactionId = wallet.transfer(sendParams); // where is that going?
     transactionHash = Common::podToHex(wallet.getTransaction(transactionId).hash);
 
     logger(Logging::DEBUGGING) << "Transaction " << transactionHash << " has been sent";
