@@ -726,6 +726,8 @@ size_t WalletGreen::transfer(const TransactionParameters& transactionParameters)
     m_dispatcher.yield();
   });
 
+  //std::cout << "*** DEBUG WalletGreep::transfer ***" << std::endl;
+
   System::EventLock lk(m_readyEvent);
 
   throwIfNotInitialized();
@@ -734,6 +736,29 @@ size_t WalletGreen::transfer(const TransactionParameters& transactionParameters)
 
   return doTransfer(transactionParameters);
 }
+
+// dm -------------------------------------------------------------------------------------------------------------------------------
+void pushDirectTransfer(std::string address, uint64_t amount, std::vector<WalletTransfer>& destinations) {
+
+  destinations.emplace_back(WalletTransfer {WalletTransferType::DONATION, address, static_cast<int64_t>(amount)});
+  /*
+  uint64_t donationAmount = 0;
+  if (!donation.address.empty() && donation.threshold != 0) {
+    if (donation.threshold > static_cast<uint64_t>(std::numeric_limits<int64_t>::max())) {
+      throw std::system_error(make_error_code(error::WRONG_AMOUNT),
+        "Donation threshold must not exceed " + std::to_string(std::numeric_limits<int64_t>::max()));
+    }
+
+    donationAmount = calculateDonationAmount(freeAmount, donation.threshold, dustThreshold);
+    if (donationAmount != 0) {
+      destinations.emplace_back(WalletTransfer {WalletTransferType::DONATION, donation.address, static_cast<int64_t>(donationAmount)});
+    }
+  }
+  */
+
+  return;
+}
+// -----------------------------------------------------------------------------------------------------------------------------------
 
 void WalletGreen::prepareTransaction(std::vector<WalletOuts>&& wallets,
   const std::vector<WalletOrder>& orders,
@@ -749,6 +774,8 @@ void WalletGreen::prepareTransaction(std::vector<WalletOuts>&& wallets,
   preparedTransaction.neededMoney = countNeededMoney(preparedTransaction.destinations, fee);
 
   std::vector<OutputToTransfer> selectedTransfers;
+  
+  // inputs - optimized in selectTransfers
   uint64_t foundMoney = selectTransfers(preparedTransaction.neededMoney, mixIn == 0, m_currency.defaultDustThreshold(), std::move(wallets), selectedTransfers);
 
   if (foundMoney < preparedTransaction.neededMoney) {
@@ -761,15 +788,20 @@ void WalletGreen::prepareTransaction(std::vector<WalletOuts>&& wallets,
   if (mixIn != 0) {
     requestMixinOuts(selectedTransfers, mixIn, mixinResult);
   }
-
+  
   std::vector<InputInfo> keysInfo;
   prepareInputs(selectedTransfers, mixinResult, mixIn, keysInfo);
 
+  // was donation set?
   uint64_t donationAmount = pushDonationTransferIfPossible(donation, foundMoney - preparedTransaction.neededMoney, m_currency.defaultDustThreshold(), preparedTransaction.destinations);
   preparedTransaction.changeAmount = foundMoney - preparedTransaction.neededMoney - donationAmount;
 
+  // splitting destinations - we changed that so we don't decompose (sub-function splitAmount):
   std::vector<ReceiverAmounts> decomposedOutputs = splitDestinations(preparedTransaction.destinations, m_currency.defaultDustThreshold(), m_currency);
+
+  // change to correct amount: foundmoney - neededmoney (- donationamount)
   if (preparedTransaction.changeAmount != 0) {
+    //std::cout<<"     --> changeAmount " << preparedTransaction.changeAmount << std::endl;
     WalletTransfer changeTransfer;
     changeTransfer.type = WalletTransferType::CHANGE;
     changeTransfer.address = m_currency.accountAddressAsString(changeDestination);
@@ -782,6 +814,8 @@ void WalletGreen::prepareTransaction(std::vector<WalletOuts>&& wallets,
 
   preparedTransaction.transaction = makeTransaction(decomposedOutputs, keysInfo, extra, unlockTimestamp);
 }
+
+// -------------------------------------------------------------------------------------------------------------------------------
 
 void WalletGreen::validateTransactionParameters(const TransactionParameters& transactionParameters) {
   if (transactionParameters.destinations.empty()) {
@@ -1316,6 +1350,8 @@ void WalletGreen::sendTransaction(const CryptoNote::Transaction& cryptoNoteTrans
 size_t WalletGreen::validateSaveAndSendTransaction(const ITransactionReader& transaction, const std::vector<WalletTransfer>& destinations, bool isFusion, bool send) {
   BinaryArray transactionData = transaction.getTransactionData();
 
+  std::cout << "Info: This transaction used " << transactionData.size() << " bytes (max " << m_upperTransactionSizeLimit << ")" << std::endl;
+
   if (transactionData.size() > m_upperTransactionSizeLimit) {
     throw std::system_error(make_error_code(error::TRANSACTION_SIZE_TOO_BIG));
   }
@@ -1404,20 +1440,43 @@ uint64_t WalletGreen::selectTransfers(
   std::vector<WalletOuts>&& wallets,
   std::vector<OutputToTransfer>& selectedTransfers) {
 
+  //std::cout << "*** DEBUG WalletGreen::selectTransfers() *** " << std::endl;
+  //std::cout << "*** DEBUG WalletGreen::selectTransfers() dust = " << dust << std::endl;
+  //std::cout << "*** DEBUG WalletGreen::selectTransfers() neededMoney = " << neededMoney << std::endl;
+  //std::cout << "*** DEBUG WalletGreen::selectTransfers() dustThreshold = " << dustThreshold << std::endl;
+  dust = false; // force dust off -> causes 2 inputs, otherwise don't unlock?
+
   uint64_t foundMoney = 0;
 
   std::vector<WalletOuts> walletOuts = wallets;
   std::default_random_engine randomGenerator(Crypto::rand<std::default_random_engine::result_type>());
 
+  // build up transactions here (inputs)
   while (foundMoney < neededMoney && !walletOuts.empty()) {
+
     std::uniform_int_distribution<size_t> walletsDistribution(0, walletOuts.size() - 1);
 
-    size_t walletIndex = walletsDistribution(randomGenerator);
+    size_t walletIndex = walletsDistribution(randomGenerator); // choose random wallet
     std::vector<TransactionOutputInformation>& addressOuts = walletOuts[walletIndex].outs;
 
     assert(addressOuts.size() > 0);
     std::uniform_int_distribution<size_t> outDistribution(0, addressOuts.size() - 1);
     size_t outIndex = outDistribution(randomGenerator);
+
+    // new: find closest index: -----
+    int ideal_index = -1;
+    uint64_t max_amount = 0;
+    for (int i=0; i<addressOuts.size(); i++) {
+        TransactionOutputInformation out = addressOuts[i];
+        if (out.amount <= (neededMoney-foundMoney) && out.amount>max_amount) {
+              ideal_index = i;
+              max_amount = out.amount;
+        }
+    }
+    if (ideal_index!=-1) {
+        outIndex = ideal_index;
+    } 
+    //-------
 
     TransactionOutputInformation out = addressOuts[outIndex];
     if (out.amount > dustThreshold || dust) {
@@ -1426,15 +1485,17 @@ uint64_t WalletGreen::selectTransfers(
       }
 
       foundMoney += out.amount;
+      //std::cout << "   -> foundmoney increased by " << out.amount << std::endl;
 
       selectedTransfers.push_back( { std::move(out), walletOuts[walletIndex].wallet } );
     }
-
+    
     addressOuts.erase(addressOuts.begin() + outIndex);
     if (addressOuts.empty()) {
       walletOuts.erase(walletOuts.begin() + walletIndex);
     }
   }
+  //----
 
   if (!dust) {
     return foundMoney;
@@ -1523,7 +1584,13 @@ CryptoNote::WalletGreen::ReceiverAmounts WalletGreen::splitAmount(
   ReceiverAmounts receiverAmounts;
 
   receiverAmounts.receiver = destination;
-  decomposeAmount(amount, dustThreshold, receiverAmounts.amounts);
+  //decomposeAmount(amount, dustThreshold, receiverAmounts.amounts); // utility function CryptoNoteTools
+  //dm: SAVE OUTPUT SIZE: removed, we don't decompose:
+  std::vector<uint64_t> amounts;
+  amounts.push_back(amount);
+  receiverAmounts.amounts = amounts;
+  //----
+
   return receiverAmounts;
 }
 

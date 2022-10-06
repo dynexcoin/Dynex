@@ -295,6 +295,10 @@ protected:
   std::vector<size_t> deleteTransfersForAddress(const std::string& address, std::vector<size_t>& deletedTransactions);
   void deleteFromUncommitedTransactions(const std::vector<size_t>& deletedTransactions);
 
+  //dm:
+  void pushDirectTransfer(std::string address, uint64_t amount, std::vector<WalletTransfer>& destinations);
+  //--
+
   System::Dispatcher& m_dispatcher;
   const Currency& m_currency;
   INode& m_node;
