@@ -640,6 +640,7 @@ uint64_t TransfersContainer::balance(uint32_t flags) const {
 }
 
 void TransfersContainer::getOutputs(std::vector<TransactionOutputInformation>& transfers, uint32_t flags) const {
+
   std::lock_guard<std::mutex> lk(m_mutex);
   for (const auto& t : m_availableTransfers) {
     if (t.visible && isIncluded(t, flags)) {
