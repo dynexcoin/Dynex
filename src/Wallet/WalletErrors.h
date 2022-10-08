@@ -63,7 +63,8 @@ enum WalletErrorCodes {
   OBJECT_NOT_FOUND,
   WALLET_NOT_FOUND,
   CHANGE_ADDRESS_REQUIRED,
-  CHANGE_ADDRESS_NOT_FOUND
+  CHANGE_ADDRESS_NOT_FOUND,
+  TIME_LIMIT
 };
 
 // custom category:
@@ -106,6 +107,7 @@ public:
     case WALLET_NOT_FOUND:         return "Requested wallet not found";
     case CHANGE_ADDRESS_REQUIRED:  return "Change address required";
     case CHANGE_ADDRESS_NOT_FOUND: return "Change address not found";
+    case TIME_LIMIT:               return "Transfer time limit restriction";
     default:                       return "Unknown error";
     }
   }

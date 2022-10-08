@@ -64,6 +64,8 @@ using namespace Common;
 using namespace Crypto;
 using namespace CryptoNote;
 
+auto last_tx = std::chrono::high_resolution_clock::now();
+
 namespace {
 
 void asyncRequestCompletion(System::Event& requestFinished) {
@@ -769,6 +771,22 @@ void WalletGreen::prepareTransaction(std::vector<WalletOuts>&& wallets,
   const DonationSettings& donation,
   const CryptoNote::AccountPublicAddress& changeDestination,
   PreparedTransaction& preparedTransaction) {
+
+  ////// CHECK LAST TRANSACTION TIMESTAMP /////////////////////////////
+  auto current_tx = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double, std::milli> elapsed = current_tx - last_tx; 
+  double elapsed_s = elapsed.count()/1000;
+  if (elapsed_s<60) {
+      double send_in = 60-elapsed_s;
+      std::string retmes = "Please send money in " + std::to_string(send_in) + " seconds";
+      std::cout << "ERROR: Transfer time limit restriction: "<< retmes << std::endl;
+      throw std::system_error(make_error_code(error::TIME_LIMIT), retmes);
+      //return true;
+  }
+  //std::cout << "Last transaction was " << elapsed_s << " seconds ago" << std::endl;
+  // ok:
+  last_tx = std::chrono::high_resolution_clock::now();
+  /////////////////////////////////////////////////////////////////////
 
   preparedTransaction.destinations = convertOrdersToTransfers(orders);
   preparedTransaction.neededMoney = countNeededMoney(preparedTransaction.destinations, fee);
