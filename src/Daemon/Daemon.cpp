@@ -176,7 +176,7 @@ int main(int argc, char* argv[])
       // check if rebuild was done:
       // flag set?
       struct stat buffer;
-      std::string flagfile = "dynex.f";
+      std::string flagfile = "dynex.g";
       bool flag_exists = (stat (flagfile.c_str(), &buffer) == 0);
       if (!flag_exists) {
 	      bool datadir_exists = (stat (data_dir.c_str(), &buffer) == 0);
@@ -188,7 +188,7 @@ int main(int argc, char* argv[])
 	      }    
       }
       // set flag:
-      FILE *fs = fopen("dynex.f","w");
+      FILE *fs = fopen("dynex.g","w");
       fprintf(fs, "3faa2f");
       fclose(fs);
       //----end
