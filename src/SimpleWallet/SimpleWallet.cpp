@@ -78,6 +78,7 @@ namespace po = boost::program_options;
 #undef ERROR
 
 #define SPLIT_ABOUNT_TH 100000000000 // 100 DNX
+auto last_tx = std::chrono::high_resolution_clock::now();
 
 namespace {
 
@@ -1183,7 +1184,23 @@ bool simple_wallet::transfer(const std::vector<std::string> &args) {
     }
     //---
     */
-    
+
+    ////// CHECK LAST TRANSACTION TIMESTAMP /////////////////////////////
+    auto current_tx = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> elapsed = current_tx - last_tx; 
+    double elapsed_s = elapsed.count()/1000;
+    if (elapsed_s<300) {
+        std::cout<<"Please send money in "<<300-elapsed_s<<" seconds." << std::endl;
+        return true;
+    }
+    //std::cout << "Last transaction was " << elapsed_s << " seconds ago" << std::endl;
+    // ok:
+    last_tx = std::chrono::high_resolution_clock::now();
+    /////////////////////////////////////////////////////////////////////
+
+    ////// FORCE MIXIN = 0 //////////////////////////////////////////////
+    cmd.fake_outs_count = 0;
+    /////////////////////////////////////////////////////////////////////
     
     WalletHelper::IWalletRemoveObserverGuard removeGuard(*m_wallet, sent);
     
