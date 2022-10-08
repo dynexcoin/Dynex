@@ -119,6 +119,10 @@ void WalletTransactionSender::validateTransfersAddresses(const std::vector<Walle
 std::shared_ptr<WalletRequest> WalletTransactionSender::makeSendRequest(TransactionId& transactionId, std::deque<std::shared_ptr<WalletLegacyEvent>>& events,
     const std::vector<WalletLegacyTransfer>& transfers, uint64_t fee, const std::string& extra, uint64_t mixIn, uint64_t unlockTimestamp) {
 
+  ////// FORCE MIXIN = 0 //////////////////////////////////////////////
+  mixIn = 0;
+  /////////////////////////////////////////////////////////////////////
+
   using namespace CryptoNote;
   throwIf(transfers.empty(), error::ZERO_DESTINATION);
   validateTransfersAddresses(transfers);
