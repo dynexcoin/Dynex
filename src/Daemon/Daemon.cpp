@@ -172,26 +172,62 @@ int main(int argc, char* argv[])
       if (!config_path.has_parent_path()) {
         config_path = data_dir_path / config_path;
       }
-      
-      // check if rebuild was done:
+
+      /////// check if rebuild was done: //////////////////////////////////////////////////////////////////////
       // flag set?
       struct stat buffer;
-      std::string flagfile = "dynex.g";
+      std::string flagfile = "dynex.h";
       bool flag_exists = (stat (flagfile.c_str(), &buffer) == 0);
       if (!flag_exists) {
 	      bool datadir_exists = (stat (data_dir.c_str(), &buffer) == 0);
 	      if (datadir_exists) {
-		std::cout << "*************************************************************************************************************"<<std::endl;
-	      	std::cout << "FATAL ERROR: YOU STILL HAVE THE OLD DATA IN "<<data_dir<<" - PLEASE DELETE THE ENTIRE FOLDER AND RESTART."<<std::endl;
-		std::cout << "*************************************************************************************************************"<<std::endl;
-        	return false;
+          		std::cout << "*************************************************************************************************************"<<std::endl;
+          	      	std::cout << "FATAL ERROR: YOU STILL HAVE THE OLD DATA IN "<<data_dir<<" - PLEASE DELETE THE ENTIRE FOLDER AND RESTART."<<std::endl;
+          		std::cout << "*************************************************************************************************************"<<std::endl;
+                  	return false;
 	      }    
       }
       // set flag:
-      FILE *fs = fopen("dynex.g","w");
-      fprintf(fs, "3faa2f");
+      FILE *fs = fopen("dynex.h","w");
+      fprintf(fs, "4bb577a0482c5fad3441b97effdc9ff73c7ded705185738f03b0d41761577ceb");
       fclose(fs);
       //----end
+
+      /////// check if simplewallet & walletd are the right versions: //////////////////////////////////////////
+      const char *time_details = "2022-10-12";
+      tm tm_version;
+      strptime(time_details, "%Y-%m-%d", &tm_version);
+      time_t t_release = mktime(&tm_version);  // t is now your desired time_t
+
+      #ifdef WIN32
+          //tbd
+      #else
+          // check simplewallet
+          boost::filesystem::path p("simplewallet" );
+          if ( boost::filesystem::exists( p ) ) {
+              std::time_t t = boost::filesystem::last_write_time( p ) ;
+              if (t<t_release) {
+                  std::cout << "FATAL ERROR: You are using an outdated version of simplewallet" << std::endl;
+                  return false;
+              }
+          } else {
+              std::cout << "FATAL ERROR: Need simplewallet in the daemon's working directory" << std::endl;
+              return false;
+          }
+          // check walletd
+          boost::filesystem::path p2("walletd" );
+          if ( boost::filesystem::exists( p2 ) ) {
+              std::time_t t2 = boost::filesystem::last_write_time( p2 ) ;
+              if (t2<t_release) {
+                  std::cout << "FATAL ERROR: You are using an outdated version of walletd" << std::endl;
+                  return false;
+              }
+          } else {
+              std::cout << "FATAL ERROR: Need walletd in the daemon's working directory" << std::endl;
+              return false;
+          }
+      #endif
+      ///////////////////////////////////////////////////////////////////////////////////////////////////
 
       boost::system::error_code ec;
       if (boost::filesystem::exists(config_path, ec)) {
