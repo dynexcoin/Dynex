@@ -44,6 +44,8 @@
 
 using namespace Crypto;
 
+auto last_tx_rpc = std::chrono::high_resolution_clock::now();
+
 namespace {
 
 using namespace CryptoNote;
@@ -197,10 +199,29 @@ std::shared_ptr<WalletRequest> WalletTransactionSender::doSendTransaction(std::s
   {
     WalletLegacyTransaction& transaction = m_transactionsCache.getTransaction(context->transactionId);
 
-    /*std::cout << "*** DEBUG *** doSendTransaction " << std::endl;
+    std::cout << "*** DEBUG *** doSendTransaction " << std::endl;
     for (const auto& td: context->selectedTransfers) {
       std::cout << "   -> selectedTransfers amount=" << td.amount << std::endl;
-    }*/
+    }
+
+    //// force mixin:
+    context->mixIn = 0;
+
+    ////// CHECK LAST TRANSACTION TIMESTAMP /////////////////////////////
+    auto current_tx = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> elapsed = current_tx - last_tx_rpc; 
+    double elapsed_s = elapsed.count()/1000;
+    if (elapsed_s<60) {
+        double send_in = 60-elapsed_s;
+        std::string retmes = "Please send money in " + std::to_string(send_in) + " seconds";
+        std::cout << "ERROR: Transfer time limit restriction: "<< retmes << std::endl;
+        throw std::system_error(make_error_code(error::TIME_LIMIT), retmes);
+    }
+    // ok:
+    last_tx_rpc = std::chrono::high_resolution_clock::now();
+    /////////////////////////////////////////////////////////////////////
+
+    
 
     std::vector<TransactionSourceEntry> sources;
     prepareInputs(context->selectedTransfers, context->outs, sources, context->mixIn);
@@ -272,6 +293,7 @@ void WalletTransactionSender::digitSplitStrategy(TransferId firstTransferId, siz
       throw std::system_error(make_error_code(error::BAD_ADDRESS));
     }
 
+    ////dm: do not decompose:
     decompose_amount_into_digits(de.amount, dust_threshold,
       [&](uint64_t chunk) { splitted_dsts.push_back(TransactionDestinationEntry(chunk, addr)); },
       [&](uint64_t a_dust) { splitted_dsts.push_back(TransactionDestinationEntry(a_dust, addr)); });
@@ -288,6 +310,8 @@ void WalletTransactionSender::prepareInputs(
   std::vector<COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount>& outs,
   std::vector<TransactionSourceEntry>& sources, uint64_t mixIn) {
 
+  ///// force mixin:
+  mixIn = 0;
   //std::cout << "*** DEBUG *** prepareInputs" << std::endl;
 
   size_t i = 0;
