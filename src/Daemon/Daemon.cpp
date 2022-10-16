@@ -75,6 +75,10 @@ namespace
   const command_line::arg_descriptor<bool>        arg_testnet_on  = {"testnet", "Used to deploy test nets. Checkpoints and hardcoded seeds are ignored, "
     "network id is changed. Use it with --data-dir flag. The wallet must be launched with --testnet flag.", false};
   const command_line::arg_descriptor<bool>        arg_print_genesis_tx = { "print-genesis-tx", "Prints genesis' block tx hex to insert it to config and exits" };
+  const command_line::arg_descriptor<std::string> arg_rollback = { "rollback", "Rollback blockchain to <height>" };
+  const command_line::arg_descriptor<bool>        arg_sync_from_zero = { "sync-from-zero", "Force sync from block 0" }; 
+  const command_line::arg_descriptor<bool>        arg_flush_mempool = { "flush-mempool", "Flush memory pool" };  
+  
 }
 
 bool command_line_preprocessor(const boost::program_options::variables_map& vm, LoggerRef& logger);
@@ -138,6 +142,9 @@ int main(int argc, char* argv[])
     command_line::add_arg(desc_cmd_sett, arg_console);
     command_line::add_arg(desc_cmd_sett, arg_testnet_on);
     command_line::add_arg(desc_cmd_sett, arg_print_genesis_tx);
+    command_line::add_arg(desc_cmd_sett, arg_rollback);
+    command_line::add_arg(desc_cmd_sett, arg_sync_from_zero);  
+    command_line::add_arg(desc_cmd_sett, arg_flush_mempool);  
 
     RpcServerConfig::initOptions(desc_cmd_sett);
     CoreConfig::initOptions(desc_cmd_sett);
@@ -194,11 +201,13 @@ int main(int argc, char* argv[])
       //----end
 
       /////// check if simplewallet & walletd are the right versions: //////////////////////////////////////////
+      /*
       const char *time_details = "2022-10-12";
       tm tm_version;
       strptime(time_details, "%Y-%m-%d", &tm_version);
       time_t t_release = mktime(&tm_version);  // t is now your desired time_t
 
+      
       #ifdef WIN32
           //tbd
       #else
@@ -227,6 +236,7 @@ int main(int argc, char* argv[])
               return false;
           }
       #endif
+      */
       ///////////////////////////////////////////////////////////////////////////////////////////////////
 
       boost::system::error_code ec;
@@ -317,6 +327,45 @@ int main(int argc, char* argv[])
       }
     }
 
+    if (command_line::has_arg(vm, arg_flush_mempool)) {
+        if(Tools::remove_blockchain_file(coreConfig.configFolder+"/"+parameters::CRYPTONOTE_POOLDATA_FILENAME))
+        {
+            logger(INFO, BRIGHT_RED) << "File " << parameters::CRYPTONOTE_POOLDATA_FILENAME << " removed!";
+        }
+    }
+
+
+
+    if (command_line::has_arg(vm, arg_sync_from_zero))
+    {
+        logger(INFO, BRIGHT_RED) << "Sync from Zero detected.. removing local blockchain...";
+
+        if(Tools::remove_blockchain_file(coreConfig.configFolder+"/"+parameters::CRYPTONOTE_BLOCKS_FILENAME))
+        {
+            logger(INFO, BRIGHT_RED) << "File " << parameters::CRYPTONOTE_BLOCKS_FILENAME << " removed!";
+        }
+        
+        if(Tools::remove_blockchain_file(coreConfig.configFolder+"/"+parameters::CRYPTONOTE_BLOCKSCACHE_FILENAME))
+        {
+            logger(INFO, BRIGHT_RED) << "File " << parameters::CRYPTONOTE_BLOCKSCACHE_FILENAME << " removed!";
+        }
+
+        if(Tools::remove_blockchain_file(coreConfig.configFolder+"/"+parameters::CRYPTONOTE_BLOCKINDEXES_FILENAME))
+        {
+            logger(INFO, BRIGHT_RED) << "File " << parameters::CRYPTONOTE_BLOCKINDEXES_FILENAME << " removed!";
+        }
+
+        if(Tools::remove_blockchain_file(coreConfig.configFolder+"/"+parameters::CRYPTONOTE_POOLDATA_FILENAME))
+        {
+            logger(INFO, BRIGHT_RED) << "File " << parameters::CRYPTONOTE_POOLDATA_FILENAME << " removed!";
+        }
+
+        if(Tools::remove_blockchain_file(coreConfig.configFolder+"/"+parameters::CRYPTONOTE_BLOCKCHAIN_INDICES_FILENAME))
+        {
+            logger(INFO, BRIGHT_RED) << "File " << parameters::CRYPTONOTE_BLOCKCHAIN_INDICES_FILENAME << " removed!";
+        }        
+    }
+
     System::Dispatcher dispatcher;
 
     CryptoNote::CryptoNoteProtocolHandler cprotocol(currency, dispatcher, ccore, nullptr, logManager);
@@ -357,6 +406,19 @@ int main(int argc, char* argv[])
       return 1;
     }
     logger(INFO) << "Core initialized OK";
+
+    if (command_line::has_arg(vm, arg_rollback)) {
+      std::string rollback_str = command_line::get_arg(vm, arg_rollback);
+      if (!rollback_str.empty()) {
+        uint32_t _index = 0;
+        if (!Common::fromString(rollback_str, _index)) {
+          std::cout << "wrong block index parameter" << ENDL;
+          return false;
+        }
+        logger(INFO, BRIGHT_YELLOW) << "Rollback blockchain to height " << _index;
+        ccore.rollbackBlockchain(_index);
+      }
+    }
 
     // start components
     if (!command_line::has_arg(vm, arg_console)) {
