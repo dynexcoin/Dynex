@@ -352,6 +352,17 @@ std::string get_nix_version_display_string()
     return fs::create_directories(fs_path, ec);
   }
 
+  bool remove_blockchain_file(const std::string& path)
+  {
+    namespace fs = boost::filesystem;
+    boost::system::error_code ec;
+    fs::path fs_path(path);
+    if (fs::is_regular_file(fs_path, ec)) {
+        return fs::remove(fs_path, ec);
+    }
+    return true;
+  }
+
   std::error_code replace_file(const std::string& replacement_name, const std::string& replaced_name)
   {
     int code;
