@@ -233,51 +233,60 @@ bool Currency::constructMinerTx(uint32_t height, size_t medianSize, uint64_t alr
   return true;
 }
 
-bool Currency::isFusionTransaction(const std::vector<uint64_t>& inputsAmounts, const std::vector<uint64_t>& outputsAmounts, size_t size) const {
-  if (size > fusionTxMaxSize()) {
-    return false;
-  }
-
-  if (inputsAmounts.size() < fusionTxMinInputCount()) {
-    return false;
-  }
-
-  if (inputsAmounts.size() < outputsAmounts.size() * fusionTxMinInOutCountRatio()) {
-    return false;
-  }
-
-  uint64_t inputAmount = 0;
-  for (auto amount: inputsAmounts) {
-    if (amount < defaultDustThreshold()) {
+bool Currency::isFusionTransaction(const std::vector<uint64_t>& inputsAmounts, const std::vector<uint64_t>& outputsAmounts, size_t size, uint32_t height) const {
+    if (size > fusionTxMaxSize()) {
+      logger(ERROR) << "Fusion transaction verification failed: size exceeded max allowed size.";
       return false;
     }
 
-    inputAmount += amount;
+    if (inputsAmounts.size() < fusionTxMinInputCount()) {
+      logger(ERROR) << "Fusion transaction verification failed: inputs count is less than minimum.";
+      return false;
+    }
+
+    if (inputsAmounts.size() < outputsAmounts.size() * fusionTxMinInOutCountRatio()) {
+      logger(ERROR) << "Fusion transaction verification failed: inputs to outputs count ratio is less than minimum.";
+      return false;
+    }
+
+    uint64_t inputAmount = 0;
+    for (auto amount : inputsAmounts) {
+        if (amount < defaultDustThreshold()) {
+          logger(ERROR) << "Fusion transaction verification failed: amount " << amount << " is less than dust threshold.";
+          return false;
+        }
+      inputAmount += amount;
+    }
+
+    std::vector<uint64_t> expectedOutputsAmounts;
+    expectedOutputsAmounts.reserve(outputsAmounts.size());
+    decomposeAmount(inputAmount, defaultDustThreshold(), expectedOutputsAmounts);
+    std::sort(expectedOutputsAmounts.begin(), expectedOutputsAmounts.end());
+
+    bool decompose = expectedOutputsAmounts == outputsAmounts;
+    if (!decompose) {
+      logger(ERROR) << "Fusion transaction verification failed: decomposed output amounts do not match expected.";
+      return false;
+    }
+
+    return true;
   }
 
-  std::vector<uint64_t> expectedOutputsAmounts;
-  expectedOutputsAmounts.reserve(outputsAmounts.size());
-  decomposeAmount(inputAmount, defaultDustThreshold(), expectedOutputsAmounts);
-  std::sort(expectedOutputsAmounts.begin(), expectedOutputsAmounts.end());
+  bool Currency::isFusionTransaction(const Transaction& transaction, size_t size, uint32_t height) const {
+    assert(getObjectBinarySize(transaction) == size);
 
-  return expectedOutputsAmounts == outputsAmounts;
-}
+    std::vector<uint64_t> outputsAmounts;
+    outputsAmounts.reserve(transaction.outputs.size());
+    for (const TransactionOutput& output : transaction.outputs) {
+      outputsAmounts.push_back(output.amount);
+    }
 
-bool Currency::isFusionTransaction(const Transaction& transaction, size_t size) const {
-  assert(getObjectBinarySize(transaction) == size);
-
-  std::vector<uint64_t> outputsAmounts;
-  outputsAmounts.reserve(transaction.outputs.size());
-  for (const TransactionOutput& output : transaction.outputs) {
-    outputsAmounts.push_back(output.amount);
+    return isFusionTransaction(getInputsAmounts(transaction), outputsAmounts, size, height);
   }
 
-  return isFusionTransaction(getInputsAmounts(transaction), outputsAmounts, size);
-}
-
-bool Currency::isFusionTransaction(const Transaction& transaction) const {
-  return isFusionTransaction(transaction, getObjectBinarySize(transaction));
-}
+  bool Currency::isFusionTransaction(const Transaction& transaction, uint32_t height) const {
+    return isFusionTransaction(transaction, getObjectBinarySize(transaction), height);
+  }
 
 bool Currency::isAmountApplicableInFusionTransactionInput(uint64_t amount, uint64_t threshold) const {
   uint8_t ignore;
@@ -378,10 +387,59 @@ bool Currency::parseAmount(const std::string& str, uint64_t& amount) const {
   return Common::fromString(strAmount, amount);
 }
 
+// Copyright (c) 2017-2018 Zawy 
+  // http://zawy1.blogspot.com/2017/12/using-difficulty-to-get-constant-value.html
+  // Moore's law application by Sergey Kozlov
+  uint64_t Currency::getMinimalFee(uint64_t dailyDifficulty, uint64_t reward, uint64_t avgHistoricalDifficulty, uint64_t medianHistoricalReward, uint32_t height) const {
+    const uint64_t blocksInTwoYears = CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY * 365 * 2;
+    const double gauge = double(0.25);
+    uint64_t minimumFee(0);
+    double dailyDifficultyMoore = dailyDifficulty / pow(2, static_cast<double>(height) / static_cast<double>(blocksInTwoYears));
+    double minFee = gauge * CryptoNote::parameters::COIN * static_cast<double>(avgHistoricalDifficulty) 
+      / dailyDifficultyMoore * static_cast<double>(reward)
+      / static_cast<double>(medianHistoricalReward);
+    if (minFee == 0 || !std::isfinite(minFee))
+      return CryptoNote::parameters::MAXIMUM_FEE; // zero test 
+    minimumFee = static_cast<uint64_t>(minFee);
+
+    return std::min<uint64_t>(CryptoNote::parameters::MAXIMUM_FEE, minimumFee);
+  }
+
+  uint64_t Currency::roundUpMinFee(uint64_t minimalFee, int digits) const {
+    uint64_t ret(0);
+    std::string minFeeString = formatAmount(minimalFee);
+    double minFee = boost::lexical_cast<double>(minFeeString);
+    double scale = pow(10., floor(log10(fabs(minFee))) + (1 - digits));
+    double roundedFee = ceil(minFee / scale) * scale;
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(12) << roundedFee;
+    std::string roundedFeeString = ss.str();
+    parseAmount(roundedFeeString, ret);
+    return ret;
+  }
+
 difficulty_type Currency::nextDifficulty(std::vector<uint64_t> timestamps,
   std::vector<difficulty_type> cumulativeDifficulties) const {
   assert(m_difficultyWindow >= 2);
 
+  //////////////// LWMA difficulty algorithm ///////////////////////////////////////////////////////////
+  /*
+  uint64_t last_block_solving_time = timestamps[timestamps.size()-1 ] - timestamps[timestamps.size()-2]; //seconds
+  uint64_t T = 120; //target solvetime
+  uint64_t ST = uint64_t(fmin(T*6,fmax(last_block_solving_time, -5*T)));
+  uint64_t prev_target = cumulativeDifficulties[cumulativeDifficulties.size()-1] - cumulativeDifficulties[cumulativeDifficulties.size()-2];
+  uint64_t next_target = prev_target*(30+ST/T/0.984-1)/30;
+
+  logger(DEBUGGING)  << "[nextDifficulty] previous solvetime(s) = " << last_block_solving_time << std::endl;
+  logger(DEBUGGING)  << "[nextDifficulty] prev_target           = " << prev_target << std::endl;
+  logger(DEBUGGING)  << "[nextDifficulty] next_target           = " << next_target << std::endl;
+  logger(DEBUGGING)  << "[nextDifficulty] curent_block          = " << next_target << std::endl;
+
+  return next_target;
+  */
+  //////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  
   if (timestamps.size() > m_difficultyWindow) {
     timestamps.resize(m_difficultyWindow);
     cumulativeDifficulties.resize(m_difficultyWindow);
@@ -405,7 +463,7 @@ difficulty_type Currency::nextDifficulty(std::vector<uint64_t> timestamps,
     cutBegin = (length - (m_difficultyWindow - 2 * m_difficultyCut) + 1) / 2;
     cutEnd = cutBegin + (m_difficultyWindow - 2 * m_difficultyCut);
   }
-  assert(/*cut_begin >= 0 &&*/ cutBegin + 2 <= cutEnd && cutEnd <= length);
+  assert(cutBegin + 2 <= cutEnd && cutEnd <= length);
   uint64_t timeSpan = timestamps[cutEnd - 1] - timestamps[cutBegin];
   if (timeSpan == 0) {
     timeSpan = 1;
@@ -421,6 +479,7 @@ difficulty_type Currency::nextDifficulty(std::vector<uint64_t> timestamps,
   }
 
   return (low + timeSpan - 1) / timeSpan;
+  
 }
 
 bool Currency::checkProofOfWork(Crypto::cn_context& context, const Block& block, difficulty_type currentDiffic,
@@ -463,6 +522,7 @@ CurrencyBuilder::CurrencyBuilder(Logging::ILogger& log) : m_currency(log) {
   publicAddressBase58Prefix(parameters::CRYPTONOTE_PUBLIC_ADDRESS_BASE58_PREFIX);
   minedMoneyUnlockWindow(parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW);
 
+  expectedNumberOfBlocksPerDay(parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY);
   timestampCheckWindow(parameters::BLOCKCHAIN_TIMESTAMP_CHECK_WINDOW);
   blockFutureTimeLimit(parameters::CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT);
 
@@ -472,6 +532,9 @@ CurrencyBuilder::CurrencyBuilder(Logging::ILogger& log) : m_currency(log) {
   rewardBlocksWindow(parameters::CRYPTONOTE_REWARD_BLOCKS_WINDOW);
   blockGrantedFullRewardZone(parameters::CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE);
   minerTxBlobReservedSize(parameters::CRYPTONOTE_COINBASE_BLOB_RESERVED_SIZE);
+  maxTransactionSizeLimit(parameters::MAX_TRANSACTION_SIZE_LIMIT);
+  minMixin(parameters::MIN_TX_MIXIN_SIZE);
+  maxMixin(parameters::MAX_TX_MIXIN_SIZE);
 
   numberOfDecimalPlaces(parameters::CRYPTONOTE_DISPLAY_DECIMAL_POINT);
 
