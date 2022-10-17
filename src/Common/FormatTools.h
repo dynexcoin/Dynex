@@ -35,20 +35,24 @@
 // Copyright (c) 2017-2022, The CROAT.community developers
 
 
-#pragma once
+#pragma once 
 
 #include <string>
-#include "IOutputStream.h"
+#include "Rpc/CoreRpcServerCommandsDefinitions.h"
 
-namespace Common {
+namespace Common
+{
+    std::string get_mining_speed(const uint64_t hashrate);
 
-class StringOutputStream : public IOutputStream {
-public:
-  StringOutputStream(std::string& out);
-  size_t writeSome(const void* data, size_t size) override;
+    std::string get_sync_percentage(
+        uint64_t height,
+        const uint64_t target_height);
 
-private:
-  std::string& out;
-};
+    std::string formatAmount(const uint64_t amount);
 
+    std::string formatAmountBasic(const uint64_t amount);
+
+    std::string prettyPrintBytes(const uint64_t numBytes);
+
+    std::string unixTimeToDate(const uint64_t timestamp);
 }

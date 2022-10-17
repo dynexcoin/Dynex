@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, The TuringX Project
+// Copyright (c) 2021-2022, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -26,11 +26,18 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Parts of this project are originally copyright by:
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero project
+// Copyright (c) 2014-2018, The Forknote developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2022, The CROAT.community developers
 
 
 #include "JsonValue.h"
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 
 namespace Common {
@@ -596,6 +603,17 @@ JsonValue JsonValue::fromString(const std::string& source) {
   return jsonValue;
 }
 
+JsonValue JsonValue::fromStringWithWhiteSpaces(const std::string& source) {
+  JsonValue jsonValue;
+  std::istringstream stream(source);
+  stream >> std::noskipws >> jsonValue;
+  if (stream.fail()) {
+    throw std::runtime_error("Unable to parse JsonValue");
+  }
+
+  return jsonValue;
+}
+
 std::string JsonValue::toString() const {
   std::ostringstream stream;
   stream << *this;
@@ -664,9 +682,8 @@ std::ostream& operator<<(std::ostream& out, const JsonValue& jsonValue) {
 namespace {
 
 char readChar(std::istream& in) {
-  char c;
-
-  if (!(in >> c)) {
+  char c = static_cast<char>(in.get());
+  if (!in) {
     throw std::runtime_error("Unable to parse: unexpected end of stream");
   }
 

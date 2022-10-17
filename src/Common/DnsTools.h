@@ -38,17 +38,14 @@
 #pragma once
 
 #include <string>
-#include "IOutputStream.h"
+#include <vector>
 
 namespace Common {
 
-class StringOutputStream : public IOutputStream {
-public:
-  StringOutputStream(std::string& out);
-  size_t writeSome(const void* data, size_t size) override;
+#ifndef __ANDROID__
 
-private:
-  std::string& out;
-};
+  bool fetch_dns_txt(const std::string domain, std::vector<std::string>&records);
+
+#endif
 
 }

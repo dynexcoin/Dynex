@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, The TuringX Project
+// Copyright (c) 2021-2022, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -26,11 +26,19 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Parts of this project are originally copyright by:
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero project
+// Copyright (c) 2014-2018, The Forknote developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2022, The CROAT.community developers
+
 
 #pragma once
 
 #include <cstdint>
+#include <ostream>
 #include <vector>
 #include <string>
 
@@ -84,6 +92,37 @@ template<typename T> T readVarint(IInputStream& in) {
   T value;
   readVarint(in, value);
   return value;
+}
+
+template<typename T>
+class ContainerFormatter {
+public:
+  explicit ContainerFormatter(const T& container) :
+    m_container(container) {
+  }
+
+  friend std::ostream& operator<<(std::ostream& os, const ContainerFormatter<T>& formatter) {
+    os << '{';
+
+    if (!formatter.m_container.empty()) {
+      os << formatter.m_container.front();
+      for (auto it = std::next(formatter.m_container.begin()); it != formatter.m_container.end(); ++it) {
+        os << ", " << *it;
+      }
+    }
+
+    os << '}';
+
+    return os;
+  }
+
+private:
+  const T& m_container;
+};
+
+template<typename T>
+ContainerFormatter<T> makeContainerFormatter(const T& container) {
+  return ContainerFormatter<T>(container);
 }
 
 };

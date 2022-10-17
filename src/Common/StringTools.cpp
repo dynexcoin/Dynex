@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, The TuringX Project
+// Copyright (c) 2021-2022, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -26,10 +26,18 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Parts of this project are originally copyright by:
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero project
+// Copyright (c) 2014-2018, The Forknote developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2022, The CROAT.community developers
+
 
 #include "StringTools.h"
 #include <fstream>
+#include <iomanip>
 
 namespace Common {
 
@@ -325,6 +333,21 @@ std::string ipAddressToString(uint32_t ip) {
   return std::string(buf);
 }
 
+uint32_t stringToIpAddress(std::string addr) {
+  uint32_t v[4];
+  if (sscanf(addr.c_str(), "%d.%d.%d.%d", &v[0], &v[1], &v[2], &v[3]) != 4) {
+	  return false;
+  }
+
+  for (int i = 0; i < 4; ++i) {
+    if (v[i] > 0xff) {
+      return false;
+    }
+  }
+
+  return ((v[3] << 24) | (v[2] << 16) | (v[1] << 8) | v[0]);
+}
+
 bool parseIpAddressAndPort(uint32_t& ip, uint32_t& port, const std::string& addr) {
   uint32_t v[4];
   uint32_t localPort;
@@ -355,12 +378,14 @@ std::string timeIntervalToString(uint64_t intervalInSeconds) {
   tail = tail % (60);
   auto seconds = tail;
 
-  return 
-    "d" + std::to_string(days) + 
-    ".h" + std::to_string(hours) + 
-    ".m" + std::to_string(minutes) +
-    ".s" + std::to_string(seconds);
-}
+  std::stringstream ss;
+  ss << "d" << days <<
+    std::setfill('0') <<
+    ".h" << std::setw(2) << hours <<
+    ".m" << std::setw(2) << minutes <<
+    ".s" << std::setw(2) << seconds;
 
+  return ss.str();
+}
 
 }

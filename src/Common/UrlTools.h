@@ -35,20 +35,14 @@
 // Copyright (c) 2017-2022, The CROAT.community developers
 
 
+
 #pragma once
 
+#include <stdint.h>
 #include <string>
-#include "IOutputStream.h"
 
 namespace Common {
 
-class StringOutputStream : public IOutputStream {
-public:
-  StringOutputStream(std::string& out);
-  size_t writeSome(const void* data, size_t size) override;
-
-private:
-  std::string& out;
-};
+bool parseUrlAddress(const std::string& url, std::string& host, uint16_t& port, std::string& path, bool& ssl);
 
 }

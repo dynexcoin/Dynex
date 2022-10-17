@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, The TuringX Project
+// Copyright (c) 2021-2022, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -26,7 +26,13 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Parts of this project are originally copyright by:
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero project
+// Copyright (c) 2014-2018, The Forknote developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2022, The CROAT.community developers
 
 
 #include "ConsoleHandler.h"
@@ -36,6 +42,9 @@
 #include <sstream>
 
 #ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <Windows.h>
 #else
 #include <unistd.h>
@@ -66,6 +75,24 @@ void AsyncConsoleReader::start() {
 bool AsyncConsoleReader::getline(std::string& line) {
   return m_queue.pop(line);
 }
+
+void AsyncConsoleReader::pause() {
+  if (m_stop) {
+    return;
+  }
+
+  m_stop = true;
+
+  if (m_thread.joinable()) {
+    m_thread.join();
+  }
+
+  m_thread = std::thread();
+}
+
+void AsyncConsoleReader::unpause() {
+  start();
+} 
 
 void AsyncConsoleReader::stop() {
 
@@ -107,7 +134,11 @@ void AsyncConsoleReader::consoleThread() {
 
 bool AsyncConsoleReader::waitInput() {
 #ifndef _WIN32
-  int stdin_fileno = ::fileno(stdin);
+  #if defined(__OpenBSD__) || defined(__ANDROID__)
+    int stdin_fileno = fileno(stdin);
+  #else
+    int stdin_fileno = ::fileno(stdin);
+  #endif
 
   while (!m_stop) {
     fd_set read_set;
@@ -130,6 +161,20 @@ bool AsyncConsoleReader::waitInput() {
 
     if (retval > 0) {
       return true;
+    }
+  }
+#else
+  while (!m_stop.load(std::memory_order_relaxed))
+  {
+    int retval = ::WaitForSingleObject(::GetStdHandle(STD_INPUT_HANDLE), 100);
+    switch (retval)
+    {
+      case WAIT_FAILED:
+        return false;
+      case WAIT_OBJECT_0:
+        return true;
+      default:
+        break;
     }
   }
 #endif
@@ -161,6 +206,14 @@ void ConsoleHandler::stop() {
   wait();
 }
 
+void ConsoleHandler::pause() {
+  m_consoleReader.pause();
+}
+
+void ConsoleHandler::unpause() {
+  m_consoleReader.unpause();
+}
+  
 void ConsoleHandler::wait() {
 
   try {
@@ -218,9 +271,40 @@ bool ConsoleHandler::runCommand(const std::vector<std::string>& cmdAndArgs) {
 }
 
 void ConsoleHandler::handleCommand(const std::string& cmd) {
-  std::vector<std::string> args;
-  boost::split(args, cmd, boost::is_any_of(" "), boost::token_compress_on);
-  runCommand(args);
+  bool parseString = false;
+  std::string arg;
+  std::vector<std::string> argList;
+
+  for (auto ch : cmd) {
+    switch (ch) {
+    case ' ':
+      if (parseString) {
+        arg += ch;
+      } else if (!arg.empty()) {
+        argList.emplace_back(std::move(arg));
+        arg.clear();
+      }
+      break;
+
+    case '"':
+      if (!arg.empty()) {
+        argList.emplace_back(std::move(arg));
+        arg.clear();
+      }
+
+      parseString = !parseString;
+      break;
+
+    default:
+      arg += ch;
+    }
+  }
+
+  if (!arg.empty()) {
+    argList.emplace_back(std::move(arg));
+  }
+
+  runCommand(argList);
 }
 
 void ConsoleHandler::handlerThread() {

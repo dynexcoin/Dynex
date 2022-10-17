@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, The TuringX Project
+// Copyright (c) 2021-2022, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -26,7 +26,13 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Parts of this project are originally copyright by:
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero project
+// Copyright (c) 2014-2018, The Forknote developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2022, The CROAT.community developers
 
 
 #pragma once
@@ -36,6 +42,11 @@
 #include <stdint.h>
 #include <string.h>
 #include <sys/param.h>
+#include <math.h>
+
+#if defined(__ANDROID__)
+#include <byteswap.h>
+#endif
 
 #if defined(_MSC_VER)
 #include <stdlib.h>
@@ -140,15 +151,25 @@ static inline uint32_t div128_32(uint64_t dividend_hi, uint64_t dividend_lo, uin
 static inline uint32_t ident32(uint32_t x) { return x; }
 static inline uint64_t ident64(uint64_t x) { return x; }
 
+#ifndef __OpenBSD__
+#  if defined(__ANDROID__) && defined(__swap32) && !defined(swap32)
+#      define swap32 __swap32
+#  elif !defined(swap32)
 static inline uint32_t swap32(uint32_t x) {
-  x = ((x & 0x00ff00ff) << 8) | ((x & 0xff00ff00) >> 8);
-  return (x << 16) | (x >> 16);
+	x = ((x & 0x00ff00ff) << 8) | ((x & 0xff00ff00) >> 8);
+	return (x << 16) | (x >> 16);
 }
+#  endif
+#  if defined(__ANDROID__) && defined(__swap64) && !defined(swap64)
+#      define swap64 __swap64
+#  elif !defined(swap64)
 static inline uint64_t swap64(uint64_t x) {
-  x = ((x & 0x00ff00ff00ff00ff) <<  8) | ((x & 0xff00ff00ff00ff00) >>  8);
-  x = ((x & 0x0000ffff0000ffff) << 16) | ((x & 0xffff0000ffff0000) >> 16);
-  return (x << 32) | (x >> 32);
+	x = ((x & 0x00ff00ff00ff00ff) << 8) | ((x & 0xff00ff00ff00ff00) >> 8);
+	x = ((x & 0x0000ffff0000ffff) << 16) | ((x & 0xffff0000ffff0000) >> 16);
+	return (x << 32) | (x >> 32);
 }
+#  endif
+#endif /* __OpenBSD__ */
 
 #if defined(__GNUC__)
 #define UNUSED __attribute__((unused))
@@ -189,6 +210,25 @@ static inline void memcpy_swap64(void *dst, const void *src, size_t n) {
   for (i = 0; i < n; i++) {
     ((uint64_t *) dst)[i] = swap64(((const uint64_t *) src)[i]);
   }
+}
+
+// Calculate ln(p) of Poisson distribution
+// https://github.com/ryo-currency/ryo-writeups/blob/master/poisson-writeup.md
+// Original idea : https://stackoverflow.com/questions/30156803/implementing-poisson-distribution-in-c
+// Using logarithms avoids dealing with very large (k!) and very small (p < 10^-44) numbers
+// lam     - lambda parameter - in our case, how many blocks, on average, you would expect to see in the interval
+// k       - k parameter - in our case, how many blocks we have actually seen
+//           !!! k must not be zero
+// return  - ln(p)
+
+static inline double calc_poisson_ln(double lam, uint64_t k)
+{
+  double logx = -lam + k * log(lam);
+  do
+  {
+    logx -= log((double) k); // This can be tabulated
+  } while (--k > 0);
+  return logx;
 }
 
 #if !defined(BYTE_ORDER) || !defined(LITTLE_ENDIAN) || !defined(BIG_ENDIAN)

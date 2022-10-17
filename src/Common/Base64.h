@@ -37,18 +37,13 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string>
-#include "IOutputStream.h"
 
-namespace Common {
-
-class StringOutputStream : public IOutputStream {
-public:
-  StringOutputStream(std::string& out);
-  size_t writeSome(const void* data, size_t size) override;
-
-private:
-  std::string& out;
-};
-
+namespace Tools
+{
+  namespace Base64
+  {
+    std::string encode(const std::string& data);
+  }
 }

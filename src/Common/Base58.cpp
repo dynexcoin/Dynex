@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, The TuringX Project
+// Copyright (c) 2021-2022, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -26,7 +26,13 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Parts of this project are originally copyright by:
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero project
+// Copyright (c) 2014-2018, The Forknote developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2022, The CROAT.community developers
 
 
 #include "Base58.h"
@@ -111,13 +117,13 @@ namespace Tools
         uint64_t res = 0;
         switch (9 - size)
         {
-        case 1:            res |= *data++;
-        case 2: res <<= 8; res |= *data++;
-        case 3: res <<= 8; res |= *data++;
-        case 4: res <<= 8; res |= *data++;
-        case 5: res <<= 8; res |= *data++;
-        case 6: res <<= 8; res |= *data++;
-        case 7: res <<= 8; res |= *data++;
+        case 1:            res |= *data++; /* FALLTHRU */
+        case 2: res <<= 8; res |= *data++; /* FALLTHRU */
+        case 3: res <<= 8; res |= *data++; /* FALLTHRU */
+        case 4: res <<= 8; res |= *data++; /* FALLTHRU */
+        case 5: res <<= 8; res |= *data++; /* FALLTHRU */
+        case 6: res <<= 8; res |= *data++; /* FALLTHRU */
+        case 7: res <<= 8; res |= *data++; /* FALLTHRU */
         case 8: res <<= 8; res |= *data; break;
         default: assert(false);
         }
