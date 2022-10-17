@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, The TuringX Project
+// Copyright (c) 2021-2022, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -26,7 +26,14 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Parts of this project are originally copyright by:
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero project
+// Copyright (c) 2014-2018, The Forknote developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2022, The CROAT.community developers
+
 
 #pragma once
 
@@ -37,20 +44,27 @@
 
 #include <boost/program_options/variables_map.hpp>
 
+#include "android.h"
 #include "IWalletLegacy.h"
-#include "PasswordContainer.h"
+#include "Common/PasswordContainer.h"
 
 #include "Common/ConsoleHandler.h"
 #include "CryptoNoteCore/CryptoNoteBasicImpl.h"
 #include "CryptoNoteCore/Currency.h"
 #include "NodeRpcProxy/NodeRpcProxy.h"
 #include "WalletLegacy/WalletHelper.h"
+#include "WalletLegacy/WalletLegacy.h"
 
 #include <Logging/LoggerRef.h>
 #include <Logging/LoggerManager.h>
 
 #include <System/Dispatcher.h>
 #include <System/Ipv4Address.h>
+
+std::string remote_fee_address;
+namespace{
+	Tools::PasswordContainer pwd_container;
+}
 
 namespace CryptoNote
 {
@@ -68,6 +82,7 @@ namespace CryptoNote
 
     bool process_command(const std::vector<std::string> &args);
     std::string get_commands_str();
+    std::string getFeeAddress();
 
     const CryptoNote::Currency& currency() const { return m_currency; }
 
@@ -85,33 +100,52 @@ namespace CryptoNote
 
     void handle_command_line(const boost::program_options::variables_map& vm);
 
-    bool run_console_handler();
-
     bool new_wallet(const std::string &wallet_file, const std::string& password);
-    bool open_wallet(const std::string &wallet_file, const std::string& password);
+    bool new_wallet(const std::string &wallet_file, const std::string& password, const Crypto::SecretKey& secret_key, const Crypto::SecretKey& view_key);
+    bool new_wallet(const std::string &wallet_file, const std::string& password, const Crypto::SecretKey& recovery_key);
+    bool new_wallet(const std::string &wallet_file, const std::string& password, const AccountKeys& private_key);
+    bool new_tracking_wallet(AccountKeys &tracking_key, const std::string &wallet_file, const std::string& password);
+    //bool open_wallet(const std::string &wallet_file, const std::string& password);
     bool close_wallet();
 
     bool help(const std::vector<std::string> &args = std::vector<std::string>());
+    bool seed(const std::vector<std::string> &args = std::vector<std::string>());
     bool exit(const std::vector<std::string> &args);
     bool start_mining(const std::vector<std::string> &args);
     bool stop_mining(const std::vector<std::string> &args);
     bool show_balance(const std::vector<std::string> &args = std::vector<std::string>());
+    bool export_keys(const std::vector<std::string> &args = std::vector<std::string>());
+    bool export_tracking_key(const std::vector<std::string> &args = std::vector<std::string>());
     bool show_incoming_transfers(const std::vector<std::string> &args);
+    bool show_outgoing_transfers(const std::vector<std::string> &args);
     bool show_payments(const std::vector<std::string> &args);
     bool show_blockchain_height(const std::vector<std::string> &args);
+    bool show_unlocked_outputs_count(const std::vector<std::string> &args);
     bool listTransfers(const std::vector<std::string> &args);
     bool transfer(const std::vector<std::string> &args);
     bool print_address(const std::vector<std::string> &args = std::vector<std::string>());
     bool save(const std::vector<std::string> &args);
     bool reset(const std::vector<std::string> &args);
     bool set_log(const std::vector<std::string> &args);
+    bool payment_id(const std::vector<std::string> &args);
+    bool change_password(const std::vector<std::string> &args);
+    bool sweep_dust(const std::vector<std::string> &args);
+    bool estimate_fusion(const std::vector<std::string> &args);
+    bool optimize(const std::vector<std::string> &args);
+    bool get_tx_key(const std::vector<std::string> &args);
+    bool get_tx_proof(const std::vector<std::string> &args);
+    bool get_reserve_proof(const std::vector<std::string> &args);
+    bool sign_message(const std::vector<std::string> &args);
+    bool verify_message(const std::vector<std::string> &args);
     // dynex-chip:
     bool start_dynexchip(const std::vector<std::string> &args);
     bool stop_dynexchip(const std::vector<std::string> &args);
 
-    bool ask_wallet_create_if_needed();
-
+#ifndef __ANDROID__
+    std::string resolveAlias(const std::string& aliasUrl);
+#endif
     void printConnectionError() const;
+    uint64_t getMinimalFee();
 
     //---------------- IWalletLegacyObserver -------------------------
     virtual void initCompleted(std::error_code result) override;
@@ -170,19 +204,26 @@ namespace CryptoNote
   private:
     std::string m_wallet_file_arg;
     std::string m_generate_new;
+    std::string m_import_new;
+    std::string m_restore_new;
+    std::string m_track_new;
     std::string m_import_path;
-
     std::string m_daemon_address;
     std::string m_daemon_host;
-    uint16_t m_daemon_port;
-
+    std::string m_daemon_path;
+    std::string m_mnemonic_seed;
+    std::string m_view_key;
+    std::string m_spend_key;
     std::string m_wallet_file;
+    uint16_t m_daemon_port;
+    uint32_t m_scan_height;
+    bool m_daemon_ssl;
 
     std::unique_ptr<std::promise<std::error_code>> m_initResultPromise;
 
     Common::ConsoleHandler m_consoleHandler;
     const CryptoNote::Currency& m_currency;
-    Logging::LoggerManager& logManager;
+    Logging::LoggerManager& m_logManager;
     System::Dispatcher& m_dispatcher;
     Logging::LoggerRef logger;
 
@@ -191,6 +232,7 @@ namespace CryptoNote
     refresh_progress_reporter_t m_refresh_progress_reporter;
 
     bool m_walletSynchronized;
+    bool m_trackingWallet;
     std::mutex m_walletSynchronizedMutex;
     std::condition_variable m_walletSynchronizedCV;
   };
