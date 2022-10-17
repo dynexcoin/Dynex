@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, The TuringX Project
+// Copyright (c) 2021-2022, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -26,7 +26,14 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Parts of this project are originally copyright by:
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero project
+// Copyright (c) 2014-2018, The Forknote developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2022, The CROAT.community developers
+
 
 #include "BlockchainExplorer.h"
 
@@ -472,7 +479,13 @@ uint64_t BlockchainExplorer::getFullRewardMaxBlockSize(uint8_t majorVersion) {
     throw std::system_error(make_error_code(CryptoNote::error::BlockchainExplorerErrorCodes::NOT_INITIALIZED));
   }
 
-  return parameters::CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE;
+  if (majorVersion >= BLOCK_MAJOR_VERSION_3) {
+    return parameters::CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE;
+  } else if (majorVersion == BLOCK_MAJOR_VERSION_2) {
+    return parameters::CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE_V2;
+  } else {
+    return parameters::CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE_V1;
+  }
 }
 
 bool BlockchainExplorer::isSynchronized() {
