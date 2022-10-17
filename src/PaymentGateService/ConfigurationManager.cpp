@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, The TuringX Project
+// Copyright (c) 2021-2022, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -26,7 +26,14 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Parts of this project are originally copyright by:
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero project
+// Copyright (c) 2014-2018, The Forknote developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2022, The CROAT.community developers
+
 
 #include "ConfigurationManager.h"
 
@@ -35,6 +42,7 @@
 
 #include "Common/CommandLine.h"
 #include "Common/Util.h"
+#include "version.h"
 
 namespace PaymentService {
 
@@ -58,7 +66,8 @@ bool ConfigurationManager::init(int argc, char** argv) {
   cmdGeneralOptions.add_options()
       ("help,h", "produce this help message and exit")
       ("local", po::bool_switch(), "start with local node (remote is default)")
-      ("testnet", po::bool_switch(), "testnet mode");
+      ("testnet", po::bool_switch(), "testnet mode")
+      ("version", "Output version information");
 
   command_line::add_arg(cmdGeneralOptions, command_line::arg_data_dir, Tools::getDefaultDataDirectory());
   command_line::add_arg(confGeneralOptions, command_line::arg_data_dir, Tools::getDefaultDataDirectory());
@@ -85,6 +94,11 @@ bool ConfigurationManager::init(int argc, char** argv) {
 
   if (cmdOptions.count("help")) {
     std::cout << cmdOptionsDesc << std::endl;
+    return false;
+  }
+
+  if (cmdOptions.count("version") > 0) {
+    std::cout << "walletd v" << CN_PROJECT_VERSION_LONG;
     return false;
   }
 
