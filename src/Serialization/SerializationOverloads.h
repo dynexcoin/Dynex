@@ -1,35 +1,26 @@
-// Copyright (c) 2021-2022, The TuringX Project
-// 
-// All rights reserved.
-// 
-// Redistribution and use in source and binary forms, with or without modification, are
-// permitted provided that the following conditions are met:
-// 
-// 1. Redistributions of source code must retain the above copyright notice, this list of
-//    conditions and the following disclaimer.
-// 
-// 2. Redistributions in binary form must reproduce the above copyright notice, this list
-//    of conditions and the following disclaimer in the documentation and/or other
-//    materials provided with the distribution.
-// 
-// 3. Neither the name of the copyright holder nor the names of its contributors may be
-//    used to endorse or promote products derived from this software without specific
-//    prior written permission.
-// 
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
-// EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-// MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-// THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
-// STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
-// THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2018-2019, The TurtleCoin Developers
+// Copyright (c) 2016-2019, The Karbo developers
+// Copyright (c) 2017-2019, The CROAT.community developers
+//
+// This file is part of Bytecoin.
+//
+// Bytecoin is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Bytecoin is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
+#include <stdexcept>
 #include "ISerializer.h"
 
 #include <array>
@@ -52,9 +43,16 @@ serializeAsBinary(std::vector<T>& value, Common::StringView name, CryptoNote::IS
   std::string blob;
   if (serializer.type() == ISerializer::INPUT) {
     serializer.binary(blob, name);
-    value.resize(blob.size() / sizeof(T));
-    if (blob.size()) {
-      memcpy(&value[0], blob.data(), blob.size());
+    const size_t blobSize = blob.size();
+
+    value.resize(blobSize / sizeof(T));
+
+    if (blobSize % sizeof(T) != 0) {
+      throw std::runtime_error("Invalid blob size given!");
+    }
+
+    if (blobSize > 0) {
+      memcpy(&value[0], blob.data(), blobSize);
     }
   } else {
     if (!value.empty()) {
@@ -72,6 +70,11 @@ serializeAsBinary(std::list<T>& value, Common::StringView name, CryptoNote::ISer
     serializer.binary(blob, name);
 
     size_t count = blob.size() / sizeof(T);
+
+    if (blob.size() % sizeof(T) != 0) {
+      throw std::runtime_error("Invalid blob size given!");
+    }
+
     const T* ptr = reinterpret_cast<const T*>(blob.data());
 
     while (count--) {
@@ -94,7 +97,10 @@ template <typename Cont>
 bool serializeContainer(Cont& value, Common::StringView name, CryptoNote::ISerializer& serializer) {
   size_t size = value.size();
   if (!serializer.beginArray(size, name)) {
-    value.clear();
+    if (serializer.type() == ISerializer::INPUT) {
+      value.clear();
+    }
+
     return false;
   }
 
@@ -141,7 +147,10 @@ bool serializeMap(MapT& value, Common::StringView name, CryptoNote::ISerializer&
   size_t size = value.size();
 
   if (!serializer.beginArray(size, name)) {
-    value.clear();
+    if (serializer.type() == ISerializer::INPUT) {
+      value.clear();
+    }
+
     return false;
   }
 
@@ -177,7 +186,10 @@ bool serializeSet(SetT& value, Common::StringView name, CryptoNote::ISerializer&
   size_t size = value.size();
 
   if (!serializer.beginArray(size, name)) {
-    value.clear();
+    if (serializer.type() == ISerializer::INPUT) {
+      value.clear();
+    }
+
     return false;
   }
 
@@ -251,7 +263,10 @@ void writeSequence(Iterator begin, Iterator end, Common::StringView name, ISeria
 template <typename Element, typename Iterator>
 void readSequence(Iterator outputIterator, Common::StringView name, ISerializer& s) {
   size_t size = 0;
-  s.beginArray(size, name);
+  // array of zero size is not written in KVBinaryOutputStreamSerializer
+  if (!s.beginArray(size, name)) {
+    return;
+  }
 
   while (size--) {
     Element e;
