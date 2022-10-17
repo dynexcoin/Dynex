@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, The TuringX Project
+// Copyright (c) 2021-2022, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -26,33 +26,43 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Parts of this project are originally copyright by:
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero project
+// Copyright (c) 2014-2018, The Forknote developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2022, The CROAT.community developers
+
 
 #pragma once
 
-#include <iostream>
 #include "ILogger.h"
+#include <iostream>
 
 namespace Logging {
 
-class LoggerMessage : public std::ostream, std::streambuf {
+class LoggerMessage : public std::ostream, std::streambuf
+{
 public:
-  LoggerMessage(ILogger& logger, const std::string& category, Level level, const std::string& color);
-  ~LoggerMessage();
-  LoggerMessage(const LoggerMessage&) = delete;
-  LoggerMessage& operator=(const LoggerMessage&) = delete;
-  LoggerMessage(LoggerMessage&& other);
+	LoggerMessage(ILogger& logger, const std::string& category, Level level, const std::string& color);
+	LoggerMessage(LoggerMessage&& other);
+	~LoggerMessage();
+	LoggerMessage(const LoggerMessage&) = delete;
+	LoggerMessage& operator=(const LoggerMessage&) = delete;
 
 private:
-  int sync() override;
-  int overflow(int c) override;
+	int sync() override;
+	std::streamsize xsputn(const char* s, std::streamsize n) override;
+	int overflow(int c) override;
 
-  std::string message;
-  const std::string category;
-  Level logLevel;
-  ILogger& logger;
-  boost::posix_time::ptime timestamp;
-  bool gotText;
+private:
+	ILogger& m_logger;
+	const std::string m_sCategory;
+	Level m_nLogLevel;
+	std::string m_sMessage;
+	boost::posix_time::ptime m_tmTimeStamp;
+	bool m_bGotText;
 };
 
-}
+} //Logging

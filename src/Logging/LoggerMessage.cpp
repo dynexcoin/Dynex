@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, The TuringX Project
+// Copyright (c) 2021-2022, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -26,51 +26,40 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Parts of this project are originally copyright by:
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero project
+// Copyright (c) 2014-2018, The Forknote developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2022, The CROAT.community developers
+
 
 #include "LoggerMessage.h"
 
 namespace Logging {
 
 LoggerMessage::LoggerMessage(ILogger& logger, const std::string& category, Level level, const std::string& color)
-  : std::ostream(this)
-  , std::streambuf()
-  , logger(logger)
-  , category(category)
-  , logLevel(level)
-  , message(color)
-  , timestamp(boost::posix_time::microsec_clock::local_time())
-  , gotText(false) {
-}
+	: std::ostream(this)
+	, std::streambuf()
+	, m_logger(logger)
+	, m_sCategory(category)
+	, m_nLogLevel(level)
+	, m_sMessage(color)
+	, m_tmTimeStamp(boost::posix_time::microsec_clock::local_time())
+	, m_bGotText(false)
+{}
 
-LoggerMessage::~LoggerMessage() {
-  if (gotText) {
-    (*this) << std::endl;
-  }
-}
-
-#ifndef __linux__
-LoggerMessage::LoggerMessage(LoggerMessage&& other)
-  : std::ostream(std::move(other))
-  , std::streambuf(std::move(other))
-  , category(other.category)
-  , logLevel(other.logLevel)
-  , logger(other.logger)
-  , message(other.message)
-  , timestamp(boost::posix_time::microsec_clock::local_time())
-  , gotText(false) {
-  this->set_rdbuf(this);
-}
-#else
+#if defined __linux__ && !defined __ANDROID__
 LoggerMessage::LoggerMessage(LoggerMessage&& other)
   : std::ostream(nullptr)
   , std::streambuf()
-  , category(other.category)
-  , logLevel(other.logLevel)
-  , logger(other.logger)
-  , message(other.message)
-  , timestamp(boost::posix_time::microsec_clock::local_time())
-  , gotText(false) {
+  , m_sCategory(other.m_sCategory)
+  , m_nLogLevel(other.m_nLogLevel)
+  , m_logger(other.m_logger)
+  , m_sMessage(other.m_sMessage)
+  , m_tmTimeStamp(boost::posix_time::microsec_clock::local_time())
+  , m_bGotText(false) {
   if (this != &other) {
     _M_tie = nullptr;
     _M_streambuf = nullptr;
@@ -108,19 +97,47 @@ LoggerMessage::LoggerMessage(LoggerMessage&& other)
   }
   _M_streambuf = this;
 }
+#else
+LoggerMessage::LoggerMessage(LoggerMessage&& other)
+	: std::ostream(std::move(other))
+	, std::streambuf(std::move(other))
+	, m_logger(other.m_logger)
+	, m_sCategory(other.m_sCategory)
+	, m_nLogLevel(other.m_nLogLevel)
+	, m_sMessage(other.m_sMessage)
+	, m_tmTimeStamp(boost::posix_time::microsec_clock::local_time())
+	, m_bGotText(false)
+{
+	std::ostream::rdbuf(this);
+}
 #endif
 
-int LoggerMessage::sync() {
-  logger(category, logLevel, timestamp, message);
-  gotText = false;
-  message = DEFAULT;
-  return 0;
+LoggerMessage::~LoggerMessage()
+{
+	if (m_bGotText)
+		(*this) << std::endl;
 }
 
-int LoggerMessage::overflow(int c) {
-  gotText = true;
-  message += static_cast<char>(c);
-  return 0;
+int LoggerMessage::sync()
+{
+	m_logger(m_sCategory, m_nLogLevel, m_tmTimeStamp, m_sMessage);
+	m_bGotText = false;
+	m_sMessage = Logging::DEFAULT;
+	return 0;
 }
 
+std::streamsize LoggerMessage::xsputn(const char* s, std::streamsize n)
+{
+	m_bGotText = true;
+	m_sMessage.append(s, n);
+	return n;
 }
+
+int LoggerMessage::overflow(int c)
+{
+	m_bGotText = true;
+	m_sMessage += static_cast<char>(c);
+	return 0;
+}
+
+} //Logging
