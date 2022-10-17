@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, The TuringX Project
+// Copyright (c) 2021-2022, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -26,14 +26,23 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Parts of this project are originally copyright by:
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero project
+// Copyright (c) 2014-2018, The Forknote developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2022, The CROAT.community developers
+
 
 #pragma once
 
 #include <limits>
 #include <string>
 #include <vector>
+#include <boost/optional.hpp>
 #include "CryptoNote.h"
+#include "ITransfersContainer.h"
 
 namespace CryptoNote {
 
@@ -55,6 +64,12 @@ enum WalletEventType {
   BALANCE_UNLOCKED,
   SYNC_PROGRESS_UPDATED,
   SYNC_COMPLETED,
+};
+
+enum class WalletSaveLevel : uint8_t {
+  SAVE_KEYS_ONLY,
+  SAVE_KEYS_AND_TRANSACTIONS,
+  SAVE_ALL
 };
 
 struct WalletTransactionCreatedData {
@@ -84,6 +99,7 @@ struct WalletTransaction {
   uint64_t timestamp;
   uint32_t blockHeight;
   Crypto::Hash hash;
+  boost::optional<Crypto::SecretKey> secretKey;
   int64_t totalAmount;
   uint64_t fee;
   uint64_t creationTime;
@@ -139,22 +155,35 @@ class IWallet {
 public:
   virtual ~IWallet() {}
 
-  virtual void initialize(const std::string& password) = 0;
-  virtual void initializeWithViewKey(const Crypto::SecretKey& viewSecretKey, const std::string& password) = 0;
-  virtual void load(std::istream& source, const std::string& password) = 0;
+  virtual void initialize(const std::string& path, const std::string& password) = 0;
+  virtual void initializeWithViewKey(const std::string& path, const std::string& password, const Crypto::SecretKey& viewSecretKey) = 0;
+  virtual void initializeWithViewKey(const std::string& path, const std::string& password, const Crypto::SecretKey& viewSecretKey, const uint64_t& creationTimestamp) = 0;
+  virtual void initializeWithViewKey(const std::string& path, const std::string& password, const Crypto::SecretKey& viewSecretKey, const uint32_t scanHeight) = 0;
+  virtual void load(const std::string& path, const std::string& password, std::string& extra) = 0;
+  virtual void load(const std::string& path, const std::string& password) = 0;
   virtual void shutdown() = 0;
 
   virtual void changePassword(const std::string& oldPassword, const std::string& newPassword) = 0;
-  virtual void save(std::ostream& destination, bool saveDetails = true, bool saveCache = true) = 0;
+  virtual void save(WalletSaveLevel saveLevel = WalletSaveLevel::SAVE_ALL, const std::string& extra = "") = 0;
+  virtual void reset(const uint64_t scanHeight) = 0;
+  virtual void exportWallet(const std::string& path, bool encrypt = true, WalletSaveLevel saveLevel = WalletSaveLevel::SAVE_ALL, const std::string& extra = "") = 0;
 
   virtual size_t getAddressCount() const = 0;
   virtual std::string getAddress(size_t index) const = 0;
+  virtual AccountPublicAddress getAccountPublicAddress(size_t index) const = 0;
   virtual KeyPair getAddressSpendKey(size_t index) const = 0;
   virtual KeyPair getAddressSpendKey(const std::string& address) const = 0;
   virtual KeyPair getViewKey() const = 0;
   virtual std::string createAddress() = 0;
-  virtual std::string createAddress(const Crypto::SecretKey& spendSecretKey) = 0;
-  virtual std::string createAddress(const Crypto::PublicKey& spendPublicKey) = 0;
+  virtual std::string createAddress(const Crypto::SecretKey& spendSecretKey, bool reset = true) = 0;
+  virtual std::string createAddress(const Crypto::PublicKey& spendPublicKey, bool reset = true) = 0;
+  virtual std::string createAddress(const Crypto::SecretKey& spendSecretKey, const uint64_t& creationTimestamp) = 0;
+  virtual std::string createAddress(const Crypto::PublicKey& spendPublicKey, const uint64_t& creationTimestamp) = 0;
+  virtual std::string createAddress(const Crypto::SecretKey& spendSecretKey, const uint32_t scanHeight) = 0;
+  virtual std::string createAddress(const Crypto::PublicKey& spendPublicKey, const uint32_t scanHeight) = 0;
+  virtual std::vector<std::string> createAddressList(const std::vector<Crypto::SecretKey>& spendSecretKeys, bool reset = true) = 0;
+  virtual std::vector<std::string> createAddressList(const std::vector<Crypto::SecretKey>& spendSecretKeys, const std::vector<uint64_t>& creationTimestamps) = 0;
+  virtual std::vector<std::string> createAddressList(const std::vector<Crypto::SecretKey>& spendSecretKeys, const std::vector<uint32_t>& scanHeights) = 0;
   virtual void deleteAddress(const std::string& address) = 0;
 
   virtual uint64_t getActualBalance() const = 0;
@@ -164,6 +193,9 @@ public:
 
   virtual size_t getTransactionCount() const = 0;
   virtual WalletTransaction getTransaction(size_t transactionIndex) const = 0;
+  virtual Crypto::SecretKey getTransactionSecretKey(size_t transactionIndex) const = 0;
+  virtual Crypto::SecretKey getTransactionSecretKey(Crypto::Hash& transactionHash) const = 0;
+  virtual bool getTransactionProof(const Crypto::Hash& transactionHash, const CryptoNote::AccountPublicAddress& destinationAddress, const Crypto::SecretKey& txKey, std::string& transactionProof) = 0;
   virtual size_t getTransactionTransferCount(size_t transactionIndex) const = 0;
   virtual WalletTransfer getTransactionTransfer(size_t transactionIndex, size_t transferIndex) const = 0;
 
@@ -174,8 +206,11 @@ public:
   virtual uint32_t getBlockCount() const  = 0;
   virtual std::vector<WalletTransactionWithTransfers> getUnconfirmedTransactions() const = 0;
   virtual std::vector<size_t> getDelayedTransactionIds() const = 0;
+  virtual std::vector<TransactionOutputInformation> getTransfers(size_t index, uint32_t flags) const = 0;
 
-  virtual size_t transfer(const TransactionParameters& sendingTransaction) = 0;
+  virtual std::string getReserveProof(const uint64_t &reserve, const std::string& address, const std::string &message) = 0;
+
+  virtual size_t transfer(const TransactionParameters& sendingTransaction, Crypto::SecretKey &txSecretKey) = 0;
 
   virtual size_t makeTransaction(const TransactionParameters& sendingTransaction) = 0;
   virtual void commitTransaction(size_t transactionId) = 0;
