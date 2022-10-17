@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, The TuringX Project
+// Copyright (c) 2021-2022, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -26,7 +26,14 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Parts of this project are originally copyright by:
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero project
+// Copyright (c) 2014-2018, The Forknote developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2022, The CROAT.community developers
+
 
 #pragma once
 
@@ -36,6 +43,7 @@
 #include <memory>
 #include <mutex>
 
+#include "CryptoNote.h"
 #include "IWalletLegacy.h"
 #include "INode.h"
 #include "Wallet/WalletErrors.h"
@@ -57,23 +65,28 @@ namespace CryptoNote {
 
 class SyncStarter;
 
-class WalletLegacy : 
-  public IWalletLegacy, 
-  IBlockchainSynchronizerObserver,  
+class WalletLegacy :
+  public IWalletLegacy,
+  IBlockchainSynchronizerObserver,
   ITransfersObserver {
 
 public:
-  WalletLegacy(const CryptoNote::Currency& currency, INode& node);
+  WalletLegacy(const CryptoNote::Currency& currency, INode& node, Logging::ILogger& loggerGroup);
   virtual ~WalletLegacy();
 
   virtual void addObserver(IWalletLegacyObserver* observer) override;
   virtual void removeObserver(IWalletLegacyObserver* observer) override;
 
   virtual void initAndGenerate(const std::string& password) override;
+  virtual void initAndGenerateDeterministic(const std::string& password) override;
   virtual void initAndLoad(std::istream& source, const std::string& password) override;
   virtual void initWithKeys(const AccountKeys& accountKeys, const std::string& password) override;
+  virtual void initWithKeys(const AccountKeys& accountKeys, const std::string& password, const uint32_t scanHeight) override;
   virtual void shutdown() override;
   virtual void reset() override;
+
+  virtual Crypto::SecretKey generateKey(const std::string& password, const Crypto::SecretKey& recovery_param = Crypto::SecretKey(),
+	  bool recover = false, bool two_random = false) override;
 
   virtual void save(std::ostream& destination, bool saveDetailed = true, bool saveCache = true) override;
 
@@ -83,20 +96,43 @@ public:
 
   virtual uint64_t actualBalance() override;
   virtual uint64_t pendingBalance() override;
+  virtual uint64_t dustBalance() override;
 
   virtual size_t getTransactionCount() override;
   virtual size_t getTransferCount() override;
+  virtual size_t getUnlockedOutputsCount() override;
 
   virtual TransactionId findTransactionByTransferId(TransferId transferId) override;
 
   virtual bool getTransaction(TransactionId transactionId, WalletLegacyTransaction& transaction) override;
   virtual bool getTransfer(TransferId transferId, WalletLegacyTransfer& transfer) override;
+  virtual std::vector<Payments> getTransactionsByPaymentIds(const std::vector<PaymentId>& paymentIds) const override;
+  virtual bool getTxProof(Crypto::Hash& txid, CryptoNote::AccountPublicAddress& address, Crypto::SecretKey& tx_key, std::string& sig_str) override;
+  virtual std::string getReserveProof(const uint64_t &reserve, const std::string &message) override;
+  virtual Crypto::SecretKey getTxKey(Crypto::Hash& txid) override;
+  virtual bool get_tx_key(Crypto::Hash& txid, Crypto::SecretKey& txSecretKey) override;
+  virtual void getAccountKeys(AccountKeys& keys) override;
+  virtual bool getSeed(std::string& electrum_words) override;
 
   virtual TransactionId sendTransaction(const WalletLegacyTransfer& transfer, uint64_t fee, const std::string& extra = "", uint64_t mixIn = 0, uint64_t unlockTimestamp = 0) override;
   virtual TransactionId sendTransaction(const std::vector<WalletLegacyTransfer>& transfers, uint64_t fee, const std::string& extra = "", uint64_t mixIn = 0, uint64_t unlockTimestamp = 0) override;
+  virtual TransactionId sendDustTransaction(const std::vector<WalletLegacyTransfer>& transfers, uint64_t fee, const std::string& extra = "", uint64_t mixIn = 0, uint64_t unlockTimestamp = 0) override;
+  virtual TransactionId sendFusionTransaction(const std::list<TransactionOutputInformation>& fusionInputs, uint64_t fee, const std::string& extra = "", uint64_t mixIn = 0, uint64_t unlockTimestamp = 0) override;
   virtual std::error_code cancelTransaction(size_t transactionId) override;
 
-  virtual void getAccountKeys(AccountKeys& keys) override;
+  virtual size_t estimateFusion(const uint64_t& threshold) override;
+  virtual std::list<TransactionOutputInformation> selectFusionTransfersToSend(uint64_t threshold, size_t minInputCount, size_t maxInputCount) override;
+
+  virtual bool getTransactionInformation(const Crypto::Hash& transactionHash, TransactionInformation& info,
+      uint64_t* amountIn = nullptr, uint64_t* amountOut = nullptr) const override;
+  virtual std::vector<TransactionOutputInformation> getTransactionOutputs(const Crypto::Hash& transactionHash, uint32_t flags = ITransfersContainer::IncludeDefault) const override;
+  virtual std::vector<TransactionOutputInformation> getTransactionInputs(const Crypto::Hash& transactionHash, uint32_t flags) const override;
+  virtual bool isFusionTransaction(const WalletLegacyTransaction& walletTx) const override;
+
+  virtual std::string sign_message(const std::string &data) override;
+  virtual bool verify_message(const std::string &data, const CryptoNote::AccountPublicAddress &address, const std::string &signature) override;
+
+  virtual bool isTrackingWallet() override;
 
 private:
 
@@ -121,6 +157,9 @@ private:
 
   std::vector<TransactionId> deleteOutdatedUnconfirmedTransactions();
 
+  uint64_t scanHeightToTimestamp(const uint32_t scanHeight);
+  CryptoNote::BlockDetails getBlock(const uint32_t blockHeight);
+
   enum WalletState
   {
     NOT_INITIALIZED = 0,
@@ -135,10 +174,12 @@ private:
   std::string m_password;
   const CryptoNote::Currency& m_currency;
   INode& m_node;
+  Logging::ILogger& m_loggerGroup;
   bool m_isStopping;
 
   std::atomic<uint64_t> m_lastNotifiedActualBalance;
   std::atomic<uint64_t> m_lastNotifiedPendingBalance;
+  std::atomic<uint64_t> m_lastNotifiedUnmixableBalance;
 
   BlockchainSynchronizer m_blockchainSync;
   TransfersSyncronizer m_transfersSync;

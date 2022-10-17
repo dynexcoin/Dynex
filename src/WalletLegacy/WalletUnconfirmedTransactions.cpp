@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, The TuringX Project
+// Copyright (c) 2021-2022, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -26,7 +26,14 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Parts of this project are originally copyright by:
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero project
+// Copyright (c) 2014-2018, The Forknote developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2022, The CROAT.community developers
+
 
 #include "WalletUnconfirmedTransactions.h"
 #include "WalletLegacy/WalletLegacySerialization.h"
@@ -77,7 +84,7 @@ void WalletUnconfirmedTransactions::erase(const Hash& hash) {
 }
 
 void WalletUnconfirmedTransactions::add(const Transaction& tx, TransactionId transactionId, 
-  uint64_t amount, const std::list<TransactionOutputInformation>& usedOutputs) {
+  uint64_t amount, const std::list<TransactionOutputInformation>& usedOutputs, Crypto::SecretKey& tx_key) {
 
   UnconfirmedTransferDetails& utd = m_unconfirmedTxs[getObjectHash(tx)];
 
@@ -85,6 +92,7 @@ void WalletUnconfirmedTransactions::add(const Transaction& tx, TransactionId tra
   utd.sentTime = time(nullptr);
   utd.tx = tx;
   utd.transactionId = transactionId;
+  utd.secretKey = tx_key;
 
   uint64_t outsAmount = 0;
   // process used outputs

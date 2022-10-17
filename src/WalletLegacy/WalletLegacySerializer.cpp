@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, The TuringX Project
+// Copyright (c) 2021-2022, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -26,7 +26,14 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Parts of this project are originally copyright by:
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero project
+// Copyright (c) 2014-2018, The Forknote developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2022, The CROAT.community developers
+
 
 #include "WalletLegacySerializer.h"
 
@@ -41,35 +48,26 @@
 #include "CryptoNoteCore/CryptoNoteSerialization.h"
 #include "WalletLegacy/WalletUserTransactionsCache.h"
 #include "Wallet/WalletErrors.h"
+#include "Wallet/WalletUtils.h"
 #include "WalletLegacy/KeysStorage.h"
 
 using namespace Common;
 
-namespace {
-
-bool verifyKeys(const Crypto::SecretKey& sec, const Crypto::PublicKey& expected_pub) {
-  Crypto::PublicKey pub;
-  bool r = Crypto::secret_key_to_public_key(sec, pub);
-  return r && expected_pub == pub;
-}
-
-void throwIfKeysMissmatch(const Crypto::SecretKey& sec, const Crypto::PublicKey& expected_pub) {
-  if (!verifyKeys(sec, expected_pub))
-    throw std::system_error(make_error_code(CryptoNote::error::WRONG_PASSWORD));
-}
-
-}
-
 namespace CryptoNote {
+
+uint32_t WALLET_LEGACY_SERIALIZATION_VERSION = 2;
 
 WalletLegacySerializer::WalletLegacySerializer(CryptoNote::AccountBase& account, WalletUserTransactionsCache& transactionsCache) :
   account(account),
   transactionsCache(transactionsCache),
-  walletSerializationVersion(1)
+  walletSerializationVersion(2)
 {
 }
 
 void WalletLegacySerializer::serialize(std::ostream& stream, const std::string& password, bool saveDetailed, const std::string& cache) {
+  // set serialization version global variable
+  CryptoNote::WALLET_LEGACY_SERIALIZATION_VERSION = walletSerializationVersion;
+
   std::stringstream plainArchive;
   StdOutputStream plainStream(plainArchive);
   CryptoNote::BinaryOutputStreamSerializer serializer(plainStream);
@@ -135,6 +133,8 @@ void WalletLegacySerializer::deserialize(std::istream& stream, const std::string
 
   uint32_t version;
   serializerEncrypted(version, "version");
+  // set serialization version global variable
+  CryptoNote::WALLET_LEGACY_SERIALIZATION_VERSION = version;
 
   Crypto::chacha8_iv iv;
   serializerEncrypted(iv, "iv");
@@ -185,7 +185,11 @@ void WalletLegacySerializer::decrypt(const std::string& cipher, std::string& pla
 void WalletLegacySerializer::loadKeys(CryptoNote::ISerializer& serializer) {
   CryptoNote::KeysStorage keys;
 
-  keys.serialize(serializer, "keys");
+  try {
+    keys.serialize(serializer, "keys");
+  } catch (const std::runtime_error&) {
+    throw std::system_error(make_error_code(CryptoNote::error::WRONG_PASSWORD));
+  }
 
   CryptoNote::AccountKeys acc;
   acc.address.spendPublicKey = keys.spendPublicKey;

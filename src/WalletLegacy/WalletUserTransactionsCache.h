@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, The TuringX Project
+// Copyright (c) 2021-2022, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -26,7 +26,14 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Parts of this project are originally copyright by:
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero project
+// Copyright (c) 2014-2018, The Forknote developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2022, The CROAT.community developers
+
 
 #pragma once
 
@@ -56,7 +63,7 @@ public:
   size_t getTransferCount() const;
 
   TransactionId addNewTransaction(uint64_t amount, uint64_t fee, const std::string& extra, const std::vector<WalletLegacyTransfer>& transfers, uint64_t unlockTime);
-  void updateTransaction(TransactionId transactionId, const CryptoNote::Transaction& tx, uint64_t amount, const std::list<TransactionOutputInformation>& usedOutputs);
+  void updateTransaction(TransactionId transactionId, const CryptoNote::Transaction& tx, uint64_t amount, const std::list<TransactionOutputInformation>& usedOutputs, Crypto::SecretKey& tx_key);
   void updateTransactionSendingState(TransactionId transactionId, std::error_code ec);
 
   std::shared_ptr<WalletLegacyEvent> onTransactionUpdated(const TransactionInformation& txInfo, int64_t txBalance);
@@ -66,6 +73,7 @@ public:
 
   bool getTransaction(TransactionId transactionId, WalletLegacyTransaction& transaction) const;
   WalletLegacyTransaction& getTransaction(TransactionId transactionId);
+  TransactionId findTransactionByHash(const Crypto::Hash& hash);
   bool getTransfer(TransferId transferId, WalletLegacyTransfer& transfer) const;
   WalletLegacyTransfer& getTransfer(TransferId transferId);
 
@@ -74,24 +82,33 @@ public:
 
   std::vector<TransactionId> deleteOutdatedTransactions();
 
+  std::vector<Payments> getTransactionsByPaymentIds(const std::vector<PaymentId>& paymentIds) const;
+
 private:
 
-  TransactionId findTransactionByHash(const Crypto::Hash& hash);
   TransactionId insertTransaction(WalletLegacyTransaction&& Transaction);
   TransferId insertTransfers(const std::vector<WalletLegacyTransfer>& transfers);
   void updateUnconfirmedTransactions();
 
   typedef std::vector<WalletLegacyTransfer> UserTransfers;
   typedef std::vector<WalletLegacyTransaction> UserTransactions;
+  using Offset = UserTransactions::size_type;
+  using UserPaymentIndex = std::unordered_map<PaymentId, std::vector<Offset>, boost::hash<PaymentId>>;
 
   void getGoodItems(UserTransactions& transactions, UserTransfers& transfers);
   void getGoodTransaction(TransactionId txId, size_t offset, UserTransactions& transactions, UserTransfers& transfers);
 
   void getTransfersByTx(TransactionId id, UserTransfers& transfers);
 
+  void rebuildPaymentsIndex();
+  void pushToPaymentsIndex(const PaymentId& paymentId, Offset distance);
+  void pushToPaymentsIndexInternal(Offset distance, const WalletLegacyTransaction& info, std::vector<uint8_t>& extra);
+  void popFromPaymentsIndex(const PaymentId& paymentId, Offset distance);
+
   UserTransactions m_transactions;
   UserTransfers m_transfers;
   WalletUnconfirmedTransactions m_unconfirmedTransactions;
+  UserPaymentIndex m_paymentsIndex;
 };
 
 } //namespace CryptoNote
