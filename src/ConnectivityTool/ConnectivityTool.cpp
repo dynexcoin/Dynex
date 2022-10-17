@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, The TuringX Project
+// Copyright (c) 2021-2022, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -26,7 +26,13 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Parts of this project are originally copyright by:
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero project
+// Copyright (c) 2014-2018, The Forknote developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2022, The CROAT.community developers
 
 #include <boost/optional.hpp>
 #include <boost/program_options.hpp>
@@ -58,7 +64,7 @@ using namespace CryptoNote;
 #ifndef ENDL
 #define ENDL std::endl
 #endif
-
+#ifdef ALLOW_DEBUG_COMMANDS
 namespace {
   const command_line::arg_descriptor<std::string, true> arg_ip           = {"ip", "set ip"};
   const command_line::arg_descriptor<uint16_t>      arg_port = { "port", "set port" };
@@ -69,8 +75,7 @@ namespace {
   const command_line::arg_descriptor<bool>        arg_generate_keys      = {"generate_keys_pair", "generate private and public keys pair"};
   const command_line::arg_descriptor<bool>        arg_request_stat_info  = {"request_stat_info", "request statistics information"};
   const command_line::arg_descriptor<bool>        arg_request_net_state  = {"request_net_state", "request network state information (peer list, connections count)"};
-  //dm:does not compile under MacOS: const command_line::arg_descriptor<bool>        arg_get_daemon_info    = {"rpc_get_daemon_info", "request daemon state info vie rpc (--rpc_port option should be set ).", "", true};
-  const command_line::arg_descriptor<bool>        arg_get_daemon_info    = {"rpc_get_daemon_info", "request daemon state info vie rpc (--rpc_port option should be set ).", true};
+  const command_line::arg_descriptor<bool>        arg_get_daemon_info    = {"rpc_get_daemon_info", "request daemon state info vie rpc (--rpc_port option should be set ).", false, true};
 }
 
 struct response_schema {
@@ -399,3 +404,4 @@ int main(int argc, char *argv[]) {
   std::cerr << desc_all << ENDL;
   return 1;
 }
+#endif
