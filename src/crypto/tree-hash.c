@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, The TuringX Project
+// Copyright (c) 2021-2022, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -26,12 +26,25 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Parts of this project are originally copyright by:
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero project
+// Copyright (c) 2014-2018, The Forknote developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2022, The CROAT.community developers
 
+
+#ifndef __FreeBSD__
 #include <alloca.h>
+#endif
 #include <assert.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
+#ifdef __FreeBSD__
+#define alloca(x)  __builtin_alloca(x)
+#endif
 
 #include "hash-ops.h"
 
@@ -44,24 +57,25 @@ void tree_hash(const char (*hashes)[HASH_SIZE], size_t count, char *root_hash) {
   } else {
     size_t i, j;
     size_t cnt = count - 1;
-    char (*ints)[HASH_SIZE];
     for (i = 1; i < 8 * sizeof(size_t); i <<= 1) {
       cnt |= cnt >> i;
     }
     cnt &= ~(cnt >> 1);
-    ints = alloca(cnt * HASH_SIZE);
+    char *ints = calloc(cnt, HASH_SIZE);
+    assert(ints);
     memcpy(ints, hashes, (2 * cnt - count) * HASH_SIZE);
     for (i = 2 * cnt - count, j = 2 * cnt - count; j < cnt; i += 2, ++j) {
-      cn_fast_hash(hashes[i], 2 * HASH_SIZE, ints[j]);
+      cn_fast_hash(hashes[i], 2 * HASH_SIZE, ints + j * HASH_SIZE);
     }
     assert(i == count);
     while (cnt > 2) {
       cnt >>= 1;
       for (i = 0, j = 0; j < cnt; i += 2, ++j) {
-        cn_fast_hash(ints[i], 2 * HASH_SIZE, ints[j]);
+        cn_fast_hash(ints + i * HASH_SIZE, 2 * HASH_SIZE, ints + j * HASH_SIZE);
       }
     }
-    cn_fast_hash(ints[0], 2 * HASH_SIZE, root_hash);
+    cn_fast_hash(ints, 2 * HASH_SIZE, root_hash);
+    free(ints);
   }
 }
 
