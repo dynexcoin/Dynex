@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, The TuringX Project
+// Copyright (c) 2021-2022, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -26,7 +26,14 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Parts of this project are originally copyright by:
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero project
+// Copyright (c) 2014-2018, The Forknote developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2022, The CROAT.community developers
+
 
 #include "MinerManager.h"
 
@@ -59,6 +66,21 @@ MinerEvent BlockchainUpdatedEvent() {
   MinerEvent event;
   event.type = MinerEventType::BLOCKCHAIN_UPDATED;
   return event;
+}
+
+void adjustMergeMiningTag(Block& blockTemplate) {
+  if (blockTemplate.majorVersion == BLOCK_MAJOR_VERSION_2 || blockTemplate.majorVersion >= BLOCK_MAJOR_VERSION_3) {
+    CryptoNote::TransactionExtraMergeMiningTag mmTag;
+    mmTag.depth = 0;
+    if (!CryptoNote::get_aux_block_header_hash(blockTemplate, mmTag.merkleRoot)) {
+      throw std::runtime_error("Couldn't get block header hash");
+    }
+
+    blockTemplate.parentBlock.baseTransaction.extra.clear();
+    if (!CryptoNote::appendMergeMiningTagToExtra(blockTemplate.parentBlock.baseTransaction.extra, mmTag)) {
+      throw std::runtime_error("Couldn't append merge mining tag");
+    }
+  }
 }
 
 }
@@ -257,6 +279,8 @@ BlockMiningParameters MinerManager::requestMiningParameters(System::Dispatcher& 
 
 
 void MinerManager::adjustBlockTemplate(CryptoNote::Block& blockTemplate) const {
+  adjustMergeMiningTag(blockTemplate);
+
   if (m_config.firstBlockTimestamp == 0) {
     //no need to fix timestamp
     return;
