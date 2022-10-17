@@ -16,11 +16,28 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
 
-#pragma once
+#include <string.h>
+#include "Context.h"
 
-#include <string>
+void
+makecontext(uctx *ucp, void (*func)(void), intptr_t arg)
+{
+  long *sp;
+  
+  memset(&ucp->uc_mcontext, 0, sizeof ucp->uc_mcontext);
+  ucp->uc_mcontext.mc_rdi = (long)arg;
+  sp = (long*)ucp->uc_stack.ss_sp+ucp->uc_stack.ss_size/sizeof(long);
+  sp -= 1;
+  sp = (void*)((uintptr_t)sp - (uintptr_t)sp%16);	/* 16-align for OS X */
+  *--sp = 0;	/* return address */
+  ucp->uc_mcontext.mc_rip = (long)func;
+  ucp->uc_mcontext.mc_rsp = (long)sp;
+}
 
-namespace System {
-std::string lastErrorMessage();
-std::string errorMessage(int);
+int
+swapcontext(uctx *oucp, const uctx *ucp)
+{
+  if(getcontext(oucp) == 0)
+    setcontext(ucp);
+  return 0;
 }
