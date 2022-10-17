@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, The TuringX Project
+// Copyright (c) 2021-2022, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -26,16 +26,57 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Parts of this project are originally copyright by:
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero project
+// Copyright (c) 2014-2018, The Forknote developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2022, The CROAT.community developers
+
 
 #pragma once
 
 #include <string>
 
+#include "IWallet.h"
 #include "CryptoNoteCore/Currency.h"
+#include "Wallet/WalletGreen.h"
 
 namespace CryptoNote {
 
+void throwIfKeysMissmatch(const Crypto::SecretKey& secretKey, const Crypto::PublicKey& expectedPublicKey, const std::string& message = "");
 bool validateAddress(const std::string& address, const CryptoNote::Currency& currency);
+
+std::ostream& operator<<(std::ostream& os, CryptoNote::WalletTransactionState state);
+std::ostream& operator<<(std::ostream& os, CryptoNote::WalletTransferType type);
+std::ostream& operator<<(std::ostream& os, CryptoNote::WalletGreen::WalletState state);
+std::ostream& operator<<(std::ostream& os, CryptoNote::WalletGreen::WalletTrackingMode mode);
+
+class TransferListFormatter {
+public:
+  explicit TransferListFormatter(const CryptoNote::Currency& currency, const WalletGreen::TransfersRange& range);
+
+  void print(std::ostream& os) const;
+
+  friend std::ostream& operator<<(std::ostream& os, const TransferListFormatter& formatter);
+
+private:
+  const CryptoNote::Currency& m_currency;
+  const WalletGreen::TransfersRange& m_range;
+};
+
+class WalletOrderListFormatter {
+public:
+  explicit WalletOrderListFormatter(const CryptoNote::Currency& currency, const std::vector<CryptoNote::WalletOrder>& walletOrderList);
+
+  void print(std::ostream& os) const;
+
+  friend std::ostream& operator<<(std::ostream& os, const WalletOrderListFormatter& formatter);
+
+private:
+  const CryptoNote::Currency& m_currency;
+  const std::vector<CryptoNote::WalletOrder>& m_walletOrderList;
+};
 
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, The TuringX Project
+// Copyright (c) 2021-2022, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -26,7 +26,14 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Parts of this project are originally copyright by:
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero project
+// Copyright (c) 2014-2018, The Forknote developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2022, The CROAT.community developers
+
 
 #pragma once
 
@@ -35,7 +42,6 @@
 
 #include "ITransfersContainer.h"
 #include "IWallet.h"
-#include "IWalletLegacy.h" //TODO: make common types for all of our APIs (such as PublicKey, KeyPair, etc)
 
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/ordered_index.hpp>
@@ -43,6 +49,9 @@
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/composite_key.hpp>
 #include <boost/multi_index/member.hpp>
+
+#include "Common/FileMappedVector.h"
+#include "crypto/chacha8.h"
 
 namespace CryptoNote {
 
@@ -56,6 +65,14 @@ struct WalletRecord {
   uint64_t actualBalance = 0;
   time_t creationTimestamp;
 };
+
+#pragma pack(push, 1)
+struct EncryptedWalletRecord {
+  Crypto::chacha8_iv iv;
+  // Secret key, public key and creation timestamp
+  uint8_t data[sizeof(Crypto::PublicKey) + sizeof(Crypto::SecretKey) + sizeof(uint64_t)];
+};
+#pragma pack(pop)
 
 struct RandomAccessIndex {};
 struct KeysIndex {};
@@ -111,6 +128,7 @@ typedef boost::multi_index_container <
   >
 > WalletTransactions;
 
+typedef Common::FileMappedVector<EncryptedWalletRecord> ContainerStorage;
 typedef std::pair<size_t, CryptoNote::WalletTransfer> TransactionTransferPair;
 typedef std::vector<TransactionTransferPair> WalletTransfers;
 typedef std::map<size_t, CryptoNote::Transaction> UncommitedTransactions;

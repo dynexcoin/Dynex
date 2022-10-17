@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, The TuringX Project
+// Copyright (c) 2021-2022, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -26,7 +26,14 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Parts of this project are originally copyright by:
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero project
+// Copyright (c) 2014-2018, The Forknote developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2022, The CROAT.community developers
+
 
 #include "LegacyKeysImporter.h"
 
@@ -43,6 +50,7 @@
 
 #include "WalletLegacy/WalletLegacySerializer.h"
 #include "WalletLegacy/WalletUserTransactionsCache.h"
+#include "Wallet/WalletUtils.h"
 #include "Wallet/WalletErrors.h"
 
 using namespace Crypto;
@@ -58,12 +66,6 @@ struct keys_file_data {
     s(account_data, "account_data");
   }
 };
-
-bool verify_keys(const SecretKey& sec, const PublicKey& expected_pub) {
-  PublicKey pub;
-  bool r = secret_key_to_public_key(sec, pub);
-  return r && expected_pub == pub;
-}
 
 void loadKeysFromFile(const std::string& filename, const std::string& password, CryptoNote::AccountBase& account) {
   keys_file_data keys_file_data;
@@ -84,15 +86,13 @@ void loadKeysFromFile(const std::string& filename, const std::string& password, 
   account_data.resize(keys_file_data.account_data.size());
   chacha8(keys_file_data.account_data.data(), keys_file_data.account_data.size(), key, keys_file_data.iv, &account_data[0]);
 
-  const CryptoNote::AccountKeys& keys = account.getAccountKeys();
-
-  if (CryptoNote::loadFromBinaryKeyValue(account, account_data) &&
-      verify_keys(keys.viewSecretKey, keys.address.viewPublicKey) &&
-      verify_keys(keys.spendSecretKey, keys.address.spendPublicKey)) {
-    return;
+  if (!CryptoNote::loadFromBinaryKeyValue(account, account_data)) {
+    throw std::system_error(make_error_code(CryptoNote::error::WRONG_PASSWORD));
   }
 
-  throw std::system_error(make_error_code(CryptoNote::error::WRONG_PASSWORD));
+  const CryptoNote::AccountKeys& keys = account.getAccountKeys();
+  CryptoNote::throwIfKeysMissmatch(keys.viewSecretKey, keys.address.viewPublicKey);
+  CryptoNote::throwIfKeysMissmatch(keys.spendSecretKey, keys.address.spendPublicKey);
 }
 
 }

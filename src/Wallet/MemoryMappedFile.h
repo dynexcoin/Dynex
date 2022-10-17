@@ -37,27 +37,43 @@
 
 #pragma once
 
-#include <condition_variable>
-#include <mutex>
-#include <stdint.h>
+#include <cstdint>
+#include <string>
+#include <system_error>
 
-namespace CryptoNote {
+namespace System {
 
-class WalletAsyncContextCounter
-{
+class MemoryMappedFile {
 public:
-  WalletAsyncContextCounter() : m_asyncContexts(0) {}
+  MemoryMappedFile();
+  ~MemoryMappedFile();
 
-  void addAsyncContext();
-  void delAsyncContext();
+  void create(const std::string& path, uint64_t size, bool overwrite, std::error_code& ec);
+  void create(const std::string& path, uint64_t size, bool overwrite);
+  void open(const std::string& path, std::error_code& ec);
+  void open(const std::string& path);
+  void close(std::error_code& ec);
+  void close();
 
-  //returns true if contexts are finished before timeout
-  void waitAsyncContextsFinish();
+  const std::string& path() const;
+  uint64_t size() const;
+  const uint8_t* data() const;
+  uint8_t* data();
+  bool isOpened() const;
+
+  void rename(const std::string& newPath, std::error_code& ec);
+  void rename(const std::string& newPath);
+
+  void flush(uint8_t* data, uint64_t size, std::error_code& ec);
+  void flush(uint8_t* data, uint64_t size);
+
+  void swap(MemoryMappedFile& other);
 
 private:
-  uint32_t m_asyncContexts;
-  std::condition_variable m_cv;
-  std::mutex m_mutex;
+  int m_file;
+  std::string m_path;
+  uint64_t m_size;
+  uint8_t* m_data;
 };
 
-} //namespace CryptoNote
+}
