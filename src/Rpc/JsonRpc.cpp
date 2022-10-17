@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, The TuringX Project
+// Copyright (c) 2021-2022, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -26,10 +26,18 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Parts of this project are originally copyright by:
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero project
+// Copyright (c) 2014-2018, The Forknote developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2022, The CROAT.community developers
+
 
 #include "JsonRpc.h"
-#include "Rpc/HttpClient.h"
+#include "HttpClient.h"
+#include "CryptoNoteCore/TransactionPool.h"
 
 namespace CryptoNote {
 
@@ -51,10 +59,16 @@ JsonRpcError::JsonRpcError(int c) : code(c) {
 JsonRpcError::JsonRpcError(int c, const std::string& msg) : code(c), message(msg) {
 }
 
-void invokeJsonRpcCommand(HttpClient& httpClient, JsonRpcRequest& jsReq, JsonRpcResponse& jsRes) {
+void invokeJsonRpcCommand(HttpClient& httpClient, JsonRpcRequest& jsReq, JsonRpcResponse& jsRes, const std::string& user, const std::string& password) {
+//void invokeJsonRpcCommand(HttpClient& httpClient, JsonRpcRequest& jsReq, JsonRpcResponse& jsRes) {
   HttpRequest httpReq;
   HttpResponse httpRes;
-
+/*
+  if (!user.empty() || !password.empty()) {
+    httpReq.addHeader("Authorization", "Basic " + Tools::Base64::encode(user + ":" + password));
+  }
+*/
+  httpReq.addHeader("Content-Type", "application/json");
   httpReq.setUrl("/json_rpc");
   httpReq.setBody(jsReq.getBody());
 

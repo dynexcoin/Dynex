@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, The TuringX Project
+// Copyright (c) 2021-2022, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -26,7 +26,14 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Parts of this project are originally copyright by:
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero project
+// Copyright (c) 2014-2018, The Forknote developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2022, The CROAT.community developers
+
 
 #pragma once 
 
@@ -51,10 +58,11 @@ public:
 
   HttpServer(System::Dispatcher& dispatcher, Logging::ILogger& log);
 
-  void start(const std::string& address, uint16_t port);
+  void start(const std::string& address, uint16_t port, const std::string& user = "", const std::string& password = "");
   void stop();
 
   virtual void processRequest(const HttpRequest& request, HttpResponse& response) = 0;
+  virtual size_t get_connections_count() const;
 
 protected:
 
@@ -64,11 +72,13 @@ private:
 
   void acceptLoop();
   void connectionHandler(System::TcpConnection&& conn);
+  bool authenticate(const HttpRequest& request) const;
 
   System::ContextGroup workingContextGroup;
   Logging::LoggerRef logger;
   System::TcpListener m_listener;
   std::unordered_set<System::TcpConnection*> m_connections;
+  std::string m_credentials;
 };
 
 }
