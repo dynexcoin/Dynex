@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, The TuringX Project
+// Copyright (c) 2021-2022, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -26,13 +26,21 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Parts of this project are originally copyright by:
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero project
+// Copyright (c) 2014-2018, The Forknote developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2022, The CROAT.community developers
+
 
 #pragma once
 
+#include <boost/functional/hash.hpp>
+#include <map>
 #include <string>
 #include <unordered_map>
-#include <map>
 
 #include "crypto/hash.h"
 #include "CryptoNoteBasic.h"
@@ -41,13 +49,18 @@ namespace CryptoNote {
 
 class ISerializer;
 
+inline size_t paymentIdHash(const Crypto::Hash& paymentId) {
+  return boost::hash_range(std::begin(paymentId.data), std::end(paymentId.data));
+}
+
 class PaymentIdIndex {
 public:
-  PaymentIdIndex() = default;
+  PaymentIdIndex(bool enabled);
 
   bool add(const Transaction& transaction);
   bool remove(const Transaction& transaction);
   bool find(const Crypto::Hash& paymentId, std::vector<Crypto::Hash>& transactionHashes);
+  std::vector<Crypto::Hash> find(const Crypto::Hash& paymentId);
   void clear();
 
   void serialize(ISerializer& s);
@@ -57,12 +70,13 @@ public:
     archive & index;
   }
 private:
-  std::unordered_multimap<Crypto::Hash, Crypto::Hash> index;
+  std::unordered_multimap<Crypto::Hash, Crypto::Hash, std::function<decltype(paymentIdHash)>> index;
+  bool enabled = false;
 };
 
 class TimestampBlocksIndex {
 public:
-  TimestampBlocksIndex() = default;
+  TimestampBlocksIndex(bool enabled);
 
   bool add(uint64_t timestamp, const Crypto::Hash& hash);
   bool remove(uint64_t timestamp, const Crypto::Hash& hash);
@@ -77,11 +91,12 @@ public:
   }
 private:
   std::multimap<uint64_t, Crypto::Hash> index;
+  bool enabled = false;
 };
 
 class TimestampTransactionsIndex {
 public:
-  TimestampTransactionsIndex() = default;
+  TimestampTransactionsIndex(bool enabled);
 
   bool add(uint64_t timestamp, const Crypto::Hash& hash);
   bool remove(uint64_t timestamp, const Crypto::Hash& hash);
@@ -96,11 +111,12 @@ public:
   }
 private:
   std::multimap<uint64_t, Crypto::Hash> index;
+  bool enabled = false;
 };
 
 class GeneratedTransactionsIndex {
 public:
-  GeneratedTransactionsIndex();
+  GeneratedTransactionsIndex(bool enabled);
 
   bool add(const Block& block);
   bool remove(const Block& block);
@@ -117,11 +133,12 @@ public:
 private:
   std::unordered_map<uint32_t, uint64_t> index;
   uint64_t lastGeneratedTxNumber;
+  bool enabled = false;
 };
 
 class OrphanBlocksIndex {
 public:
-  OrphanBlocksIndex() = default;
+  OrphanBlocksIndex(bool enabled);
 
   bool add(const Block& block);
   bool remove(const Block& block);
@@ -129,6 +146,7 @@ public:
   void clear();
 private:
   std::unordered_multimap<uint32_t, Crypto::Hash> index;
+  bool enabled = false;
 };
 
 }

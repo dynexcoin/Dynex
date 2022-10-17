@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, The TuringX Project
+// Copyright (c) 2021-2022, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -26,7 +26,14 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Parts of this project are originally copyright by:
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero project
+// Copyright (c) 2014-2018, The Forknote developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2022, The CROAT.community developers
+
 
 #include "CryptoNoteFormatUtils.h"
 
@@ -134,6 +141,7 @@ bool constructTransaction(
   std::vector<uint8_t> extra,
   Transaction& tx,
   uint64_t unlock_time,
+  Crypto::SecretKey &tx_key,
   Logging::ILogger& log) {
   LoggerRef logger(log, "construct_tx");
 
@@ -147,6 +155,8 @@ bool constructTransaction(
   tx.extra = extra;
   KeyPair txkey = generateKeyPair();
   addTransactionPublicKeyToExtra(tx.extra, txkey.publicKey);
+
+  tx_key = txkey.secretKey;
 
   struct input_generation_context_data {
     KeyPair in_ephemeral;
@@ -302,8 +312,10 @@ bool check_inputs_types_supported(const TransactionPrefix& tx) {
 }
 
 bool check_outs_valid(const TransactionPrefix& tx, std::string* error) {
+  std::unordered_set<PublicKey> keys_seen;
   for (const TransactionOutput& out : tx.outputs) {
     if (out.target.type() == typeid(KeyOutput)) {
+ 
       if (out.amount == 0) {
         if (error) {
           *error = "Zero amount ouput";
@@ -317,6 +329,14 @@ bool check_outs_valid(const TransactionPrefix& tx, std::string* error) {
         }
         return false;
       }
+
+      if (keys_seen.find(boost::get<KeyOutput>(out.target).key) != keys_seen.end()) {
+        if (error) {
+          *error = "The same output target is present more than once";
+        }
+        return false;
+      }
+      keys_seen.insert(boost::get<KeyOutput>(out.target).key);
     } else if (out.target.type() == typeid(MultisignatureOutput)) {
       const MultisignatureOutput& multisignatureOutput = ::boost::get<MultisignatureOutput>(out.target);
       if (multisignatureOutput.requiredSignatureCount > multisignatureOutput.keys.size()) {
@@ -332,6 +352,15 @@ bool check_outs_valid(const TransactionPrefix& tx, std::string* error) {
           }
           return false;
         }
+
+        if (keys_seen.find(key) != keys_seen.end()) {
+          if (error) {
+            *error = "The same multisignature output target is present more than once";
+          }
+          return false;
+        }
+		keys_seen.insert(key);
+
       }
     } else {
       if (error) {
@@ -467,10 +496,25 @@ bool get_block_hashing_blob(const Block& b, BinaryArray& ba) {
   return true;
 }
 
+bool get_parent_block_hashing_blob(const Block& b, BinaryArray& blob) {
+  auto serializer = makeParentBlockSerializer(b, true, true);
+  return toBinaryArray(serializer, blob);
+}
+
 bool get_block_hash(const Block& b, Hash& res) {
   BinaryArray ba;
   if (!get_block_hashing_blob(b, ba)) {
     return false;
+  }
+
+  // The header of block version 1 differs from headers of blocks starting from v.2
+  if (BLOCK_MAJOR_VERSION_2 == b.majorVersion || BLOCK_MAJOR_VERSION_3 == b.majorVersion) {
+    BinaryArray parent_blob;
+    auto serializer = makeParentBlockSerializer(b, true, false);
+    if (!toBinaryArray(serializer, parent_blob))
+      return false;
+
+    ba.insert(ba.end(), parent_blob.begin(), parent_blob.end());
   }
 
   return getObjectHash(ba, res);
@@ -493,10 +537,17 @@ bool get_aux_block_header_hash(const Block& b, Hash& res) {
 
 bool get_block_longhash(cn_context &context, const Block& b, Hash& res) {
   BinaryArray bd;
-  if (!get_block_hashing_blob(b, bd)) {
+  if (b.majorVersion == BLOCK_MAJOR_VERSION_1 || b.majorVersion >= BLOCK_MAJOR_VERSION_4) {
+    if (!get_block_hashing_blob(b, bd)) {
+      return false;
+    }
+  } else if (b.majorVersion == BLOCK_MAJOR_VERSION_2 || b.majorVersion == BLOCK_MAJOR_VERSION_3) {
+    if (!get_parent_block_hashing_blob(b, bd)) {
+      return false;
+    }
+  } else {
     return false;
   }
-
   cn_slow_hash(context, bd.data(), bd.size(), res);
   return true;
 }
@@ -543,7 +594,7 @@ Hash get_tx_tree_hash(const Block& b) {
 bool is_valid_decomposed_amount(uint64_t amount) {
   auto it = std::lower_bound(Currency::PRETTY_AMOUNTS.begin(), Currency::PRETTY_AMOUNTS.end(), amount);
   if (it == Currency::PRETTY_AMOUNTS.end() || amount != *it) {
-    return false;
+	  return false;
   }
   return true;
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, The TuringX Project
+// Copyright (c) 2021-2022, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -26,7 +26,14 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Parts of this project are originally copyright by:
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero project
+// Copyright (c) 2014-2018, The Forknote developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2022, The CROAT.community developers
+
 
 #include "TransactionExtra.h"
 
@@ -91,6 +98,13 @@ bool parseTransactionExtra(const std::vector<uint8_t> &transactionExtra, std::ve
         transactionExtraFields.push_back(extraNonce);
         break;
       }
+
+      case TX_EXTRA_MERGE_MINING_TAG: {
+        TransactionExtraMergeMiningTag mmTag;
+        ar(mmTag, "mm_tag");
+        transactionExtraFields.push_back(mmTag);
+        break;
+      }
       }
     }
   } catch (std::exception &) {
@@ -120,6 +134,10 @@ struct ExtraSerializerVisitor : public boost::static_visitor<bool> {
 
   bool operator()(const TransactionExtraNonce& t) {
     return addExtraNonceToTransactionExtra(extra, t.nonce);
+  }
+
+  bool operator()(const TransactionExtraMergeMiningTag& t) {
+    return appendMergeMiningTagToExtra(extra, t);
   }
 };
 
@@ -170,6 +188,24 @@ bool addExtraNonceToTransactionExtra(std::vector<uint8_t>& tx_extra, const Binar
   ++start_pos;
   memcpy(&tx_extra[start_pos], extra_nonce.data(), extra_nonce.size());
   return true;
+}
+
+bool appendMergeMiningTagToExtra(std::vector<uint8_t>& tx_extra, const TransactionExtraMergeMiningTag& mm_tag) {
+  BinaryArray blob;
+  if (!toBinaryArray(mm_tag, blob)) {
+    return false;
+  }
+
+  tx_extra.push_back(TX_EXTRA_MERGE_MINING_TAG);
+  std::copy(reinterpret_cast<const uint8_t*>(blob.data()), reinterpret_cast<const uint8_t*>(blob.data() + blob.size()), std::back_inserter(tx_extra));
+  return true;
+}
+
+bool getMergeMiningTagFromExtra(const std::vector<uint8_t>& tx_extra, TransactionExtraMergeMiningTag& mm_tag) {
+  std::vector<TransactionExtraField> tx_extra_fields;
+  parseTransactionExtra(tx_extra, tx_extra_fields);
+
+  return findTransactionExtraFieldByType(tx_extra_fields, mm_tag);
 }
 
 void setPaymentIdToTransactionExtraNonce(std::vector<uint8_t>& extra_nonce, const Hash& payment_id) {

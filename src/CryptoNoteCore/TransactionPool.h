@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, The TuringX Project
+// Copyright (c) 2021-2022, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -26,7 +26,14 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Parts of this project are originally copyright by:
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero project
+// Copyright (c) 2014-2018, The Forknote developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2022, The CROAT.community developers
+
 
 #pragma once
 
@@ -55,6 +62,7 @@
 #include "CryptoNoteCore/ITxPoolObserver.h"
 #include "CryptoNoteCore/VerificationContext.h"
 #include "CryptoNoteCore/BlockchainIndices.h"
+#include "CryptoNoteCore/ICore.h"
 
 #include <Logging/LoggerRef.h>
 
@@ -97,10 +105,12 @@ namespace CryptoNote {
   class tx_memory_pool: boost::noncopyable {
   public:
     tx_memory_pool(
-      const CryptoNote::Currency& currency, 
+      const CryptoNote::Currency& currency,
       CryptoNote::ITransactionValidator& validator,
+      CryptoNote::ICore& core,
       CryptoNote::ITimeProvider& timeProvider,
-      Logging::ILogger& log);
+      Logging::ILogger& log,
+      bool blockchainIndexesEnabled);
 
     bool addObserver(ITxPoolObserver* observer);
     bool removeObserver(ITxPoolObserver* observer);
@@ -128,6 +138,7 @@ namespace CryptoNote {
     void get_difference(const std::vector<Crypto::Hash>& known_tx_ids, std::vector<Crypto::Hash>& new_tx_ids, std::vector<Crypto::Hash>& deleted_tx_ids) const;
     size_t get_transactions_count() const;
     std::string print_pool(bool short_format) const;
+	
     void on_idle();
 
     bool getTransactionIdsByPaymentId(const Crypto::Hash& paymentId, std::vector<Crypto::Hash>& transactionIds);
@@ -163,9 +174,8 @@ namespace CryptoNote {
       time_t receiveTime;
     };
 
-    void getMemoryPool(std::list<CryptoNote::tx_memory_pool::TransactionDetails> txs) const;
-  std::list<CryptoNote::tx_memory_pool::TransactionDetails> getMemoryPool() const;
-
+	void getMemoryPool(std::list<CryptoNote::tx_memory_pool::TransactionDetails> txs) const;
+	std::list<CryptoNote::tx_memory_pool::TransactionDetails> getMemoryPool() const;
 
   private:
 
@@ -215,6 +225,7 @@ namespace CryptoNote {
 
     Tools::ObserverManager<ITxPoolObserver> m_observerManager;
     const CryptoNote::Currency& m_currency;
+	CryptoNote::ICore& m_core;
     OnceInTimeInterval m_txCheckInterval;
     mutable std::recursive_mutex m_transactions_lock;
     key_images_container m_spent_key_images;
