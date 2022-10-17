@@ -1,38 +1,27 @@
-// Copyright (c) 2021-2022, The TuringX Project
-// 
-// All rights reserved.
-// 
-// Redistribution and use in source and binary forms, with or without modification, are
-// permitted provided that the following conditions are met:
-// 
-// 1. Redistributions of source code must retain the above copyright notice, this list of
-//    conditions and the following disclaimer.
-// 
-// 2. Redistributions in binary form must reproduce the above copyright notice, this list
-//    of conditions and the following disclaimer in the documentation and/or other
-//    materials provided with the distribution.
-// 
-// 3. Neither the name of the copyright holder nor the names of its contributors may be
-//    used to endorse or promote products derived from this software without specific
-//    prior written permission.
-// 
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
-// EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-// MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-// THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
-// STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
-// THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2017-2019, The CROAT.community developers
+//
+// This file is part of Bytecoin.
+//
+// Bytecoin is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Bytecoin is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
 
+#include <stdint.h>
+#include <stdexcept> 
 #include "Dispatcher.h"
 #include <pthread.h>
 #include <cassert>
-#include <cstdint> //dm
-#include <stdexcept> //dm
+
 #include <sys/epoll.h>
 #include <sys/eventfd.h>
 #include <sys/timerfd.h>
@@ -70,7 +59,8 @@ private:
 
 static_assert(Dispatcher::SIZEOF_PTHREAD_MUTEX_T == sizeof(pthread_mutex_t), "invalid pthread mutex size");
 
-const size_t STACK_SIZE = 64 * 1024;
+//const size_t STACK_SIZE = 64 * 1024;
+const size_t STACK_SIZE = 512 * 1024;
 
 };
 
@@ -104,6 +94,7 @@ Dispatcher::Dispatcher() {
           mainContext.group = &contextGroup;
           mainContext.groupPrev = nullptr;
           mainContext.groupNext = nullptr;
+          mainContext.inExecutionQueue = false;
           contextGroup.firstContext = nullptr;
           contextGroup.lastContext = nullptr;
           contextGroup.firstWaiter = nullptr;
@@ -184,6 +175,8 @@ void Dispatcher::dispatch() {
     if (firstResumingContext != nullptr) {
       context = firstResumingContext;
       firstResumingContext = context->next;
+      //assert(context->inExecutionQueue);
+      context->inExecutionQueue = false;
       break;
     }
 
@@ -266,7 +259,10 @@ bool Dispatcher::interrupted() {
 
 void Dispatcher::pushContext(NativeContext* context) {
   assert(context != nullptr);
+  if (context->inExecutionQueue)
+    return;
   context->next = nullptr;
+  context->inExecutionQueue = true;
   if(firstResumingContext != nullptr) {
     assert(lastResumingContext != nullptr);
     lastResumingContext->next = context;
@@ -337,13 +333,23 @@ void Dispatcher::yield() {
         }
 
         if ((events[i].events & EPOLLOUT) != 0) {
-          contextPair->writeContext->context->interruptProcedure = nullptr;
+          if(contextPair->writeContext != nullptr) {
+            if(contextPair->writeContext->context != nullptr) {
+              contextPair->writeContext->context->interruptProcedure = nullptr;
+            }
+          }
           pushContext(contextPair->writeContext->context);
           contextPair->writeContext->events = events[i].events;
         } else if ((events[i].events & EPOLLIN) != 0) {
-          contextPair->readContext->context->interruptProcedure = nullptr;
+          if(contextPair->readContext != nullptr) {
+            if(contextPair->readContext->context != nullptr) {
+              contextPair->readContext->context->interruptProcedure = nullptr;
+            }
+          }
           pushContext(contextPair->readContext->context);
           contextPair->readContext->events = events[i].events;
+        } else if ((events[i].events & (EPOLLERR | EPOLLHUP)) != 0) {
+          throw std::runtime_error("Dispatcher::dispatch, events & (EPOLLERR | EPOLLHUP) != 0");
         } else {
           continue;
         }
@@ -429,6 +435,7 @@ void Dispatcher::contextProcedure(void* ucontext) {
   context.ucontext = ucontext;
   context.interrupted = false;
   context.next = nullptr;
+  context.inExecutionQueue = false;
   firstReusableContext = &context;
   ucontext_t* oldContext = static_cast<ucontext_t*>(context.ucontext);
   if (swapcontext(oldContext, static_cast<ucontext_t*>(currentContext->ucontext)) == -1) {
