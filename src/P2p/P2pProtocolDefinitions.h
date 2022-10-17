@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, The TuringX Project
+// Copyright (c) 2021-2022, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -26,7 +26,14 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Parts of this project are originally copyright by:
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero project
+// Copyright (c) 2014-2018, The Forknote developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2022, The CROAT.community developers
+
 
 #pragma once
 
@@ -75,6 +82,7 @@ namespace CryptoNote
   {
     uuid network_id;
     uint8_t version;
+    std::string node_version;    // By CROAT
     uint64_t local_time;
     uint32_t my_port;
     PeerIdType peer_id;
@@ -85,6 +93,7 @@ namespace CryptoNote
         version = 0;
       }
       KV_MEMBER(version)
+      KV_MEMBER(node_version)       // BY CROAT
       KV_MEMBER(peer_id)
       KV_MEMBER(local_time)
       KV_MEMBER(my_port)
@@ -244,6 +253,7 @@ namespace CryptoNote
     {
       std::string version;
       std::string os_version;
+      std::string node_version;   // BY CROAT
       uint64_t connections_count;
       uint64_t incoming_connections_count;
       core_stat_info payload_info;
@@ -251,6 +261,7 @@ namespace CryptoNote
       void serialize(ISerializer& s) {
         KV_MEMBER(version)
         KV_MEMBER(os_version)
+        KV_MEMBER(node_version)        // By CROAT
         KV_MEMBER(connections_count)
         KV_MEMBER(incoming_connections_count)
         KV_MEMBER(payload_info)

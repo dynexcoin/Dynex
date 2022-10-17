@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, The TuringX Project
+// Copyright (c) 2021-2022, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -26,7 +26,14 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-// Parts of this file are originally copyright (c) 2012-2016 The Cryptonote developers
+// Parts of this project are originally copyright by:
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero project
+// Copyright (c) 2014-2018, The Forknote developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2022, The CROAT.community developers
+
 
 #pragma once
 
@@ -153,10 +160,14 @@ namespace CryptoNote
     // debug functions
     bool log_peerlist();
     bool log_connections();
+    bool log_banlist();
     virtual uint64_t get_connections_count() override;
     size_t get_outgoing_connections_count();
 
     CryptoNote::PeerlistManager& getPeerlistManager() { return m_peerlist; }
+    bool ban_host(const uint32_t address_ip, time_t seconds = P2P_IP_BLOCKTIME) override;
+    bool unban_host(const uint32_t address_ip) override;
+    std::map<uint32_t, time_t> get_blocked_hosts() override { return m_blocked_hosts; };
 
   private:
 
@@ -175,7 +186,9 @@ namespace CryptoNote
     bool init_config();
     bool make_default_config();
     bool store_config();
+#ifdef ALLOW_DEBUG_COMMANDS
     bool check_trust(const proof_of_trust& tr);
+#endif
     void initUpnp();
 
     bool handshake(CryptoNote::LevinProtocol& proto, P2pConnectionContext& context, bool just_take_peerlist = false);
@@ -189,11 +202,16 @@ namespace CryptoNote
     //----------------- i_p2p_endpoint -------------------------------------------------------------
     virtual void relay_notify_to_all(int command, const BinaryArray& data_buff, const net_connection_id* excludeConnection) override;
     virtual bool invoke_notify_to_peer(int command, const BinaryArray& req_buff, const CryptoNoteConnectionContext& context) override;
+    virtual void drop_connection(CryptoNoteConnectionContext& context, bool add_fail) override;
     virtual void for_each_connection(std::function<void(CryptoNote::CryptoNoteConnectionContext&, PeerIdType)> f) override;
-    virtual void externalRelayNotifyToAll(int command, const BinaryArray& data_buff) override;
+    virtual void externalRelayNotifyToAll(int command, const BinaryArray& data_buff, const net_connection_id* excludeConnection) override;
 
     //-----------------------------------------------------------------------------------------------
-    bool handle_command_line(const boost::program_options::variables_map& vm);
+    bool add_host_fail(const uint32_t address_ip);
+	bool block_host(const uint32_t address_ip, time_t seconds = P2P_IP_BLOCKTIME);
+	bool unblock_host(const uint32_t address_ip);
+	bool handle_command_line(const boost::program_options::variables_map& vm);
+	bool is_remote_host_allowed(const uint32_t address_ip);
     bool handleConfig(const NetNodeConfig& config);
     bool append_net_address(std::vector<NetworkAddress>& nodes, const std::string& addr);
     bool idle_worker();
@@ -282,5 +300,9 @@ namespace CryptoNote
     std::list<PeerlistEntry> m_command_line_peers;
     uint64_t m_peer_livetime;
     boost::uuids::uuid m_network_id;
+    std::map<uint32_t, time_t> m_blocked_hosts;
+    std::map<uint32_t, uint64_t> m_host_fails_score;
+
+    mutable std::mutex mutex;
   };
 }
