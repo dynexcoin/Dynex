@@ -2505,6 +2505,7 @@ uint64_t WalletGreen::selectTransfers(
   // build up transactions here:
   while (foundMoney < neededMoney && !indexGenerator.empty()) {
     // new: find closest amount:
+    /*
     int ideal_index = -1;
     uint64_t max_amout = 0;
     //std::cout << "*** DEBUG: need " << (neededMoney-foundMoney) << " of total " << neededMoney << std::endl;
@@ -2527,7 +2528,8 @@ uint64_t WalletGreen::selectTransfers(
         //std::cout << "     *** amount " << out.second.amount << " added." << std::endl;
     }
     // ---
-    //auto& out = walletOuts[indexGenerator()];
+    */
+    auto& out = walletOuts[indexGenerator()];
     foundMoney += out.second.amount;
     selectedTransfers.emplace_back(OutputToTransfer{ std::move(out.second), std::move(out.first) });
   }
