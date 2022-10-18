@@ -490,6 +490,7 @@ uint64_t WalletTransactionSender::selectTransfersToSend(uint64_t neededMoney, bo
 	    selectOneUnmixable = false;
     } else {
       /// find idx with largest first:
+      /*
       int found_idx = -1;
       uint64_t amount_remaining = neededMoney - foundMoney;
       uint64_t largest_amount = 0;
@@ -509,7 +510,8 @@ uint64_t WalletTransactionSender::selectTransfersToSend(uint64_t neededMoney, bo
         idx = !unusedTransfers.empty() ? popRandomValue(randomGenerator, unusedTransfers) : popRandomValue(randomGenerator, unusedDust);
       }
       /////////////////////////////
-      //idx = !unusedTransfers.empty() ? popRandomValue(randomGenerator, unusedTransfers) : popRandomValue(randomGenerator, unusedDust);
+      */
+      idx = !unusedTransfers.empty() ? popRandomValue(randomGenerator, unusedTransfers) : popRandomValue(randomGenerator, unusedDust);
     }
     selectedTransfers.push_back(outputs[idx]);
     foundMoney += outputs[idx].amount;
