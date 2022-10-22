@@ -451,8 +451,8 @@ T popIdxValue(T1& idx, std::vector<T>& vec) {
 uint64_t WalletTransactionSender::selectTransfersToSend(uint64_t neededMoney, bool addDust, uint64_t dust, std::list<TransactionOutputInformation>& selectedTransfers) {
 
   ///// force dust => 0
-  addDust = false;
-  dust = 0;
+  //addDust = false;
+  //dust = 0;
   //////////////////////
 
   std::vector<size_t> unusedTransfers;
