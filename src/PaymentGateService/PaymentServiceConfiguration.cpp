@@ -92,6 +92,7 @@ void Configuration::initOptions(boost::program_options::options_description& des
 }
 
 void Configuration::init(const boost::program_options::variables_map& options) {
+
   if (options.count("daemon") != 0) {
     daemonize = true;
   }
@@ -144,10 +145,12 @@ void Configuration::init(const boost::program_options::variables_map& options) {
     m_rpcPassword = options["rpc-password"].as<std::string>();
   }
 
-  if (options.count("container-file") != 0) {
-    containerFile = options["container-file"].as<std::string>();
-  } else {
-    throw ConfigurationError("Wallet file not set");
+  if (containerFile.empty()) {
+    if (options.count("container-file") != 0) {
+     containerFile = options["container-file"].as<std::string>();
+    } else {
+      throw ConfigurationError("Wallet file not set");
+    }
   }
 
   if (options.count("container-password") != 0) {
