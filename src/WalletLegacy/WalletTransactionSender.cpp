@@ -451,7 +451,7 @@ T popIdxValue(T1& idx, std::vector<T>& vec) {
 uint64_t WalletTransactionSender::selectTransfersToSend(uint64_t neededMoney, bool addDust, uint64_t dust, std::list<TransactionOutputInformation>& selectedTransfers) {
 
   ///// force dust => 0
-  //addDust = false;
+  //addDust = true;
   //dust = 0;
   //////////////////////
 
@@ -479,6 +479,13 @@ uint64_t WalletTransactionSender::selectTransfersToSend(uint64_t neededMoney, bo
 
   std::default_random_engine randomGenerator(Crypto::rand<std::default_random_engine::result_type>());
   bool selectOneUnmixable = addDust && !unusedUnmixable.empty();
+
+  //// FIX: only unusable dust available:
+  if (unusedTransfers.empty() && unusedDust.empty() && !unusedUnmixable.empty()) {
+      selectOneUnmixable = true;
+  }
+  // ---
+
   uint64_t foundMoney = 0;
 
   selectOneUnmixable = false;
@@ -489,13 +496,15 @@ uint64_t WalletTransactionSender::selectTransfersToSend(uint64_t neededMoney, bo
       idx = popRandomValue(randomGenerator, unusedUnmixable);
 	    selectOneUnmixable = false;
     } else {
-      /// find idx with largest first:
       /*
+      /// find idx with largest first:
+      
       int found_idx = -1;
       uint64_t amount_remaining = neededMoney - foundMoney;
       uint64_t largest_amount = 0;
       for (size_t i = 0; i < unusedTransfers.size(); i++) {
           const auto& out = outputs[unusedTransfers[i]];
+std::cout << "*** DEBUG: out has " << out.amount << " looking for " << amount_remaining << " largest_amount=" << largest_amount << std::endl;
           if (out.amount <= amount_remaining && out.amount > largest_amount) {
                 largest_amount = out.amount;
                 found_idx = unusedTransfers[i];
@@ -511,7 +520,15 @@ uint64_t WalletTransactionSender::selectTransfersToSend(uint64_t neededMoney, bo
       }
       /////////////////////////////
       */
-      idx = !unusedTransfers.empty() ? popRandomValue(randomGenerator, unusedTransfers) : popRandomValue(randomGenerator, unusedDust);
+      //idx = !unusedTransfers.empty() ? popRandomValue(randomGenerator, unusedTransfers) : popRandomValue(randomGenerator, unusedDust);
+      
+      //// FIX: only unusable dust available:
+      if (unusedTransfers.empty() && unusedDust.empty() && !unusedUnmixable.empty()) {
+          idx = popRandomValue(randomGenerator, unusedUnmixable);
+      } else {
+          idx = !unusedTransfers.empty() ? popRandomValue(randomGenerator, unusedTransfers) : popRandomValue(randomGenerator, unusedDust);
+      }
+      /////
     }
     selectedTransfers.push_back(outputs[idx]);
     foundMoney += outputs[idx].amount;
