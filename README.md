@@ -56,6 +56,8 @@ From the command line, you can also create and manage your personal wallet to mi
 
 Then just follow the commands (use "O" to open an existing wallet or "G" to generate a new wallet for your TRGX).
 
+## DynexSolve Mining Software
+
 To run the Dynex Solve mining software, use the following command:
 
 ```
