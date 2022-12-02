@@ -264,49 +264,6 @@ struct COMMAND_RPC_SEND_RAW_TX {
   };
 };
 //-----------------------------------------------
-struct COMMAND_RPC_START_MINING {
-  struct request {
-    std::string miner_address;
-    uint64_t threads_count;
-
-    void serialize(ISerializer &s) {
-      KV_MEMBER(miner_address)
-      KV_MEMBER(threads_count)
-    }
-  };
-
-  struct response {
-    std::string status;
-
-    void serialize(ISerializer &s) {
-      KV_MEMBER(status)
-    }
-  };
-};
-//-----------------------------------------------
-struct COMMAND_RPC_START_DYNEXCHIP {
-  struct request {
-    std::string miner_address;
-    uint64_t threads_count;
-
-    uint64_t dynex_minute_rate;
-    
-    void serialize(ISerializer &s) {
-      KV_MEMBER(miner_address)
-      KV_MEMBER(threads_count)
-      KV_MEMBER(dynex_minute_rate)
-    }
-  };
-
-  struct response {
-    std::string status;
-
-    void serialize(ISerializer &s) {
-      KV_MEMBER(status)
-    }
-  };
-};
-//-----------------------------------------------
 struct COMMAND_RPC_GET_INFO {
   typedef EMPTY_STRUCT request;
 
@@ -367,17 +324,6 @@ struct COMMAND_RPC_GET_INFO {
       KV_MEMBER(contact)      
     }
   };
-};
-
-//-----------------------------------------------
-struct COMMAND_RPC_STOP_MINING {
-  typedef EMPTY_STRUCT request;
-  typedef STATUS_STRUCT response;
-};
-//-----------------------------------------------
-struct COMMAND_RPC_STOP_DYNEXCHIP {
-  typedef EMPTY_STRUCT request;
-  typedef STATUS_STRUCT response;
 };
 
 //-----------------------------------------------
