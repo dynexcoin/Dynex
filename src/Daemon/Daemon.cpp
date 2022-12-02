@@ -72,6 +72,7 @@
 
 #if defined(WIN32)
 #include <crtdbg.h>
+#undef ERROR
 #endif
 
 using Common::JsonValue;
@@ -433,9 +434,9 @@ int main(int argc, char* argv[])
     "                                            \n"
     " ██████  ██    ██ ███    ██ ███████ ██   ██ \n"
     " ██   ██  ██  ██  ████   ██ ██       ██ ██  \n"
-    " ██   ██   ████   ██ ██  ██ █████     ███   \n"
-    " ██   ██    ██    ██  ██ ██ ██       ██ ██  \n"
-    " ██████     ██    ██   ████ ███████ ██   ██ \n" 
+    " ██   ██   ████   ██ ██  ██ █████     ███   DYNEXSOLVE\n"
+    " ██   ██    ██    ██  ██ ██ ██       ██ ██  MEANINGFUL\n"
+    " ██████     ██    ██   ████ ███████ ██   ██ MINING\n" 
     "                                            \n" << ENDL;
         
     #endif

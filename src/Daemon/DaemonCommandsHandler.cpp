@@ -68,13 +68,13 @@ DaemonCommandsHandler::DaemonCommandsHandler(CryptoNote::core& core, CryptoNote:
   //m_consoleHandler.setHandler("print_bc_outs", boost::bind(&DaemonCommandsHandler::print_bc_outs, this, _1));
   m_consoleHandler.setHandler("print_block", boost::bind(&DaemonCommandsHandler::print_block, this, boost::placeholders::_1), "Print block, print_block <block_hash> | <block_height>");
   m_consoleHandler.setHandler("print_tx", boost::bind(&DaemonCommandsHandler::print_tx, this, boost::placeholders::_1), "Print transaction, print_tx <transaction_hash>");
-  m_consoleHandler.setHandler("start_mining", boost::bind(&DaemonCommandsHandler::start_mining, this, boost::placeholders::_1), "Start mining for specified address, start_mining <addr> [threads=1]");
-  m_consoleHandler.setHandler("stop_mining", boost::bind(&DaemonCommandsHandler::stop_mining, this, boost::placeholders::_1), "Stop mining");
+  //m_consoleHandler.setHandler("start_mining", boost::bind(&DaemonCommandsHandler::start_mining, this, boost::placeholders::_1), "Start mining for specified address, start_mining <addr> [threads=1]");
+  //m_consoleHandler.setHandler("stop_mining", boost::bind(&DaemonCommandsHandler::stop_mining, this, boost::placeholders::_1), "Stop mining");
   m_consoleHandler.setHandler("print_pool", boost::bind(&DaemonCommandsHandler::print_pool, this, boost::placeholders::_1), "Print transaction pool (long format)");
   m_consoleHandler.setHandler("print_pool_sh", boost::bind(&DaemonCommandsHandler::print_pool_sh, this, boost::placeholders::_1), "Print transaction pool (short format)");
   m_consoleHandler.setHandler("print_mp", boost::bind(&DaemonCommandsHandler::print_pool_count, this, boost::placeholders::_1), "Print number of transactions in memory pool");
-  m_consoleHandler.setHandler("show_hr", boost::bind(&DaemonCommandsHandler::show_hr, this, boost::placeholders::_1), "Start showing hash rate");
-  m_consoleHandler.setHandler("hide_hr", boost::bind(&DaemonCommandsHandler::hide_hr, this, boost::placeholders::_1), "Stop showing hash rate");
+  //m_consoleHandler.setHandler("show_hr", boost::bind(&DaemonCommandsHandler::show_hr, this, boost::placeholders::_1), "Start showing hash rate");
+  //m_consoleHandler.setHandler("hide_hr", boost::bind(&DaemonCommandsHandler::hide_hr, this, boost::placeholders::_1), "Stop showing hash rate");
   m_consoleHandler.setHandler("set_log", boost::bind(&DaemonCommandsHandler::set_log, this, boost::placeholders::_1), "set_log <level> - Change current log level, <level> is a number 0-4");
   m_consoleHandler.setHandler("print_diff", boost::bind(&DaemonCommandsHandler::print_diff, this, boost::placeholders::_1), "Difficulty for next block");
   m_consoleHandler.setHandler("print_ban", boost::bind(&DaemonCommandsHandler::print_ban, this, boost::placeholders::_1), "Print banned nodes");
@@ -82,8 +82,8 @@ DaemonCommandsHandler::DaemonCommandsHandler(CryptoNote::core& core, CryptoNote:
   m_consoleHandler.setHandler("unban", boost::bind(&DaemonCommandsHandler::unban, this, boost::placeholders::_1), "Unban a given <IP>, unban <IP>");
   m_consoleHandler.setHandler("status", boost::bind(&DaemonCommandsHandler::status, this, boost::placeholders::_1), "Show daemon status");
   // dynex chip handlers:
-  m_consoleHandler.setHandler("start_dynexchip", boost::bind(&DaemonCommandsHandler::start_dynexchip, this, boost::placeholders::_1), "Start Dynex chip, receiving DNX to specified address, start_dynexchip <addr> [threads=1]");
-  m_consoleHandler.setHandler("stop_dynexchip", boost::bind(&DaemonCommandsHandler::stop_dynexchip, this, boost::placeholders::_1), "Stop Dynex chip");
+  //m_consoleHandler.setHandler("start_dynexchip", boost::bind(&DaemonCommandsHandler::start_dynexchip, this, boost::placeholders::_1), "Start Dynex chip, receiving DNX to specified address, start_dynexchip <addr> [threads=1]");
+  //m_consoleHandler.setHandler("stop_dynexchip", boost::bind(&DaemonCommandsHandler::stop_dynexchip, this, boost::placeholders::_1), "Stop Dynex chip");
 }
 
 //--------------------------------------------------------------------------------
@@ -176,7 +176,7 @@ bool DaemonCommandsHandler::status(const std::vector<std::string>& args) {
     << (synced ? "Dynex BlockChain Synced " : "Syncing Dynex BlockChain") << " - Block: " << height << "/" << last_known_block_index 
     << " (" << get_sync_percentage(height, last_known_block_index) << "%) "
     << "on " << (m_core.currency().isTestnet() ? "testnet, " : "mainnet, ") << std::endl
-    << "Network Hashrate: " << get_mining_speed(hashrate)  << std::endl
+    //<< "Network Hashrate: " << get_mining_speed(hashrate)  << std::endl
     << "Generated coins: " << coins_already_generated << " of " << coins_total_supply << std::endl
     << "Last block hash: " << Common::podToHex(last_block_hash) << std::endl
 	<< "Next difficulty: " << difficulty  << std::endl
@@ -199,6 +199,7 @@ bool DaemonCommandsHandler::print_pl(const std::vector<std::string>& args) {
   return true;
 }
 //--------------------------------------------------------------------------------
+/*
 bool DaemonCommandsHandler::show_hr(const std::vector<std::string>& args)
 {
   if (!m_core.get_miner().is_mining())
@@ -216,6 +217,7 @@ bool DaemonCommandsHandler::hide_hr(const std::vector<std::string>& args)
   m_core.get_miner().do_print_hashrate(false);
   return true;
 }
+*/
 //--------------------------------------------------------------------------------
 bool DaemonCommandsHandler::print_bc_outs(const std::vector<std::string>& args)
 {
@@ -408,6 +410,7 @@ bool DaemonCommandsHandler::print_pool_sh(const std::vector<std::string>& args)
   return true;
 }
 //--------------------------------------------------------------------------------
+/*
 bool DaemonCommandsHandler::start_dynexchip(const std::vector<std::string> &args) {
   std::cout << "Starting Dynex Chip(s)... " << std::endl;
 
@@ -442,13 +445,16 @@ bool DaemonCommandsHandler::start_dynexchip(const std::vector<std::string> &args
   
   return true;
 }
+*/
 //--------------------------------------------------------------------------------
+/*
 bool DaemonCommandsHandler::stop_dynexchip(const std::vector<std::string>& args) {
   //<== STOP DYNEXCHIP HERE WHEN INVOICED FROM DAEMON COMMAND LINE
-  m_core.m_dynexchip.stop();
+  //m_core.m_dynexchip.stop();
   
   return true;
 }
+*/
 //--------------------------------------------------------------------------------
 bool DaemonCommandsHandler::print_diff(const std::vector<std::string>& args)
 {
@@ -462,7 +468,8 @@ bool DaemonCommandsHandler::print_pool_count(const std::vector<std::string>& arg
   return true;
 }
 //--------------------------------------------------------------------------------
-bool DaemonCommandsHandler::start_mining(const std::vector<std::string> &args) {
+/*bool DaemonCommandsHandler::start_mining(const std::vector<std::string> &args) {
+  /*
   if (!args.size()) {
     std::cout << "Please, specify wallet address to mine for: start_mining <addr> [threads=1]" << std::endl;
     return true;
@@ -481,14 +488,18 @@ bool DaemonCommandsHandler::start_mining(const std::vector<std::string> &args) {
   }
 
   m_core.get_miner().start(adr, threads_count);
+  
   return true;
 }
+*/
 
 //--------------------------------------------------------------------------------
+/*
 bool DaemonCommandsHandler::stop_mining(const std::vector<std::string>& args) {
-  m_core.get_miner().stop();
+  //m_core.get_miner().stop();
   return true;
 }
+*/
 
 //--------------------------------------------------------------------------------
 bool DaemonCommandsHandler::print_ban(const std::vector<std::string>& args) {
