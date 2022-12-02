@@ -105,14 +105,10 @@ namespace CryptoNote
     bool new_wallet(const std::string &wallet_file, const std::string& password, const Crypto::SecretKey& recovery_key);
     bool new_wallet(const std::string &wallet_file, const std::string& password, const AccountKeys& private_key);
     bool new_tracking_wallet(AccountKeys &tracking_key, const std::string &wallet_file, const std::string& password);
-    //bool open_wallet(const std::string &wallet_file, const std::string& password);
     bool close_wallet();
-
     bool help(const std::vector<std::string> &args = std::vector<std::string>());
     bool seed(const std::vector<std::string> &args = std::vector<std::string>());
     bool exit(const std::vector<std::string> &args);
-    bool start_mining(const std::vector<std::string> &args);
-    bool stop_mining(const std::vector<std::string> &args);
     bool show_balance(const std::vector<std::string> &args = std::vector<std::string>());
     bool export_keys(const std::vector<std::string> &args = std::vector<std::string>());
     bool export_tracking_key(const std::vector<std::string> &args = std::vector<std::string>());
@@ -137,9 +133,6 @@ namespace CryptoNote
     bool get_reserve_proof(const std::vector<std::string> &args);
     bool sign_message(const std::vector<std::string> &args);
     bool verify_message(const std::vector<std::string> &args);
-    // dynex-chip:
-    bool start_dynexchip(const std::vector<std::string> &args);
-    bool stop_dynexchip(const std::vector<std::string> &args);
 
 #ifndef __ANDROID__
     std::string resolveAlias(const std::string& aliasUrl);
