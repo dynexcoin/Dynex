@@ -46,7 +46,7 @@ const size_t   CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW          = 60; //number of b
 const uint64_t CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT            = 60 * 60 * 2;
 const size_t   BLOCKCHAIN_TIMESTAMP_CHECK_WINDOW             = 60;
 const size_t   BLOCKCHAIN_TIMESTAMP_CHECK_WINDOW_V1          = 11;
-const uint64_t MONEY_SUPPLY                                  = UINT64_C(100000000000000000); //100,000,000 coins, 9 digits
+const uint64_t MONEY_SUPPLY                                  = UINT64_C(110000000000000000); //100,000,000 coins, 9 digits
 
 const uint64_t COIN                                          = UINT64_C(1000000000);
 const uint64_t TAIL_EMISSION_REWARD                          = UINT64_C(1000000000);
