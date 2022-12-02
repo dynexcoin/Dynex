@@ -52,6 +52,8 @@
 #include "CryptoNoteTools.h"
 #include "TransactionExtra.h"
 
+#define DYNEXSOLVE_FORK 58506
+
 using namespace Logging;
 using namespace Common;
 
@@ -1138,10 +1140,13 @@ bool Blockchain::validate_miner_transaction(const Block& b, uint32_t height, siz
   size_t blocksSizeMedian = Common::medianValue(lastBlocksSizes);
 
   auto blockMajorVersion = getBlockMajorVersionForHeight(height);
-  if (!m_currency.getBlockReward(blockMajorVersion, blocksSizeMedian, cumulativeBlockSize, alreadyGeneratedCoins, fee, reward, emissionChange)) {
+  
+  if (!m_currency.getBlockReward(height, blockMajorVersion, blocksSizeMedian, cumulativeBlockSize, alreadyGeneratedCoins, fee, reward, emissionChange)) {
     logger(INFO, BRIGHT_WHITE) << "block size " << cumulativeBlockSize << " is bigger than allowed for this blockchain";
     return false;
   }
+
+  if (height < DYNEXSOLVE_FORK ) return true;
 
   if (minerReward > reward) {
     logger(ERROR, BRIGHT_RED) << "Coinbase transaction spend too much money: " << m_currency.formatAmount(minerReward) <<

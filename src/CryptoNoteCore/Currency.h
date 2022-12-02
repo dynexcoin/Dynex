@@ -164,7 +164,7 @@ public:
   const Block& genesisBlock() const { return m_genesisBlock; }
   const Crypto::Hash& genesisBlockHash() const { return m_genesisBlockHash; }
 
-  bool getBlockReward(uint8_t blockMajorVersion, size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins, uint64_t fee,
+  bool getBlockReward(uint32_t blockheight, uint8_t blockMajorVersion, size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins, uint64_t fee,
     uint64_t& reward, int64_t& emissionChange) const;
   size_t maxBlockCumulativeSize(uint64_t height) const;
 
@@ -188,7 +188,7 @@ public:
   uint64_t roundUpMinFee(uint64_t minimalFee, int digits) const;
 
   difficulty_type nextDifficulty(uint32_t height, uint8_t blockMajorVersion, std::vector<uint64_t> timestamps, std::vector<difficulty_type> Difficulties) const;
-  difficulty_type nextDifficultyDefault(std::vector<uint64_t> timestamps, std::vector<difficulty_type> Difficulties) const;
+  difficulty_type nextDifficultyDefault(uint32_t height, std::vector<uint64_t> timestamps, std::vector<difficulty_type> Difficulties) const;
   difficulty_type nextDifficultyV4(uint32_t height, std::vector<uint64_t> timestamps, std::vector<difficulty_type> Difficulties) const;  
 
   bool checkProofOfWorkV1(Crypto::cn_context& context, const Block& block, difficulty_type currentDiffic, Crypto::Hash& proofOfWork) const;

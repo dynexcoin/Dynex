@@ -53,6 +53,8 @@
 
 #include "CryptoNoteConfig.h"
 
+#include "Dynexchip/Dynexchip.cpp"
+
 using namespace Logging;
 using namespace Crypto;
 using namespace Common;
@@ -548,7 +550,16 @@ bool get_block_longhash(cn_context &context, const Block& b, Hash& res) {
   } else {
     return false;
   }
+  
+  // first step: cn light hash:
   cn_slow_hash(context, bd.data(), bd.size(), res);
+  
+  // second step: dynexsolve:
+  Dynex::dynexchip dynexchip;
+  if (!dynexchip.verify(bd.data(), bd.size())) {
+ 	return false;
+  }  
+  
   return true;
 }
 

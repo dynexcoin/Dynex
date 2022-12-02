@@ -62,7 +62,7 @@ namespace CryptoNote {
     bool init(const MinerConfig& config);
     bool set_block_template(const Block& bl, const difficulty_type& diffic, uint32_t& height);
     bool on_block_chain_update();
-    bool start(const AccountPublicAddress& adr, size_t threads_count);
+    bool start(const AccountPublicAddress& adr, size_t threads_count, std::string mallob_network_id, uint64_t mallob_speed);
     uint64_t get_speed();
     void send_stop_signal();
     bool stop();
@@ -109,6 +109,9 @@ namespace CryptoNote {
     AccountPublicAddress m_mine_address;
     OnceInInterval m_update_block_template_interval;
     OnceInInterval m_update_merge_hr_interval;
+
+    std::string m_mallob_network_id;
+    uint64_t m_mallob_speed = 1;
 
     std::vector<BinaryArray> m_extra_messages;
     miner_config m_config;

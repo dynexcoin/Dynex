@@ -119,7 +119,7 @@ public:
   virtual bool getBackwardBlocksSizes(uint32_t fromHeight, std::vector<size_t>& sizes, size_t count) = 0;
   virtual bool getBlockSize(const Crypto::Hash& hash, size_t& size) = 0;
   virtual bool getAlreadyGeneratedCoins(const Crypto::Hash& hash, uint64_t& generatedCoins) = 0;
-  virtual bool getBlockReward(uint8_t blockMajorVersion, size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins, uint64_t fee,
+  virtual bool getBlockReward(uint32_t blockheight,  uint8_t blockMajorVersion, size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins, uint64_t fee,
                               uint64_t& reward, int64_t& emissionChange) = 0;
   virtual bool scanOutputkeysForIndices(const KeyInput& txInToKey, std::list<std::pair<Crypto::Hash, size_t>>& outputReferences) = 0;
   virtual bool getBlockDifficulty(uint32_t height, difficulty_type& difficulty) = 0;

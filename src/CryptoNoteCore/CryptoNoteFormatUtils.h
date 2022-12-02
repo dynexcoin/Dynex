@@ -51,6 +51,7 @@ class ILogger;
 
 namespace CryptoNote {
 
+
 bool parseAndValidateTransactionFromBinaryArray(const BinaryArray& transactionBinaryArray, Transaction& transaction, Crypto::Hash& transactionHash, Crypto::Hash& transactionPrefixHash);
 
 struct TransactionSourceEntry {

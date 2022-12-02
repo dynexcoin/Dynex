@@ -34,7 +34,7 @@
 // Copyright (c) 2016-2018, The Karbowanec developers
 // Copyright (c) 2017-2022, The CROAT.community developers
 
-
+#include <iostream> // REMOVE WHEN DEBUGGING IS REMOVED!! STD::COUT
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
@@ -77,6 +77,7 @@ namespace CryptoNote {
   }
 
   bool check_hash(const Crypto::Hash &hash, difficulty_type difficulty) {
+//std::cout << "*** DEBUG *** check_hash()  " << std::endl; // MAIN HASH CHECKING FUNCTION
     uint64_t low, high, top, cur;
     // First check the highest word, this will most likely fail for a random hash.
     mul(swap64le(((const uint64_t *) &hash)[3]), difficulty, top, high);

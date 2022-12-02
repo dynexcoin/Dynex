@@ -160,7 +160,7 @@ namespace CryptoNote {
 		}
 	}
 
-	bool Currency::getBlockReward(uint8_t blockMajorVersion, size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins,
+	bool Currency::getBlockReward(uint32_t blockheight, uint8_t blockMajorVersion, size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins,
 		uint64_t fee, uint64_t& reward, int64_t& emissionChange) const {
 		assert(alreadyGeneratedCoins <= m_moneySupply);
 		assert(m_emissionSpeedFactor > 0 && m_emissionSpeedFactor <= 8 * sizeof(uint64_t));
@@ -172,7 +172,7 @@ namespace CryptoNote {
             logger(INFO) << "Genesis block reward: " << baseReward << " de " << CryptoNote::CRYPTONOTE_NAME;
         }
 
-		size_t blockGrantedFullRewardZone = blockGrantedFullRewardZoneByBlockVersion(blockMajorVersion);
+        size_t blockGrantedFullRewardZone = blockGrantedFullRewardZoneByBlockVersion(blockMajorVersion);
 		medianSize = std::max(medianSize, blockGrantedFullRewardZone);
 		if (currentBlockSize > UINT64_C(2) * medianSize) {
 			logger(TRACE) << "Block cumulative size is too big: " << currentBlockSize << ", expected less than " << 2 * medianSize;
@@ -219,7 +219,7 @@ namespace CryptoNote {
 
 		uint64_t blockReward;
 		int64_t emissionChange;
-		if (!getBlockReward(blockMajorVersion, medianSize, currentBlockSize, alreadyGeneratedCoins, fee, blockReward, emissionChange)) {
+		if (!getBlockReward(height, blockMajorVersion, medianSize, currentBlockSize, alreadyGeneratedCoins, fee, blockReward, emissionChange)) {
 			logger(INFO) << "Block is too big";
 			return false;
 		}
@@ -469,25 +469,29 @@ namespace CryptoNote {
 
 	difficulty_type Currency::nextDifficulty(uint32_t height, uint8_t blockMajorVersion, std::vector<uint64_t> timestamps,
 		std::vector<difficulty_type> cumulativeDifficulties) const {
+		
+		//std::cout << "DEBUG: BLOCK_MAJOR_VERSION = " << blockMajorVersion << std::endl;
+		
 		if (blockMajorVersion >= BLOCK_MAJOR_VERSION_4) {
-			return nextDifficultyV4(height, timestamps, cumulativeDifficulties);
+			return nextDifficultyV4(height, timestamps, cumulativeDifficulties); // <== default Dynex difficulty for test-net
 		}
 		else if (blockMajorVersion == BLOCK_MAJOR_VERSION_3) {
-			return nextDifficultyDefault(timestamps, cumulativeDifficulties);
+			return nextDifficultyDefault(height, timestamps, cumulativeDifficulties);
 		}
 		else if (blockMajorVersion == BLOCK_MAJOR_VERSION_2) {
-			return nextDifficultyDefault(timestamps, cumulativeDifficulties);
+			return nextDifficultyDefault(height, timestamps, cumulativeDifficulties);
 		}
 		else {
-			return nextDifficultyDefault(timestamps, cumulativeDifficulties);
+			return nextDifficultyDefault(height, timestamps, cumulativeDifficulties); // <== default Dynex difficulty (main-net has no BLOCK_MAJOR_VERSION)
 		}
 	}
 
 // Default Difficulty Calculation 
 // CROAT: V1, V2, V3 Blocks
 
-	difficulty_type Currency::nextDifficultyDefault(std::vector<uint64_t> timestamps,
+	difficulty_type Currency::nextDifficultyDefault(uint32_t blockIndex, std::vector<uint64_t> timestamps,
 		std::vector<difficulty_type> cumulativeDifficulties) const {
+		
 		assert(m_difficultyWindow >= 2);
 
 		if (timestamps.size() > m_difficultyWindow) {
@@ -533,19 +537,27 @@ namespace CryptoNote {
                 
         // Testnet hardcode
         if (isTestnet()) { nextDiffDefault = nextDiffDefault/2; }
+
+        // DynexSolve - adjust difficulty for new mining algorithm
+        // mined blocks will be used for aidrop
+        if (!isTestnet() && (blockIndex>=58494 && blockIndex<=58494+725)) {
+			nextDiffDefault = 14;
+			logger(DEBUGGING, BRIGHT_YELLOW) << "Fixing Diff to '" << nextDiffDefault << "' in mainnet.";
+		}
+		
         
         return nextDiffDefault;
 	}
 
-
-// Default Difficulty Calculation for V4 Blocks
-// CROAT: V4 Blocks
+////////////////////////////////////////////
+// V4 Blocks
+// DEFAULT DIFFICULTY CALCULATION FOR DYNEX
 
 	difficulty_type Currency::nextDifficultyV4(uint32_t blockIndex, std::vector<uint64_t> timestamps,
 		std::vector<difficulty_type> cumulativeDifficulties) const {
 		assert(m_difficultyWindow >= 2);
 
-        // Hardcode difficulty for N blocks after fork height if no isTestnet
+		// Hardcode difficulty for N blocks after fork height if no isTestnet
         const size_t N = CryptoNote::parameters::DIFFICULTY_WINDOW_V4;
         if ((blockIndex >= upgradeHeight(CryptoNote::BLOCK_MAJOR_VERSION_4) && blockIndex <= (upgradeHeight(CryptoNote::BLOCK_MAJOR_VERSION_4) + N))) {
             
@@ -553,15 +565,15 @@ namespace CryptoNote {
             
             if (!isTestnet())
             {
-                uint64_t nextDiff = 17141714; // Fixed difficulty value
+            	uint64_t nextDiff = 17141714; // Fixed difficulty value
                 logger(DEBUGGING, BRIGHT_YELLOW) << "Fixing Diff to '" << nextDiff << "' in mainnet! " << offset << " blocks left!";
                 return nextDiff;
             }
             else if (isTestnet()) //Hardcode difficulty if isTestnet
             {
-                uint64_t nextDiff = 14;
-                logger(DEBUGGING, BRIGHT_YELLOW) << "Fixing Diff to '" << nextDiff << "' in testnet! " << offset << " blocks left!";
-                return nextDiff;
+            		uint64_t nextDiff = 14;
+                	logger(DEBUGGING, BRIGHT_YELLOW) << "Fixing Diff to '" << nextDiff << "' in testnet! " << offset << " blocks left!";
+                	return nextDiff;
             }
         }
         
@@ -608,14 +620,25 @@ namespace CryptoNote {
         
 		// minimum limit
 		if (!isTestnet() && nextDiff < 100000) {
-			nextDiff = 100000;
+				nextDiff = 100000;
 		}
-        
+		
         // Testnet hardcode
-        if (isTestnet()) { nextDiff = nextDiff/2; }
-            
-		return nextDiff;          
-	}
+        /*
+        if (isTestnet()) { nextDiff = nextDiff/2; }	
+		*/
+	
+		// DYNEXSOLVE: TEST-NET ADJUST DIFFICULTY AT BLOCK xxx FOR DYNEXSOLVE
+		if (isTestnet() && (blockIndex>=17292 && blockIndex<=17493)) { //testnet version 2.0.6 set back difficulty window = 200
+        	uint64_t nextDiff = 14;
+        	logger(DEBUGGING, BRIGHT_YELLOW) << "DynexSolve 2.0.6: BLOCK 17292-17493 Fixing Diff to '" << nextDiff << "' in testnet! ";
+        	return nextDiff;
+        }
+        if (isTestnet() && blockIndex < 17292) { nextDiff = nextDiff/2; }
+        
+    return nextDiff;          
+}
+	
 
 
 // Proof of Work
@@ -628,6 +651,7 @@ bool Currency::checkProofOfWorkV1(Crypto::cn_context& context, const Block& bloc
 	if (BLOCK_MAJOR_VERSION_2 == block.majorVersion || BLOCK_MAJOR_VERSION_3 == block.majorVersion) {
 		return false;
 	}
+//std::cout << "*** DEBUG *** Currency.cpp -> checkProofOfWorkV1" << std::endl; // only for genesis block
 	if (!get_block_longhash(context, block, proofOfWork)) {
 		return false;
 	}
@@ -636,8 +660,11 @@ bool Currency::checkProofOfWorkV1(Crypto::cn_context& context, const Block& bloc
 
 /* checkProofOfWorkV2 */
 
-	bool Currency::checkProofOfWorkV2(Crypto::cn_context& context, const Block& block, difficulty_type currentDiffic,
+bool Currency::checkProofOfWorkV2(Crypto::cn_context& context, const Block& block, difficulty_type currentDiffic,
 		Crypto::Hash& proofOfWork) const {
+
+    //std::cout << "*** DEBUG *** Currency.cpp -> checkProofOfWorkV2" << std::endl; // <=== MAIN VERIFICATION OF MINED BLOCK
+
 		if (block.majorVersion < BLOCK_MAJOR_VERSION_2) {
 			return false;
 		}
