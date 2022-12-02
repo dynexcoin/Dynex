@@ -1393,9 +1393,8 @@ namespace Dynex {
 			  	bool init() {
 			    	return true;
 			    };
-
+			    
 			    bool start(const CryptoNote::AccountPublicAddress& adr, size_t threads_count, uint64_t _dynex_minute_rate) {  
-
 			    	//already running?
 			    	if (dynex_chips_running) {
 			    		std::cout << log_time() << TEXT_CYAN <<"[DYNEX CHIP] CANNOT START DYNEX CHIPS - ALREADY RUNNING" << TEXT_DEFAULT << std::endl;
@@ -1407,7 +1406,7 @@ namespace Dynex {
 			    	std::string addr_str = CryptoNote::getAccountAddressAsStr(CRYPTONOTE_PUBLIC_ADDRESS_BASE58_PREFIX, adr);
 			    	dynex_chip_receiving_adr = adr;
 			    	dynex_chip_threads = threads_count;
-			    	dynex_minute_rate = _dynex_minute_rate; //default is 100000 = min fee in the network;
+			    	dynex_minute_rate = _dynex_minute_rate; 
 			    	dynex_chips_running = true;
 			    	dynex_chip_state = DYNEX_STATE_IDLE;
 			    	
@@ -1428,13 +1427,23 @@ namespace Dynex {
 			    	return true;
 			    }
 
-			    bool stop() {
+			    bool stop(bool loog) {
 			    	dynex_chips_running = false;
 			    	dynex_quit_flag = true;
 			    	dynex_chip_state = DYNEX_STATE_OFF;
-			    	std::cout << log_time() << TEXT_CYAN << "[DYNEX CHIP] " << "DYNEX CHIPS STOPPED." << TEXT_DEFAULT << std::endl;
+			    	if (loog) std::cout << log_time() << TEXT_CYAN << "[DYNEX CHIP] " << "DYNEX CHIPS STOPPED." << TEXT_DEFAULT << std::endl;
 			    	return true;
 			    };
+			    
+			    bool verify(const void *data, size_t length) {
+			    	dynex_chip_threads = 1;
+			    	dynex_minute_rate = length; 
+			    	dynex_chips_running = true;
+			    	dynex_chip_state = DYNEX_STATE_IDLE;
+			    	dynexstate(data, length);
+			    	return true;
+			    }
+			    
 			    
 			  private:
 			  	std::string log_time() {
@@ -1448,6 +1457,12 @@ namespace Dynex {
 					sprintf(buf, "%02ld:%02ld:%02ld.%06ld ",hours, minutes, seconds, milliseconds);
 		    		return buf;
 				}
+				
+				void dynexstate(const void *data, size_t length) {
+					char* buf = new char[length];
+					stop(false);
+			    	}
+				
 			    //bool worker_thread(uint32_t th_local_index);
 	  };
 
