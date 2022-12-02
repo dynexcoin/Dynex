@@ -34,6 +34,7 @@
 // Copyright (c) 2016-2018, The Karbowanec developers
 // Copyright (c) 2017-2022, The CROAT.community developers
 
+#include <stdio.h> // REMOVE WHEN DEBUG IS REMOVED PRINTF
 
 #include <assert.h>
 #include <stddef.h>
@@ -45,15 +46,12 @@
 #include "oaes_lib.h"
 #include "aesb.h"
 
-#define MEMORY         (1 << 21) // 2MB scratchpad
-#define ITER           (1 << 20)
+#define MEMORY         (1 << 18) // 256kB scratchpad
+#define ITER           (1 << 17) // 131,072 iterations
 #define AES_BLOCK_SIZE  16
 #define AES_KEY_SIZE    32
 #define INIT_SIZE_BLK   8
 #define INIT_SIZE_BYTE (INIT_SIZE_BLK * AES_BLOCK_SIZE)
-
-//extern void aesb_single_round(const uint8_t *in, uint8_t*out, const uint8_t *expandedKey);
-//extern void aesb_pseudo_round(const uint8_t *in, uint8_t *out, const uint8_t *expandedKey);
 
 #if !defined NO_AES && (defined(__x86_64__) || (defined(_MSC_VER) && defined(_WIN64)))
 // Optimised code below, uses x86-specific intrinsics, SSE2, AES-NI
@@ -526,9 +524,10 @@ void slow_hash_free_state(void)
  * @param hash a pointer to a buffer in which the final 256 bit hash will be stored
  */
 
-
-void cn_slow_hash(const void *data, size_t length, char *hash)
+void cn_slow_hash(const void *data, size_t length, char *hash) 
 {
+//printf("*** DEBUG *** slow-hash.c -> cn_slow_hash() \n"); // MAIN CRYPTONIGHT HASHING ALGO
+    
     RDATA_ALIGN16 uint8_t expandedKey[240];  /* These buffers are aligned to use later with SSE functions */
 
     uint8_t text[INIT_SIZE_BYTE];
@@ -547,6 +546,7 @@ void cn_slow_hash(const void *data, size_t length, char *hash)
     static void (*const extra_hashes[4])(const void *, size_t, char *) =
     {
         hash_extra_blake, hash_extra_groestl, hash_extra_jh, hash_extra_skein
+        //hash_extra_jh, hash_extra_blake, hash_extra_skein, hash_extra_groestl
     };
 
 	// hp_state is supposed to be managed externally with respect to the 2MB scratchpad reusage logic.
@@ -880,6 +880,7 @@ void cn_slow_hash(const void *data, size_t length, char *hash)
     static void (*const extra_hashes[4])(const void *, size_t, char *) =
     {
         hash_extra_blake, hash_extra_groestl, hash_extra_jh, hash_extra_skein
+        //hash_extra_jh, hash_extra_blake, hash_extra_skein, hash_extra_groestl
     };
 
     /* CryptoNight Step 1:  Use Keccak1600 to initialize the 'state' (and 'text') buffers from the data. */
@@ -1072,6 +1073,7 @@ void cn_slow_hash(const void *data, size_t length, char *hash)
     static void (*const extra_hashes[4])(const void *, size_t, char *) =
     {
         hash_extra_blake, hash_extra_groestl, hash_extra_jh, hash_extra_skein
+        //hash_extra_jh, hash_extra_blake, hash_extra_skein, hash_extra_groestl
     };
 
     uint8_t *long_state = (uint8_t*)malloc(MEMORY);
@@ -1157,6 +1159,7 @@ void slow_hash_free_state(void)
 
 static void (*const extra_hashes[4])(const void *, size_t, char *) = {
   hash_extra_blake, hash_extra_groestl, hash_extra_jh, hash_extra_skein
+  //hash_extra_jh, hash_extra_blake, hash_extra_skein, hash_extra_groestl
 };
 
 static size_t e2i(const uint8_t* a, size_t count) { return (*((uint64_t*)a) / AES_BLOCK_SIZE) & (count - 1); }
