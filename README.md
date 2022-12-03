@@ -61,15 +61,14 @@ To run the Dynex Solve mining software, use the following command:
 
 ```
 Linux based systems:
-./dynexsolve -mining-address <WALLET ADDRESS> -no-cpu
+./dynexsolve -mining-address <WALLET ADDRESS> -no-cpu -mallob-endpoint https://dynex.dyndns.org/dynexmallob
 
 Windows based systems:
-dynexsolvevs -mining-address <WALLET ADDRESS> -no-cpu
+dynexsolvevs -mining-address <WALLET ADDRESS> -no-cpu -mallob-endpoint https://dynex.dyndns.org/dynexmallob
 ```
 
 Notes:
 * DynexSolve binaries are currently available for Windows and Linux (built for Ubuntu 22)
-* In case you cannot retrieve mining jobs, you can run DynexSolve with the additional command "-mallob-endpoint https://dynex.dyndns.org/dynexmallob/" as an alternative mallob endpoint
 * Currently supported GPUs: NVIDIA sm52 and better. AMD support coming soon
 * Older Linux Versions (Ubuntu 18, Ubuntu 20): need to be built from source: https://github.com/dynexcoin/DynexSolve
 * HiveOS: need to be built from source: https://github.com/dynexcoin/DynexSolve Here is a guide on how to build DynexSolve on HiveOS: https://discord.com/channels/1021103888503414834/1036973620938944612/1048610995456716871
