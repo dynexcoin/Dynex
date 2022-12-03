@@ -67,6 +67,12 @@ Windows based systems:
 dynexsolvevs -mining-address <WALLET ADDRESS> -no-cpu
 ```
 
+Notes:
+* DynexSolve binaries are currently available for Windows and Linux (built for Ubuntu 22)
+* Currently supported GPUs: NVIDIA sm52 and better. AMD support coming soon
+* Older Linux Versions (Ubuntu 18, Ubuntu 20): need to be built from source: https://github.com/dynexcoin/DynexSolve
+* HiveOS: need to be built from source: https://github.com/dynexcoin/DynexSolve Here is a guide on how to build DynexSolve on HiveOS: https://discord.com/channels/1021103888503414834/1036973620938944612/1048610995456716871
+
 Note that the miner output shows computation speed, number of chips which are simulated, etc. Information about mining rewards can be observed in your wallet. When you start the DynexSolve miner, it will by default the GPU with device ID zero (the first installed one). You can specify another GPU if you like by using the command line parameter “-deviceid <ID”. To query the installed and available devices, you can use the command line option “-devices” which will output all available GPUs of your system and the associated IDs. A list of all available commands can be retrieved with the option “-h”.
 
 ## Build Daemon, Simplewallet & WalletD from source
