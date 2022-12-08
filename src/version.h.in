@@ -13,7 +13,7 @@
 #define CN_VER_MINOR 1
 #define CN_VER_REV 1
 #define CN_VER_BUILD 20221208
-#define CN_VER_REMARK "#mandatory_from_10/12/22"
+#define CN_VER_REMARK "#mandatory"
 #define CN_PROJECT_VERSION STR(CN_VER_MAJOR) "." STR(CN_VER_MINOR) "." STR(CN_VER_REV)
 #define CN_PROJECT_VERSION_BUILD_NO STR(CN_VER_BUILD)
 
