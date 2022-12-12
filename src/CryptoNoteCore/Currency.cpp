@@ -535,15 +535,21 @@ namespace CryptoNote {
 
 		uint64_t nextDiffDefault = (low + timeSpan - 1) / timeSpan;
                 
-        // Testnet hardcode
-        if (isTestnet()) { nextDiffDefault = nextDiffDefault/2; }
+		// Testnet hardcode
+		if (isTestnet()) { nextDiffDefault = nextDiffDefault/2; }
 
-        // DynexSolve - adjust difficulty for new mining algorithm
-        // mined blocks will be used for aidrop
-        if (!isTestnet() && (blockIndex>=58494 && blockIndex<=58494+725)) {
-			nextDiffDefault = 14;
-			logger(DEBUGGING, BRIGHT_YELLOW) << "Fixing Diff to '" << nextDiffDefault << "' in mainnet.";
+		// DynexSolve - adjust difficulty for new mining algorithm
+		// mined blocks will be used for aidrop
+		if (!isTestnet() && (blockIndex>=58494 && blockIndex<=58494+725)) {
+				nextDiffDefault = 14;
+				logger(DEBUGGING, BRIGHT_YELLOW) << "Fixing Diff to '" << nextDiffDefault << "' in mainnet.";
 		}
+		// Dynex 213 - adjust difficulty
+		if (!isTestnet() && (blockIndex>=67589 && blockIndex<=67589+725)) {
+				nextDiffDefault = 60000000;
+				logger(DEBUGGING, BRIGHT_YELLOW) << "Fixing Diff to '" << nextDiffDefault << "' in mainnet.";
+		}
+		
 		
         
         return nextDiffDefault;

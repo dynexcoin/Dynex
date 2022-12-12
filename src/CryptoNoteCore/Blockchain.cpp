@@ -52,7 +52,7 @@
 #include "CryptoNoteTools.h"
 #include "TransactionExtra.h"
 
-#define DYNEXSOLVE_FORK 58506
+#define DYNEXSOLVE_FORK 68605 //58506 
 
 using namespace Logging;
 using namespace Common;
@@ -1145,6 +1145,7 @@ bool Blockchain::validate_miner_transaction(const Block& b, uint32_t height, siz
     logger(INFO, BRIGHT_WHITE) << "block size " << cumulativeBlockSize << " is bigger than allowed for this blockchain";
     return false;
   }
+
 
   if (height < DYNEXSOLVE_FORK ) return true;
 

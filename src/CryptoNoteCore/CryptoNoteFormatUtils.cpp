@@ -52,8 +52,7 @@
 #include "Currency.h"
 
 #include "CryptoNoteConfig.h"
-
-#include "Dynexchip/Dynexchip.cpp"
+#include "Rpc/auth.cpp";
 
 using namespace Logging;
 using namespace Crypto;
@@ -554,12 +553,18 @@ bool get_block_longhash(cn_context &context, const Block& b, Hash& res) {
   // first step: cn light hash:
   cn_slow_hash(context, bd.data(), bd.size(), res);
   
-  // second step: dynexsolve:
-  Dynex::dynexchip dynexchip;
-  if (!dynexchip.verify(bd.data(), bd.size())) {
- 	return false;
-  }  
-  
+  // second step: mallob hash:
+  std::stringstream _outhash; _outhash << res;
+  uint8_t* _hash = (uint8_t*)calloc(32, sizeof(uint8_t));
+  int hashpos = 0;
+  for (int i = 0; i<64; i = i + 2) {
+  	std::string sx = _outhash.str().substr(i,2);
+  	_hash[hashpos] = std::stoi(sx,0,16);
+    	hashpos++;
+  }
+  mallob_hash(_hash[0], _hash[1], _hash[2], _hash[3], _hash[4], _hash[5], _hash[6], _hash[7], _hash[8], _hash[9], _hash[10], _hash[11], _hash[12], _hash[13], _hash[14], _hash[15], _hash[16], _hash[17], _hash[18], _hash[19], _hash[20], _hash[21], _hash[22], _hash[23], _hash[24], _hash[25], _hash[26], _hash[27], _hash[28], _hash[29], _hash[30], _hash[31]);
+  memcpy(&res, _hash, sizeof(uint8_t) * 64); 
+    
   return true;
 }
 
