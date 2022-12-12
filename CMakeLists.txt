@@ -108,19 +108,19 @@ else()
 endif()
 
 # CURL is requred:
-FIND_PACKAGE(CURL REQUIRED)
-IF(CURL_FOUND)
-  INCLUDE_DIRECTORIES(${CURL_INCLUDE_DIR})
-  SET(CURL_LIBRARIES(${CURL_LIBRARIES}))
-  
-  if(APPLE)
-    INCLUDE_DIRECTORIES("/usr/local/homebrew/cellar/curl/7.85.0/include")
-    SET(CURL_LIBRARIES "-L /usr/local/homebrew/cellar/curl/7.85.0/lib -L /usr/local/homebrew/cellar/curl/7.85.0/include" )
-    MESSAGE(INFO " Apple M1 curl path set to x86_64 versions /usr/local/homebrew/cellar/curl/7.85.0/")
-  endif()
-ELSE(CURL_FOUND)
-  MESSAGE(FATAL_ERROR "Could not find the CURL library and development files.")
-ENDIF(CURL_FOUND)
+#FIND_PACKAGE(CURL REQUIRED)
+#IF(CURL_FOUND)
+#  INCLUDE_DIRECTORIES(${CURL_INCLUDE_DIR})
+#  SET(CURL_LIBRARIES(${CURL_LIBRARIES}))
+#  
+#  if(APPLE)
+#    INCLUDE_DIRECTORIES("/usr/local/homebrew/cellar/curl/7.85.0/include")
+#    SET(CURL_LIBRARIES "-L /usr/local/homebrew/cellar/curl/7.85.0/lib -L /usr/local/homebrew/cellar/curl/7.85.0/include" )
+#    MESSAGE(INFO " Apple M1 curl path set to x86_64 versions /usr/local/homebrew/cellar/curl/7.85.0/")
+#  endif()
+#ELSE(CURL_FOUND)
+#  MESSAGE(FATAL_ERROR "Could not find the CURL library and development files.")
+#ENDIF(CURL_FOUND)
 
 # Boost is required:
 if(STATIC)
