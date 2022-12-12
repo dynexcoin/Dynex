@@ -160,10 +160,10 @@ const uint32_t P2P_IDLE_CONNECTION_KILL_INTERVAL             = (5 * 60);      //
 
 
 const std::initializer_list<const char*> SEED_NODES = {
-  "137.220.61.126:17333", // Chicago, USA
-  "95.179.252.220:17333", // Frankfurt, Germany
-  "65.20.79.149:17333",   // Mumbai, India
-  "66.42.42.90:17333",    // Tokio, Japan
+  "137.220.61.126:17335", // Chicago, USA
+  "95.179.252.220:17335", // Frankfurt, Germany
+  "65.20.79.149:17335",   // Mumbai, India
+  "66.42.42.90:17335",    // Tokio, Japan
 };
 
 const char* const TRUSTED_NODES[] = {
