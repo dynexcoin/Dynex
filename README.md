@@ -84,9 +84,10 @@ git clone https://github.com/dynexcoin/Dynex.git
 
 ### Linux
 
-It is required to have the [Boost library](https://www.boost.org) (Version 1.74.0 or better) installed: 
+It is required to have the [Boost library](https://www.boost.org) (Version 1.74.0 or better) and libcurl installed: 
 ```
-sudo apt-get install libboost-all-dev (Ubuntu Linux)
+sudo apt-get install libboost-all-dev (Ubuntu)
+sudo apt-get -y install libcurl4-openssl-dev (libcurl Ubuntu)
 ```
 
 To compile and build:
