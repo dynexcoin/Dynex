@@ -4,16 +4,12 @@ With the end of Moore’s law approaching and Dennard scaling ending, the comput
 
 Dynex is a next-generation platform for neuromorphic computing based on a new flexible blockchain protocol. It is designed for the development of software applications and algorithms that utilize neuromorphic hardware and are capable of accelerating computation. To accomplish this goal, the platform connects hosts that are running clusters of neuromorphic chips with users and applications that utilize this next-generation hardware. On the Dynex platform, computation time is exchanged for the Dynex native token. 
 
-Dynex has also developed a proprietary circuit design, the Dynex Neuromorphic Chip, that complements the Dynex ecosystem and turns any modern field programmable gate array (FPGA) based chip into a neuromorphic computing chip that can perform orders of magnitude faster than classical or quantum methodologies for a wide range of applications. Due to the dominance of ASICs in the proof-of-work token mining industry, there is a large amount of dormant FPGA infrastructure available which can be converted into high performance next-generation neuromorphic computing clusters. The Dynex mainnet started on September 16th 2022.
+Dynex has also developed a proprietary circuit design, the Dynex Neuromorphic Chip, that complements the Dynex ecosystem and turns any modern field programmable gate array (FPGA) based chip into a neuromorphic computing chip that can perform orders of magnitude faster than classical or quantum methodologies for a wide range of applications. Due to the dominance of ASICs in the proof-of-work token mining industry, there is a large amount of dormant FPGA infrastructure available which can be converted into high performance next-generation neuromorphic computing clusters.
 
 For more information, read our [Dynex White Paper](https://github.com/dynexcoin/Dynex-Whitepaper)
 
-
-
-## Using the Dynex Hosted Web Wallet to manage your DNX
-
-Users who dont want to run a node or dont want to install anything can use the Dynex Mobile Web Wallet: 
-https://dynexcoin.org/get-dnx/#wallets
+## The Dynex mainnet is live!
+Starting from September 16th 2022, the Dynex mainnet is live. Everyone is welcome to join!
 
 ## Using the Dynex-App to manage your DNX
 
@@ -21,8 +17,16 @@ Users who just want to use the Dynex wallet functionality to create wallets or s
 
 ## Mining DNX and managing DNX from the command line (precompiled binaries)
 
-The easiest way to start minging DNX or to manage DNX wallet(s) from the command line in the terminal is by using our precompiled binaries. Download the version matching your operating system from our releases page:
-https://github.com/dynexcoin/Dynex/releases
+The easiest way to start minging DNX or to manage DNX wallet(s) from the command line in the terminal is by using our precompiled binaries. Download the version matching your operating system:
+
+Microsoft Windows: 
+coming soon - please build from source as described below
+
+Apple MacOS: 
+coming soon - please build from source as described below
+
+Linux: 
+https://github.com/dynexcoin/Dynex/raw/main/Ubuntu_22.04.1_executables.tar.xz
 
 Please note that Linux and MacOS users are required to have the [Boost library](https://www.boost.org) (Version 1.74.0 or better) installed: 
 
@@ -55,27 +59,11 @@ From the command line, you can also create and manage your personal wallet to mi
 
 Then just follow the commands (use "O" to open an existing wallet or "G" to generate a new wallet for your TRGX).
 
-## DynexSolve Mining Software
+You can also start minig from within the wallet: type the command "start_mining <number_of_threads>" to start mining TRGX. The command "stop_mining" will stop the mining procedure. You can follow your hashrate in the main service daemon with the command "show_hr".
 
-To run the Dynex Solve mining software, use the following command:
+Typing "help" (both in the wallet and in the main service daemon) displays all available functions and features. Please make sure you exit these gracefully by typing in the command "exit".
 
-```
-Linux based systems:
-./dynexsolve -mining-address <WALLET ADDRESS> -no-cpu -mallob-endpoint https://dynex.dyndns.org/dynexmallob
-
-Windows based systems:
-dynexsolvevs -mining-address <WALLET ADDRESS> -no-cpu -mallob-endpoint https://dynex.dyndns.org/dynexmallob
-```
-
-Notes:
-* DynexSolve binaries are currently available for Windows and Linux (built for Ubuntu 22)
-* Currently supported GPUs: NVIDIA sm52 and better. AMD support coming soon
-* Older Linux Versions (Ubuntu 18, Ubuntu 20): need to be built from source: https://github.com/dynexcoin/DynexSolve
-* HiveOS: need to be built from source: https://github.com/dynexcoin/DynexSolve Here is a guide on how to build DynexSolve on HiveOS: https://discord.com/channels/1021103888503414834/1036973620938944612/1048610995456716871
-
-Note that the miner output shows computation speed, number of chips which are simulated, etc. Information about mining rewards can be observed in your wallet. When you start the DynexSolve miner, it will by default the GPU with device ID zero (the first installed one). You can specify another GPU if you like by using the command line parameter “-deviceid <ID”. To query the installed and available devices, you can use the command line option “-devices” which will output all available GPUs of your system and the associated IDs. A list of all available commands can be retrieved with the option “-h”.
-
-## Build Daemon, Simplewallet & WalletD from source
+## Mining DNX and managing DNX from the command line (build from source)
 
 You can also entirely build all binaries from the source. First, clone the repository:
 ```
