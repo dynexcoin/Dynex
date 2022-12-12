@@ -72,7 +72,7 @@ HttpResponse::HTTP_STATUS HttpParser::parseResponseStatusFromString(const std::s
 void HttpParser::receiveRequest(std::istream& stream, HttpRequest& request) {
   readWord(stream, request.method);
   readWord(stream, request.url);
-
+  
   std::string httpVersion;
   readWord(stream, httpVersion);
 
