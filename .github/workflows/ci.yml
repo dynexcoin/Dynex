@@ -1,0 +1,170 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  ubuntu-18_04:
+    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [
+          "core-avx2",
+          "core2",
+          "nocona",
+        ]
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v1.13
+        with:
+          cmake-version: '3.18.x'
+      - name: Extract branch name & commit
+        id: extract_branch
+        run: |
+          echo "git_hash=$(git rev-parse --short=7 "$GITHUB_SHA")" >> $GITHUB_OUTPUT
+          echo "branch=$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//\./g')" >> $GITHUB_OUTPUT
+      - name: install apt-get deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install libboost-all-dev libcurl4-openssl-dev
+          sudo apt-get install libdb++-dev build-essential libtool autotools-dev automake pkg-config bsdmainutils ccache python3 python3-pip python3-setuptools python-setuptools
+          sudo apt-get install libevent-dev python3-zmq python3-dev libboost-python-dev libboost-system-dev libboost-filesystem-dev libboost-test-dev libboost-thread-dev libminiupnpc-dev libzmq3-dev
+      - name: build Dynex
+        run: |
+          (
+          rm -rf build
+          mkdir build;
+          cd build;
+          cmake -DCMAKE_CXX_FLAGS=-march=${{ matrix.arch }} -mtune=generic -DCMAKE_C_FLAGS=-march=${{ matrix.arch }} -mtune=generic ..;
+          make -j2;
+          )
+      - name: create artifacts
+        if: success()
+        run: |
+          mkdir -p ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}
+          mv ./build/src/connectivity_tool ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}/connectivity_tool
+          mv ./build/src/dynexd ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}/dynexd
+          mv ./build/src/simplewallet ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}/simplewallet
+          mv ./build/src/walletd ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}/walletd
+          mv ./release Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}
+      - name: Archive artifacts on GH
+        if: success()
+        uses: actions/upload-artifact@v3
+        with:
+          name: Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}-ubuntu-18.04-linux-x64-${{ matrix.arch }}
+          path: Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}
+
+  ubuntu-20_04:
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [
+          "core-avx2",
+          "core2",
+          "nocona",
+        ]
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v1.13
+        with:
+          cmake-version: '3.18.x'
+      - name: Extract branch name & commit
+        id: extract_branch
+        run: |
+          echo "git_hash=$(git rev-parse --short=7 "$GITHUB_SHA")" >> $GITHUB_OUTPUT
+          echo "branch=$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//\./g')" >> $GITHUB_OUTPUT
+      - name: install apt-get deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install libboost-all-dev libcurl4-openssl-dev
+          sudo apt-get install libdb++-dev build-essential libtool autotools-dev automake pkg-config bsdmainutils ccache python3 python3-pip python3-setuptools python-setuptools
+          sudo apt-get install libevent-dev python3-zmq python3-dev libboost-python-dev libboost-system-dev libboost-filesystem-dev libboost-test-dev libboost-thread-dev libminiupnpc-dev libzmq3-dev
+      - name: build Dynex
+        run: |
+          (
+          rm -rf build
+          mkdir build;
+          cd build;
+          cmake -DCMAKE_CXX_FLAGS=-march=${{ matrix.arch }} -mtune=generic -DCMAKE_C_FLAGS=-march=${{ matrix.arch }} -mtune=generic ..;
+          make -j2;
+          )
+      - name: create artifacts
+        if: success()
+        run: |
+          mkdir -p ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}
+          mv ./build/src/connectivity_tool ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}/connectivity_tool
+          mv ./build/src/dynexd ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}/dynexd
+          mv ./build/src/simplewallet ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}/simplewallet
+          mv ./build/src/walletd ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}/walletd
+          mv ./release Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}
+      - name: Archive artifacts on GH
+        if: success()
+        uses: actions/upload-artifact@v3
+        with:
+          name: Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}-ubuntu-20.04-linux-x64-${{ matrix.arch }}
+          path: Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}
+
+  ubuntu-22_04:
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [
+          "core-avx2",
+          "core2",
+          "nocona",
+        ]
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v1.13
+        with:
+          cmake-version: '3.18.x'
+      - name: Extract branch name & commit
+        id: extract_branch
+        run: |
+          echo "git_hash=$(git rev-parse --short=7 "$GITHUB_SHA")" >> $GITHUB_OUTPUT
+          echo "branch=$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//\./g')" >> $GITHUB_OUTPUT
+      - name: install apt-get deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install libboost-all-dev libcurl4-openssl-dev
+          sudo apt-get install libdb++-dev build-essential libtool autotools-dev automake pkg-config bsdmainutils ccache python3 python3-pip python3-setuptools python-setuptools
+          sudo apt-get install libevent-dev python3-zmq python3-dev libboost-python-dev libboost-system-dev libboost-filesystem-dev libboost-test-dev libboost-thread-dev libminiupnpc-dev libzmq3-dev
+      - name: build Dynex
+        run: |
+          (
+          rm -rf build
+          mkdir build;
+          cd build;
+          cmake -DCMAKE_CXX_FLAGS=-march=${{ matrix.arch }} -mtune=generic -DCMAKE_C_FLAGS=-march=${{ matrix.arch }} -mtune=generic ..;
+          make -j2;
+          )
+      - name: create artifacts
+        if: success()
+        run: |
+          mkdir -p ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}
+          mv ./build/src/connectivity_tool ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}/connectivity_tool
+          mv ./build/src/dynexd ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}/dynexd
+          mv ./build/src/simplewallet ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}/simplewallet
+          mv ./build/src/walletd ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}/walletd
+          mv ./release Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}
+      - name: Archive artifacts on GH
+        if: success()
+        uses: actions/upload-artifact@v3
+        with:
+          name: Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}-ubuntu-22.04-linux-x64-${{ matrix.arch }}
+          path: Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}
