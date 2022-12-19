@@ -549,9 +549,23 @@ namespace CryptoNote {
 				nextDiffDefault = 60000000;
 				logger(DEBUGGING, BRIGHT_YELLOW) << "Fixing Diff to '" << nextDiffDefault << "' in mainnet.";
 		}
+		// Dynex 220
+		if (!isTestnet() && (blockIndex>=70336 && blockIndex<=70345)) {
+				nextDiffDefault = 60000000;
+				logger(DEBUGGING, BRIGHT_YELLOW) << "Fixing Diff to '" << nextDiffDefault << "' in mainnet.";
+		}
 		
+		// Dynex 221
+		if (!isTestnet() && (blockIndex>=70346 && blockIndex<=70346+50)) {
+				nextDiffDefault = 5000000; 
+				logger(DEBUGGING, BRIGHT_YELLOW) << "Fixing Diff to '" << nextDiffDefault << "' in mainnet.";
+		}
 		
-        
+		if (!isTestnet() && (blockIndex>=70404 && blockIndex<=70404+725)) {
+				nextDiffDefault = 5000000; 
+				logger(DEBUGGING, BRIGHT_YELLOW) << "Fixing Diff to '" << nextDiffDefault << "' in mainnet.";
+		}
+
         return nextDiffDefault;
 	}
 

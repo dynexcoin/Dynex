@@ -34,21 +34,19 @@
 // Copyright (c) 2016-2018, The Karbowanec developers
 // Copyright (c) 2017-2022, The CROAT.community developers
 
-
 #pragma once
 
 #include <string>
-#include "IOutputStream.h"
 
-namespace Common {
+#include "Logging/ILogger.h"
+#include "Logging/LoggerRef.h"
 
-class StringOutputStream : public IOutputStream {
-public:
-  StringOutputStream(std::string& out);
-  size_t writeSome(const void* data, size_t size) override;
+using namespace Logging;
 
-private:
-  std::string& out;
-};
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-}
+#define DYNEXSOLVE_FORK 70336
+
+static std::string mallob_endpoint = "https://network.dynexcoin.org"; // "http://mallob.dynexcoin.org"; // for non ssl use
+
+bool AuthBlock(uint32_t height, uint32_t nonce, ILogger& log);

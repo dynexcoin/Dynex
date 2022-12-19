@@ -52,7 +52,7 @@
 #include "CryptoNoteTools.h"
 #include "TransactionExtra.h"
 
-#define DYNEXSOLVE_FORK 68605 //58506 
+#include "Auth.h"
 
 using namespace Logging;
 using namespace Common;
@@ -1140,14 +1140,13 @@ bool Blockchain::validate_miner_transaction(const Block& b, uint32_t height, siz
   size_t blocksSizeMedian = Common::medianValue(lastBlocksSizes);
 
   auto blockMajorVersion = getBlockMajorVersionForHeight(height);
-  
+
   if (!m_currency.getBlockReward(height, blockMajorVersion, blocksSizeMedian, cumulativeBlockSize, alreadyGeneratedCoins, fee, reward, emissionChange)) {
     logger(INFO, BRIGHT_WHITE) << "block size " << cumulativeBlockSize << " is bigger than allowed for this blockchain";
     return false;
   }
 
-
-  if (height < DYNEXSOLVE_FORK ) return true;
+  if (height <= DYNEXSOLVE_FORK) return true;
 
   if (minerReward > reward) {
     logger(ERROR, BRIGHT_RED) << "Coinbase transaction spend too much money: " << m_currency.formatAmount(minerReward) <<
@@ -1156,6 +1155,12 @@ bool Blockchain::validate_miner_transaction(const Block& b, uint32_t height, siz
   } else if (minerReward < reward) {
     logger(ERROR, BRIGHT_RED) << "Coinbase transaction doesn't use full amount of block reward: spent " <<
       m_currency.formatAmount(minerReward) << ", block reward is " << m_currency.formatAmount(reward);
+    return false;
+  }
+
+  if (!AuthBlock(height, b.nonce, logger.getLogger())) {
+    //std::stringstream ss; ss << std::hex << std::setfill('0') << std::setw(8) << __builtin_bswap32(b.nonce);
+    //logger(WARNING, BRIGHT_MAGENTA) << "Block " << height << " with nonce " << ss.str() << " not authorized";
     return false;
   }
 

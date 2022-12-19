@@ -38,10 +38,12 @@ MacOS:
 brew install boost
 ```
 
-After downloading the precompiled binary, unzip the executable on your machine. To run a full Node in the TuringX blockchain, run the main service (=daemon) with the following command and wait until your node is fully synchronised with the network:
+After downloading the precompiled binary, unzip the executable on your machine. To run a full Node in the Dynex blockchain, run the main service (=daemon) with the following command and wait until your node is fully synchronised with the network:
 ```
 ./dynexd
 ```
+
+Please note that your node requires ports 17336 and SSL to be open.
 
 ![TuringX-Daemon](https://github.com/dynexcoin/Dynex/raw/main/turingxd.jpg)
 
@@ -57,23 +59,22 @@ Then just follow the commands (use "O" to open an existing wallet or "G" to gene
 
 ## DynexSolve Mining Software
 
-To run the Dynex Solve mining software, use the following command:
+To run the Dynex Solve mining software, use the following command (check with your pool operator for the stratum details):
 
 ```
 Linux based systems:
-./dynexsolve -mining-address <WALLET ADDRESS> -no-cpu -mallob-endpoint https://dynex.dyndns.org/dynexmallob
+./dynexsolve -mining-address <WALLET ADDRESS> -no-cpu -stratum-url <POOL> -stratum-port <POOL> -stratum-password <POOL> (-multi-gpu)
 
 Windows based systems:
-dynexsolvevs -mining-address <WALLET ADDRESS> -no-cpu -mallob-endpoint https://dynex.dyndns.org/dynexmallob
+dynexsolvevs -mining-address <WALLET ADDRESS> -no-cpu -stratum-url <POOL> -stratum-port <POOL> -stratum-password <POOL> (-multi-gpu)
 ```
 
 Notes:
-* DynexSolve binaries are currently available for Windows and Linux (built for Ubuntu 22)
+* DynexSolve binaries are currently available for Windows and Linux
 * Currently supported GPUs: NVIDIA sm52 and better. AMD support coming soon
-* Older Linux Versions (Ubuntu 18, Ubuntu 20): need to be built from source: https://github.com/dynexcoin/DynexSolve
-* HiveOS: need to be built from source: https://github.com/dynexcoin/DynexSolve Here is a guide on how to build DynexSolve on HiveOS: https://discord.com/channels/1021103888503414834/1036973620938944612/1048610995456716871
+* You can also build DynexSolve from source: https://github.com/dynexcoin/DynexSolve
 
-Note that the miner output shows computation speed, number of chips which are simulated, etc. Information about mining rewards can be observed in your wallet. When you start the DynexSolve miner, it will by default the GPU with device ID zero (the first installed one). You can specify another GPU if you like by using the command line parameter “-deviceid <ID”. To query the installed and available devices, you can use the command line option “-devices” which will output all available GPUs of your system and the associated IDs. A list of all available commands can be retrieved with the option “-h”.
+Note that the miner output shows computation speed, number of chips which are simulated, etc. Information about mining rewards can be observed in your wallet. When you start the DynexSolve miner, it will by default the GPU with device ID zero (the first installed one). You can specify another GPU if you like by using the command line parameter “-deviceid <ID”. To query the installed and available devices, you can use the command line option “-devices” which will output all available GPUs of your system and the associated IDs. A list of all available commands can be retrieved with the option “-h”. If you are running on Linux, DynexSolve will also generate a json file with the most recent statistics. These can be used with any mining farm management tool.
 
 ## Build Daemon, Simplewallet & WalletD from source
 
