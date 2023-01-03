@@ -63,9 +63,11 @@ To run the Dynex Solve mining software, use the following command (check with yo
 
 ```
 Linux based systems:
+wget https://github.com/dynexcoin/dynexjobs/raw/main/dynex_compute_w340.cnf -O dynex_compute_w340.cnf
 ./dynexsolve -mining-address <WALLET ADDRESS> -no-cpu -stratum-url <POOL> -stratum-port <POOL> -stratum-password <POOL> (-multi-gpu)
 
 Windows based systems:
+curl -LO https://github.com/dynexcoin/dynexjobs/raw/main/dynex_compute_w340.cnf --output dynex_compute_w340.cnf
 dynexsolvevs -mining-address <WALLET ADDRESS> -no-cpu -stratum-url <POOL> -stratum-port <POOL> -stratum-password <POOL> (-multi-gpu)
 ```
 
