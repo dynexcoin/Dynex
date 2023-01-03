@@ -168,3 +168,157 @@ jobs:
         with:
           name: Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}-ubuntu-22.04-linux-x64-${{ matrix.arch }}
           path: Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}
+
+  macos_11:
+    runs-on: macos-11
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v1.13
+        with:
+          cmake-version: '3.18.x'
+      - name: Extract branch name & commit
+        id: extract_branch
+        run: |
+          echo "git_hash=$(git rev-parse --short=7 "$GITHUB_SHA")" >> $GITHUB_OUTPUT
+          echo "branch=$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//\./g')" >> $GITHUB_OUTPUT
+      - name: Install boost
+        uses: MarkusJx/install-boost@v2.4.1
+        id: install-boost
+        with:
+            # REQUIRED: Specify the required boost version
+            # A list of supported versions can be found here:
+            # https://github.com/MarkusJx/prebuilt-boost/blob/main/versions-manifest.json
+            boost_version: 1.79.0
+            platform_version: 11
+      - name: build Dynex
+        env:
+          BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
+        run: |
+          (
+          rm -rf build
+          mkdir build;
+          cd build;
+          cmake .. -DBoost_INCLUDE_DIR=${{steps.install-boost.outputs.BOOST_ROOT}}/include\
+            -DBoost_LIBRARY_DIRS=${{steps.install-boost.outputs.BOOST_ROOT}}/lib;
+          make -j2;
+          )
+      - name: create artifacts
+        if: success()
+        run: |
+          mkdir -p ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}
+          mv ./build/src/connectivity_tool ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}/connectivity_tool
+          mv ./build/src/dynexd ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}/dynexd
+          mv ./build/src/simplewallet ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}/simplewallet
+          mv ./build/src/walletd ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}/walletd
+          mv ./release Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}
+      - name: Archive artifacts on GH
+        if: success()
+        uses: actions/upload-artifact@v3
+        with:
+          name: Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}-macos-11
+          path: Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}
+
+  macos_1015:
+    runs-on: macos-10.15
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v1.13
+        with:
+          cmake-version: '3.18.x'
+      - name: Extract branch name & commit
+        id: extract_branch
+        run: |
+          echo "git_hash=$(git rev-parse --short=7 "$GITHUB_SHA")" >> $GITHUB_OUTPUT
+          echo "branch=$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//\./g')" >> $GITHUB_OUTPUT
+      - name: Install boost
+        uses: MarkusJx/install-boost@v2.4.1
+        id: install-boost
+        with:
+            # REQUIRED: Specify the required boost version
+            # A list of supported versions can be found here:
+            # https://github.com/MarkusJx/prebuilt-boost/blob/main/versions-manifest.json
+            boost_version: 1.79.0
+            platform_version: 10.15
+      - name: build Dynex
+        env:
+          BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
+        run: |
+          (
+          rm -rf build
+          mkdir build;
+          cd build;
+          cmake .. -DBoost_INCLUDE_DIR=${{steps.install-boost.outputs.BOOST_ROOT}}/include\
+            -DBoost_LIBRARY_DIRS=${{steps.install-boost.outputs.BOOST_ROOT}}/lib;
+          make -j2;
+          )
+      - name: create artifacts
+        if: success()
+        run: |
+          mkdir -p ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}
+          mv ./build/src/connectivity_tool ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}/connectivity_tool
+          mv ./build/src/dynexd ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}/dynexd
+          mv ./build/src/simplewallet ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}/simplewallet
+          mv ./build/src/walletd ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}/walletd
+          mv ./release Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}
+      - name: Archive artifacts on GH
+        if: success()
+        uses: actions/upload-artifact@v3
+        with:
+          name: Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}-macos-10.15
+          path: Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}
+
+  macos_12:
+    runs-on: macos-12
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v1.13
+        with:
+          cmake-version: '3.18.x'
+      - name: Extract branch name & commit
+        id: extract_branch
+        run: |
+          echo "git_hash=$(git rev-parse --short=7 "$GITHUB_SHA")" >> $GITHUB_OUTPUT
+          echo "branch=$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//\./g')" >> $GITHUB_OUTPUT
+      - name: Install boost
+        uses: MarkusJx/install-boost@v2.4.1
+        id: install-boost
+        with:
+            # REQUIRED: Specify the required boost version
+            # A list of supported versions can be found here:
+            # https://github.com/MarkusJx/prebuilt-boost/blob/main/versions-manifest.json
+            boost_version: 1.80.0.beta1
+            platform_version: 12
+      - name: build Dynex
+        env:
+          BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
+        run: |
+          (
+          rm -rf build
+          mkdir build;
+          cd build;
+          cmake .. -DBoost_INCLUDE_DIR=${{steps.install-boost.outputs.BOOST_ROOT}}/include\
+            -DBoost_LIBRARY_DIRS=${{steps.install-boost.outputs.BOOST_ROOT}}/lib;
+          make -j2;
+          )
+      - name: create artifacts
+        if: success()
+        run: |
+          mkdir -p ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}
+          mv ./build/src/connectivity_tool ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}/connectivity_tool
+          mv ./build/src/dynexd ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}/dynexd
+          mv ./build/src/simplewallet ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}/simplewallet
+          mv ./build/src/walletd ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}/walletd
+          mv ./release Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}
+      - name: Archive artifacts on GH
+        if: success()
+        uses: actions/upload-artifact@v3
+        with:
+          name: Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}-macos-12
+          path: Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}
+
