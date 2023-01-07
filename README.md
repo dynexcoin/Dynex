@@ -12,7 +12,7 @@ For more information, read our [Dynex White Paper](https://github.com/dynexcoin/
 
 ## Using the Dynex Hosted Web Wallet to manage your DNX
 
-Users who dont want to run a node or dont want to install anything can use the Dynex Mobile Web Wallet: 
+Users who don't want to run a node or don't want to install anything can use the Dynex Mobile Web Wallet: 
 https://dynexcoin.org/get-dnx/#wallets
 
 ## Using the Dynex-App to manage your DNX
@@ -21,7 +21,7 @@ Users who just want to use the Dynex wallet functionality to create wallets or s
 
 ## Mining DNX and managing DNX from the command line (precompiled binaries)
 
-The easiest way to start minging DNX or to manage DNX wallet(s) from the command line in the terminal is by using our precompiled binaries. Download the version matching your operating system from our releases page:
+The easiest way to start mining DNX or to manage DNX wallet(s) from the command line in the terminal is by using our precompiled binaries. Download the version matching your operating system from our releases page:
 https://github.com/dynexcoin/Dynex/releases
 
 Please note that Linux and MacOS users are required to have the [Boost library](https://www.boost.org) (Version 1.74.0 or better) installed: 
