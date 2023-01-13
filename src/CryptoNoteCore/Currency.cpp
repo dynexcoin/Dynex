@@ -654,7 +654,10 @@ namespace CryptoNote {
         	logger(DEBUGGING, BRIGHT_YELLOW) << "DynexSolve 2.0.6: BLOCK 17292-17493 Fixing Diff to '" << nextDiff << "' in testnet! ";
         	return nextDiff;
         }
-        if (isTestnet() && blockIndex < 17292) { nextDiff = nextDiff/2; }
+        if (isTestnet() && blockIndex < 17292) { 
+        	nextDiff = nextDiff/2; 
+        	if (nextDiff < 14) nextDiff = 14;
+        }
         
     return nextDiff;          
 }
