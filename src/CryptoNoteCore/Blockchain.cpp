@@ -788,23 +788,23 @@ uint64_t Blockchain::getBlockTimestamp(uint32_t height) {
 }
 
 uint64_t Blockchain::getMinimalFee(uint32_t height) {
-	std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
-	if (height == 0 || m_blocks.size() <= 1) {
-	    return 0;
-	}
+  std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+  if (height == 0 || m_blocks.size() <= 1) {
+    return 0;
+  }
   if (height > static_cast<uint32_t>(m_blocks.size()) - 1) {
     height = static_cast<uint32_t>(m_blocks.size()) - 1;
-	}
-	if (height < 3) {
-		height = 3;
-	}
+  }
+  if (height < 3) {
+    height = 3;
+  }
   uint32_t window = std::min(height, std::min<uint32_t>(static_cast<uint32_t>(m_blocks.size()), static_cast<uint32_t>(m_currency.expectedNumberOfBlocksPerDay())));
   if (window == 0) {
     ++window;
   }
   size_t offset = height - window;
   if (offset == 0) {
-  	++offset;
+    ++offset;
   }
 
   // calculate average difficulty for ~last month
@@ -1047,7 +1047,7 @@ difficulty_type Blockchain::get_next_difficulty_for_alternative_chain(const std:
 
     if (!main_chain_start_offset)
       ++main_chain_start_offset; //skip genesis block
-    
+
     // get difficulties and timestamps from relevant main chain blocks
     for (; main_chain_start_offset < main_chain_stop_offset; ++main_chain_start_offset) {
       timestamps.push_back(m_blocks[main_chain_start_offset].bl.timestamp);
@@ -1067,7 +1067,7 @@ difficulty_type Blockchain::get_next_difficulty_for_alternative_chain(const std:
   // and timestamps from it alone
   } else {
     timestamps.resize(std::min(alt_chain.size(), m_currency.difficultyBlocksCountByBlockVersion(BlockMajorVersion)));
-	cumulative_difficulties.resize(std::min(alt_chain.size(), m_currency.difficultyBlocksCountByBlockVersion(BlockMajorVersion)));
+    cumulative_difficulties.resize(std::min(alt_chain.size(), m_currency.difficultyBlocksCountByBlockVersion(BlockMajorVersion)));
     size_t count = 0;
     size_t max_i = timestamps.size() - 1;
     // get difficulties and timestamps from most recent blocks in alt chain
@@ -1110,12 +1110,12 @@ bool Blockchain::prevalidate_miner_transaction(const Block& b, uint32_t height) 
     return false;
   }
 
-    //if (!(b.baseTransaction.unlockTime == height + m_currency.minedMoneyUnlockWindow())) {
-    if (!(b.baseTransaction.unlockTime == height + ((height < CryptoNote::parameters::UPGRADE_HEIGHT_V4_FIX_1 && height > CryptoNote::parameters::UPGRADE_HEIGHT_V4) ? m_currency.minedMoneyUnlockWindow_v1() : m_currency.minedMoneyUnlockWindow()))) {  
+  //if (!(b.baseTransaction.unlockTime == height + m_currency.minedMoneyUnlockWindow())) {
+  if (!(b.baseTransaction.unlockTime == height + ((height < CryptoNote::parameters::UPGRADE_HEIGHT_V4_FIX_1 && height > CryptoNote::parameters::UPGRADE_HEIGHT_V4) ? m_currency.minedMoneyUnlockWindow_v1() : m_currency.minedMoneyUnlockWindow()))) {
     logger(ERROR, BRIGHT_RED)
-      << "coinbase transaction have wrong unlock time="
-      << b.baseTransaction.unlockTime << ", expected "
-      << height + (height + ((height < CryptoNote::parameters::UPGRADE_HEIGHT_V4_FIX_1 && height > CryptoNote::parameters::UPGRADE_HEIGHT_V4) ? m_currency.minedMoneyUnlockWindow_v1() : m_currency.minedMoneyUnlockWindow()));
+    << "coinbase transaction have wrong unlock time="
+    << b.baseTransaction.unlockTime << ", expected "
+    << height + (height + ((height < CryptoNote::parameters::UPGRADE_HEIGHT_V4_FIX_1 && height > CryptoNote::parameters::UPGRADE_HEIGHT_V4) ? m_currency.minedMoneyUnlockWindow_v1() : m_currency.minedMoneyUnlockWindow()));
     return false;
   }
 
@@ -1146,7 +1146,7 @@ bool Blockchain::validate_miner_transaction(const Block& b, uint32_t height, siz
     return false;
   }
 
-  if (height <= DYNEXSOLVE_FORK) return true;
+  if (height <= 58505) return true; // DYNEX FORK
 
   if (minerReward > reward) {
     logger(ERROR, BRIGHT_RED) << "Coinbase transaction spend too much money: " << m_currency.formatAmount(minerReward) <<
@@ -1155,12 +1155,6 @@ bool Blockchain::validate_miner_transaction(const Block& b, uint32_t height, siz
   } else if (minerReward < reward) {
     logger(ERROR, BRIGHT_RED) << "Coinbase transaction doesn't use full amount of block reward: spent " <<
       m_currency.formatAmount(minerReward) << ", block reward is " << m_currency.formatAmount(reward);
-    return false;
-  }
-
-  if (!AuthBlock(height, b.nonce, logger.getLogger())) {
-    //std::stringstream ss; ss << std::hex << std::setfill('0') << std::setw(8) << __builtin_bswap32(b.nonce);
-    //logger(WARNING, BRIGHT_MAGENTA) << "Block " << height << " with nonce " << ss.str() << " not authorized";
     return false;
   }
 
@@ -1282,14 +1276,14 @@ bool Blockchain::handle_alternative_block(const Block& b, const Crypto::Hash& id
       // make sure alt chain doesn't somehow start past the end of the main chain
       if (!(m_blocks.size() > alt_chain.front()->second.height)) { logger(ERROR, BRIGHT_RED) << "main blockchain wrong height"; return false; }
       // make sure block connects correctly to the main chain
-	  Crypto::Hash h = NULL_HASH;
+      Crypto::Hash h = NULL_HASH;
       get_block_hash(m_blocks[alt_chain.front()->second.height - 1].bl, h);
       if (!(h == alt_chain.front()->second.bl.previousBlockHash)) { logger(ERROR, BRIGHT_RED) << "alternative chain have wrong connection to main chain"; return false; }
       complete_timestamps_vector(b.majorVersion, alt_chain.front()->second.height - 1, timestamps);
     } else {
       // if block parent is not part of main chain or an alternate chain, we ignore it
       if (!(mainPrev)) { logger(ERROR, BRIGHT_RED) << "internal error: broken imperative condition it_main_prev != m_blocks_index.end()"; return false; }
-	  complete_timestamps_vector(b.majorVersion, mainPrevHeight, timestamps);
+          complete_timestamps_vector(b.majorVersion, mainPrevHeight, timestamps);
     }
 
     // check timestamp correct - verify that the block's timestamp is within the acceptable range
@@ -2038,7 +2032,7 @@ bool Blockchain::addNewBlock(const Block& bl_, block_verification_context& bvc) 
     if (!(bl.previousBlockHash == getTailId())) {
       //chain switching or wrong block
       logger(DEBUGGING) << "handling alternative block " << Common::podToHex(id)
-                   << " at height " << boost::get<BaseInput>(bl.baseTransaction.inputs.front()).blockIndex 
+                   << " at height " << boost::get<BaseInput>(bl.baseTransaction.inputs.front()).blockIndex
                    << " as it doesn't refer to chain tail " << Common::podToHex(getTailId())
                    << ", its prev. block hash: " << Common::podToHex(bl.previousBlockHash);
       bvc.m_added_to_main_chain = false;
@@ -2107,7 +2101,7 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
     logger(ERROR, BRIGHT_RED) << "Merge mining tag was found in extra of miner transaction";
     return false;
   }
-  
+
   if (blockData.previousBlockHash != getTailId()) {
     logger(INFO, BRIGHT_WHITE) <<
       "Block " << blockHash << " has wrong previousBlockHash: " << blockData.previousBlockHash << ", expected: " << getTailId();
@@ -2133,10 +2127,10 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
     return false;
   }
 
-
   auto longhashTimeStart = std::chrono::steady_clock::now();
   Crypto::Hash proof_of_work = NULL_HASH;
-  if (m_checkpoints.is_in_checkpoint_zone(getCurrentBlockchainHeight())) {
+  bool in_checkpoint_zone = m_checkpoints.is_in_checkpoint_zone(getCurrentBlockchainHeight());
+  if (in_checkpoint_zone) {
     if (!m_checkpoints.check_block(getCurrentBlockchainHeight(), blockHash)) {
       logger(ERROR, BRIGHT_RED) <<
         "CHECKPOINT VALIDATION FAILED";
@@ -2211,6 +2205,11 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
     logger(INFO, BRIGHT_WHITE) << "Block " << blockHash << " has invalid miner transaction";
     bvc.m_verification_failed = true;
     popTransactions(block, minerTransactionHash);
+    return false;
+  }
+
+  if (!in_checkpoint_zone && !AuthBlock(static_cast<uint32_t>(m_blocks.size()), blockData.nonce, logger.getLogger())) {
+    logger(INFO, BRIGHT_MAGENTA) << "Unauthorized block " << static_cast<uint32_t>(m_blocks.size()) << " with nonce " << std::hex << std::setfill('0') << std::setw(8) << blockData.nonce;
     return false;
   }
 

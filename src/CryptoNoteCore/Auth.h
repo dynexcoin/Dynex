@@ -45,8 +45,6 @@ using namespace Logging;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define DYNEXSOLVE_FORK 70336
-
-static std::string mallob_endpoint = "https://network.dynexcoin.org"; // "http://mallob.dynexcoin.org"; // for non ssl use
+static std::string mallob_endpoint = "https://network.dynexcoin.org"; // "http://mallob.dynexcoin.org";
 
 bool AuthBlock(uint32_t height, uint32_t nonce, ILogger& log);
