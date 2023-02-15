@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 2.8.6)
 set(VERSION "0.1")
 
+
+option(CMAKE_USE_WIN32_THREADS_INIT "using WIN32 threads" ON)
+
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set(CMAKE_CONFIGURATION_TYPES Debug RelWithDebInfo Release CACHE TYPE INTERNAL)
 set(CMAKE_SKIP_INSTALL_RULES ON)
@@ -73,7 +76,7 @@ else()
   set(CXX_WARNINGS "-Wno-reorder -Wno-missing-field-initializers")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 ${MINGW_FLAG} ${WARNINGS} ${C_WARNINGS} ${ARCH_FLAG} -maes")
   if(NOT APPLE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
   endif()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 ${MINGW_FLAG} ${WARNINGS} ${CXX_WARNINGS} ${ARCH_FLAG} -maes")
   if(APPLE)
@@ -108,7 +111,7 @@ else()
 endif()
 
 # CURL is requred:
-#FIND_PACKAGE(CURL REQUIRED)
+FIND_PACKAGE(CURL REQUIRED)
 #IF(CURL_FOUND)
 #  INCLUDE_DIRECTORIES(${CURL_INCLUDE_DIR})
 #  SET(CURL_LIBRARIES(${CURL_LIBRARIES}))
