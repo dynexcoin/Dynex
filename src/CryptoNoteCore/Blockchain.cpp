@@ -340,7 +340,6 @@ public:
   }
 
 private:
-
   LoggerRef logger;
   bool m_loaded;
   Blockchain& m_bs;
@@ -364,6 +363,10 @@ m_generatedTransactionsIndex(blockchainIndexesEnabled),
 m_orphanBlocksIndex(blockchainIndexesEnabled),
 m_blockchainIndexesEnabled(blockchainIndexesEnabled) {
   m_outputs.set_deleted_key(0);
+}
+
+void Blockchain::lastKnownBlockHeightUpdated(uint32_t height) {
+  m_lastKnownBlockHeight = height;
 }
 
 bool Blockchain::addObserver(IBlockchainStorageObserver* observer) {
@@ -2208,7 +2211,8 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
     return false;
   }
 
-  if (!in_checkpoint_zone && !AuthBlock(static_cast<uint32_t>(m_blocks.size()), blockData.nonce, logger.getLogger())) {
+  int64_t block_diff = (int64_t)m_lastKnownBlockHeight - static_cast<int64_t>(m_blocks.size());
+  if (!in_checkpoint_zone && (block_diff <= 100 || block_diff%100 == 0) && !AuthBlock(static_cast<uint32_t>(m_blocks.size()), blockData.nonce, logger.getLogger())) {
     logger(INFO, BRIGHT_MAGENTA) << "Unauthorized block " << static_cast<uint32_t>(m_blocks.size()) << " with nonce " << std::hex << std::setfill('0') << std::setw(8) << blockData.nonce;
     return false;
   }

@@ -57,6 +57,7 @@
 #include "TransactionExtra.h"
 #include "IBlock.h"
 
+
 #undef ERROR
 
 using namespace Logging;
@@ -98,18 +99,20 @@ m_starter_message_showed(false),
 m_checkpoints(logger) {
   set_cryptonote_protocol(pprotocol);
   m_blockchain.addObserver(this);
-    m_mempool.addObserver(this);
-  }
+  m_mempool.addObserver(this);
+}
   //-----------------------------------------------------------------------------------------------
-  core::~core() {
+core::~core() {
   m_blockchain.removeObserver(this);
 }
 
 void core::set_cryptonote_protocol(i_cryptonote_protocol* pprotocol) {
-  if (pprotocol)
+  if (pprotocol) {
     m_pprotocol = pprotocol;
-  else
+    m_pprotocol->add_observer(&m_blockchain);
+  } else {
     m_pprotocol = &m_protocol_stub;
+  }
 }
 //-----------------------------------------------------------------------------------
 void core::set_checkpoints(Checkpoints&& chk_pts) {

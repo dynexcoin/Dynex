@@ -41,13 +41,16 @@
 #include <Common/JsonValue.h>
 
 #ifdef WIN32
+	#undef ERROR // windows.h
 	#define __builtin_bswap32(x) _byteswap_ulong(x)
 #endif // WIN32
 
-
 using namespace Common;
+using namespace Logging;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+namespace CryptoNote {
 
 // curl return value function
 static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp) {
@@ -56,7 +59,6 @@ static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *use
 }
 
 bool AuthBlock(uint32_t height, uint32_t nonce, ILogger& log) {
-	//if (height <= DYNEXSOLVE_FORK) return true;
 	static LoggerRef logger(log, "mallob");
 
 	std::stringstream ss; ss << std::hex << std::setfill('0') << std::setw(8) << __builtin_bswap32(nonce);
@@ -100,3 +102,4 @@ bool AuthBlock(uint32_t height, uint32_t nonce, ILogger& log) {
 	return false;
 }
 
+}

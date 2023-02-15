@@ -45,6 +45,10 @@ using namespace Logging;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+namespace CryptoNote {
+
 static std::string mallob_endpoint = "https://network.dynexcoin.org"; // "http://mallob.dynexcoin.org";
 
 bool AuthBlock(uint32_t height, uint32_t nonce, ILogger& log);
+
+}

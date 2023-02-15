@@ -52,6 +52,7 @@
 
 #include "Common/ObserverManager.h"
 #include "Common/Util.h"
+
 #include "CryptoNoteCore/BlockIndex.h"
 #include "CryptoNoteCore/Checkpoints.h"
 #include "CryptoNoteCore/Currency.h"
@@ -69,6 +70,8 @@
 
 #include <Logging/LoggerRef.h>
 
+#include "CryptoNoteProtocol/ICryptoNoteProtocolObserver.h"
+
 #undef ERROR
 
 namespace CryptoNote {
@@ -80,12 +83,14 @@ namespace CryptoNote {
   struct COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS_outs_for_amount;
 
   using CryptoNote::BlockInfo;
-  class Blockchain : public CryptoNote::ITransactionValidator {
+  class Blockchain : public CryptoNote::ITransactionValidator, public CryptoNote::ICryptoNoteProtocolObserver {
   public:
     Blockchain(const Currency& currency, tx_memory_pool& tx_pool, Logging::ILogger& logger, bool blockchainIndexesEnabled);
 
     bool addObserver(IBlockchainStorageObserver* observer);
     bool removeObserver(IBlockchainStorageObserver* observer);
+
+    virtual void lastKnownBlockHeightUpdated(uint32_t height) override;
 
     // ITransactionValidator
     virtual bool checkTransactionInputs(const CryptoNote::Transaction& tx, BlockInfo& maxUsedBlock) override;
@@ -348,6 +353,8 @@ namespace CryptoNote {
     IntrusiveLinkedList<MessageQueue<BlockchainMessage>> m_messageQueueList;
 
     Logging::LoggerRef logger;
+
+    uint32_t m_lastKnownBlockHeight;
 
     void rebuildCache();
     bool storeCache();
