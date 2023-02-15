@@ -120,7 +120,7 @@ namespace CryptoNote
     //----------------- i_cryptonote_protocol ----------------------------------
     virtual void relay_block(NOTIFY_NEW_BLOCK::request& arg) override;
     virtual void relay_transactions(NOTIFY_NEW_TRANSACTIONS::request& arg) override;
-
+    virtual void add_observer(ICryptoNoteProtocolObserver* observer) override;
     //----------------------------------------------------------------------------------
     uint32_t get_current_blockchain_height();
     bool request_missing_objects(CryptoNoteConnectionContext& context, bool check_having_blocks);

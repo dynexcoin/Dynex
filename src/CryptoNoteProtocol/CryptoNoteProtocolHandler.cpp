@@ -822,4 +822,8 @@ bool CryptoNoteProtocolHandler::removeObserver(ICryptoNoteProtocolObserver* obse
   return m_observerManager.remove(observer);
 }
 
+void CryptoNoteProtocolHandler::add_observer(ICryptoNoteProtocolObserver* observer) {
+  m_observerManager.add(observer);
+}
+
 };
