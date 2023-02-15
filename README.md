@@ -157,9 +157,7 @@ make
 ### Windows
 
 1. It is required to have the [Boost library](https://www.boost.org) (Version 1.74.0 or better) installed: 
-```
-sudo apt-get install libboost-all-dev (Ubuntu Linux)
-```
+https://www.boost.org/users/download/
 
 2. It is required to have [cmake](https://cmake.org/) for windows installed.
 3. You also need [Microsoft Visual Studio](https://visualstudio.microsoft.com) (2017 or later) installed for the build process.
@@ -170,7 +168,17 @@ mkdir build
 cd build
 cmake ..
 ```
-Then open Visual Studio. Make sure you have set Solution->Configuration to "Release". You also need to add "bcrypt.lib" to P2P->Properties->Configuration Properties->Librarian->Additional Dependencies. This is necessary to build boost's cryptographic randomizer functions. Once these settings are done, proceed a full build to generate your binaries.
+Then open Visual Studio: 
+a) Make sure you have set Solution->Configuration to "Release". 
+b) You also need to add "bcrypt.lib" to P2P->Properties->Configuration Properties->Librarian->Additional Dependencies. This is necessary to build boost's cryptographic randomizer functions. 
+c) Add the LibCurl include files to CryptoNoteCore:
+VC++ Directories -> Include Directories -> YOUR_CURL_PATH\libcurl-vc-x64-release-dll-ssl-dll-zlib-dll-ipv6-sspi\include
+d) Add the LibCurl library directories to CryptoNoteCore:
+VC++ Directories -> Library Directories -> YOUR_CURL_PATH\libcurl-vc-x64-release-dll-ssl-dll-zlib-dll-ipv6-sspi\lib
+and
+VC++ Directories -> Library Directories -> YOUR_ZLIB_PATH\zlib\lib
+
+Once these settings are done, proceed a full build to generate your binaries.
 
 
 
