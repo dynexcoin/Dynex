@@ -91,7 +91,7 @@ void addPortMapping(Logging::LoggerRef& logger, uint32_t port) {
   // Add UPnP port mapping
   logger(INFO) << "Attempting to add IGD port mapping.";
   int result;
-  UPNPDev* deviceList = upnpDiscover(1000, NULL, NULL, 0, 0, &result);
+  UPNPDev* deviceList = upnpDiscover(1000, NULL, NULL, 0, 0, 2, &result);
   UPNPUrls urls;
   IGDdatas igdData;
   char lanAddress[64];
@@ -690,28 +690,23 @@ namespace CryptoNote
   tm *ltm = localtime(&now);
 
   bool checkFutureDate(int year, int month, int day) {
-   
     if(year > (1900 + ltm->tm_year)) {
+      return true;
+    }
+    else if(year == (1900 + ltm->tm_year)) {
+      //adding 1900 to get the current year
+      if(month > 1 + ltm->tm_mon) {
+        //adding 1 to get the current month
         return true;
-    }
-    else if(year == (1900 + ltm->tm_year)) { 
-    
-    //adding 1900 to get the current year
-            if(month > 1 + ltm->tm_mon) {
-    //adding 1 to get the current month
-                return true;
-            }
-            else if(month == 1 + ltm->tm_mon) {
-                
-                if(day > ltm->tm_mday) {
-                    return true;
-                }
-                else {
-                    return false;
-                }
-            }
+      }
+      else if(month == 1 + ltm->tm_mon) {
+        if(day > ltm->tm_mday) {
+          return true;
         }
+      }
     }
+    return false;
+  }
 
   //----------------------------------------------------------------------------------- 
   bool NodeServer::handshake(CryptoNote::LevinProtocol& proto, P2pConnectionContext& context, bool just_take_peerlist) {
