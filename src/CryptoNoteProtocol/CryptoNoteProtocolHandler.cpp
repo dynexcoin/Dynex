@@ -488,9 +488,10 @@ int CryptoNoteProtocolHandler::handle_response_get_objects(int command, NOTIFY_R
       if (top == h) {
         logger(Logging::DEBUGGING) << "Found current top block in synced blocks, dismissing "
           << dismiss << "/" << arg.blocks.size() << " blocks";
-        while (dismiss--)
+        while (dismiss--) {
           arg.blocks.erase(arg.blocks.begin());
           parsed_blocks.erase(parsed_blocks.begin());
+        }
         break;
       }
       ++dismiss;
