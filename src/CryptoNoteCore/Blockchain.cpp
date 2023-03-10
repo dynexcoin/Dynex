@@ -2214,6 +2214,8 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
   int64_t block_diff = (int64_t)m_lastKnownBlockHeight - static_cast<int64_t>(m_blocks.size());
   if (!in_checkpoint_zone && (block_diff <= 100 || block_diff%100 == 0) && !AuthBlock(static_cast<uint32_t>(m_blocks.size()), blockData.nonce, logger.getLogger())) {
     logger(INFO, BRIGHT_MAGENTA) << "Unauthorized block " << static_cast<uint32_t>(m_blocks.size()) << " with nonce " << std::hex << std::setfill('0') << std::setw(8) << blockData.nonce;
+    bvc.m_verification_failed = true;
+    popTransactions(block, minerTransactionHash);
     return false;
   }
 

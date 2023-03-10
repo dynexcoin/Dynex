@@ -45,15 +45,6 @@
 	#define __builtin_bswap32(x) _byteswap_ulong(x)
 #endif // WIN32
 
-#ifdef WIN32
-#pragma comment(lib, "libcurl.lib" )
-#pragma comment(lib, "winmm.lib" )
-#pragma comment(lib, "ws2_32.lib")
-#pragma comment (lib, "zlib.lib")
-#pragma comment (lib, "advapi32.lib")
-#pragma comment (lib, "crypt32.lib")
-#endif // WIN32
-
 using namespace Common;
 using namespace Logging;
 

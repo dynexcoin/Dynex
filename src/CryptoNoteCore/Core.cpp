@@ -1284,7 +1284,7 @@ std::unique_ptr<IBlock> core::getBlock(const Crypto::Hash& blockId) {
     return std::unique_ptr<BlockWithTransactions>(nullptr);
   }
 
-  return std::move(blockPtr);
+  return blockPtr;
 }
 
 bool core::getMixin(const Transaction& transaction, uint64_t& mixin) {

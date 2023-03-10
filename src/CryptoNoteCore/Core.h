@@ -56,7 +56,6 @@
 #include "CryptoNoteCore/MessageQueue.h"
 #include "CryptoNoteCore/BlockchainMessages.h"
 #include <Logging/LoggerMessage.h>
-#include "../Dynexchip/Dynexchip.cpp"
 
 namespace CryptoNote {
 
@@ -75,9 +74,6 @@ namespace CryptoNote {
      bool handle_incoming_block(const Block& b, block_verification_context& bvc, bool control_miner, bool relay_block) override;
      virtual i_cryptonote_protocol* get_protocol() override {return m_pprotocol;}
      const Currency& currency() const { return m_currency; }
-
-     //-------------------- Dynex chip handler ------------------
-     Dynex::dynexchip m_dynexchip;
 
      //-------------------- IMinerHandler -----------------------
      virtual bool handle_block_found(Block& b) override;
