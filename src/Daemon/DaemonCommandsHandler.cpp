@@ -469,7 +469,7 @@ bool DaemonCommandsHandler::print_pool_count(const std::vector<std::string>& arg
 }
 //--------------------------------------------------------------------------------
 /*bool DaemonCommandsHandler::start_mining(const std::vector<std::string> &args) {
-  /*
+
   if (!args.size()) {
     std::cout << "Please, specify wallet address to mine for: start_mining <addr> [threads=1]" << std::endl;
     return true;
@@ -512,7 +512,7 @@ bool DaemonCommandsHandler::ban(const std::vector<std::string>& args)
   if (args.size() != 1 && args.size() != 2) return false;
   std::string addr = args[0];
   uint32_t ip;
-  time_t seconds;
+  time_t seconds = 3600; // 1h
   if (args.size() > 1) {
     try {
       seconds = std::stoi(args[1]);
@@ -523,12 +523,12 @@ bool DaemonCommandsHandler::ban(const std::vector<std::string>& args)
     if (seconds == 0) {
       return false;
     }
-  } 
+  }
   try {
     ip = Common::stringToIpAddress(addr);
   } catch (const std::exception &e) {
-     std::cout << "Incorrect IP value: " << e.what() << std::endl;
-     return false;
+    std::cout << "Incorrect IP value: " << e.what() << std::endl;
+    return false;
   }
   return m_srv.ban_host(ip, seconds);
 }

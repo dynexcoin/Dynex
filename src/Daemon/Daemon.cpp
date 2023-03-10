@@ -103,12 +103,14 @@ namespace
   const command_line::arg_descriptor<bool>        arg_disable_checkpoints = { "without-checkpoints", "Synchronize without checkpoints" };
   const command_line::arg_descriptor<std::string> arg_rollback = { "rollback", "Rollback blockchain to <height>" };
   const command_line::arg_descriptor<bool>        arg_sync_from_zero = { "sync-from-zero", "Force sync from block 0" };  
-  
+
+/*
   static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
   {
       ((std::string*)userp)->append((char*)contents, size * nmemb);
       return size * nmemb;
   }
+*/
 }
 
 bool command_line_preprocessor(const boost::program_options::variables_map& vm, LoggerRef& logger);
