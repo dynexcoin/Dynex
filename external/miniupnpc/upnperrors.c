@@ -1,9 +1,10 @@
-/* $Id: upnperrors.c,v 1.6 2012/03/15 01:02:03 nanard Exp $ */
-/* Project : miniupnp
+/* $Id: upnperrors.c,v 1.10 2019/08/24 08:49:53 nanard Exp $ */
+/* vim: tabstop=4 shiftwidth=4 noexpandtab
+ * Project : miniupnp
  * Author : Thomas BERNARD
- * copyright (c) 2007 Thomas Bernard
+ * copyright (c) 2007-2019 Thomas Bernard
  * All Right reserved.
- * http://miniupnp.free.fr/ or http://miniupnp.tuxfamily.org/
+ * http://miniupnp.free.fr/ or https://miniupnp.tuxfamily.org/
  * This software is subjet to the conditions detailed in the
  * provided LICENCE file. */
 #include <string.h>
@@ -24,10 +25,17 @@ const char * strupnperror(int err)
 	case UPNPCOMMAND_INVALID_ARGS:
 		s = "Miniupnpc Invalid Arguments";
 		break;
+	case UPNPCOMMAND_INVALID_RESPONSE:
+		s = "Miniupnpc Invalid response";
+		break;
+	case UPNPCOMMAND_HTTP_ERROR:
+		s = "Miniupnpc HTTP error";
+		break;
 	case UPNPDISCOVER_SOCKET_ERROR:
 		s = "Miniupnpc Socket error";
 		break;
 	case UPNPDISCOVER_MEMORY_ERROR:
+	case UPNPCOMMAND_MEM_ALLOC_ERROR:
 		s = "Miniupnpc Memory allocation error";
 		break;
 	case 401:
@@ -64,7 +72,7 @@ const char * strupnperror(int err)
 		s = "ProtocolWildcardingNotAllowed";
 		break;
 	case 708:
-		s = "WildcardNotPermittedInSrcIP";
+		s = "InvalidLayer2Address";
 		break;
 	case 709:
 		s = "NoPacketSent";
