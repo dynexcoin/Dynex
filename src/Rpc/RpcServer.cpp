@@ -343,12 +343,12 @@ bool RpcServer::masternode_check_incoming_tx(const BinaryArray& tx_blob) {
 		logger(INFO) << "Could not find outputs to masternode fee address";
 		return false;
 	}
-	*/
-
 	if (amount != 0) {
 		logger(INFO) << "Masternode received relayed transaction fee: " << m_core.currency().formatAmount(amount) << " DNX";
 		return true;
 	}
+	*/
+
 	return false;
 }
 
@@ -1125,17 +1125,17 @@ bool RpcServer::f_on_transaction_json(const F_COMMAND_RPC_GET_TRANSACTION_DETAIL
 /* Deprecated */
 bool RpcServer::f_on_pool_json(const F_COMMAND_RPC_GET_POOL::request& req, F_COMMAND_RPC_GET_POOL::response& res) {
   auto pool = m_core.getPoolTransactions();
-  for (const Transaction tx : pool) {
+  for (const Transaction &tx : pool) {
     f_transaction_short_response transaction_short;
-  
+
     uint64_t amount_in = getInputAmount(tx);
     uint64_t amount_out = getOutputAmount(tx);
-  
+
     transaction_short.hash = Common::podToHex(getObjectHash(tx));
     transaction_short.fee = amount_in < amount_out + parameters::MINIMUM_FEE ? parameters::MINIMUM_FEE : amount_in - amount_out;
     transaction_short.amount_out = amount_out;
     transaction_short.size = getObjectBinarySize(tx);
-    res.transactions.push_back(transaction_short);  
+    res.transactions.push_back(transaction_short);
   }
   res.status = CORE_RPC_STATUS_OK;
   return true;
@@ -1144,7 +1144,7 @@ bool RpcServer::f_on_pool_json(const F_COMMAND_RPC_GET_POOL::request& req, F_COM
 /* Deprecated */
 bool RpcServer::f_on_mempool_json(const COMMAND_RPC_GET_MEMPOOL::request& req, COMMAND_RPC_GET_MEMPOOL::response& res) {
   auto pool = m_core.getMemoryPool();
-  for (const CryptoNote::tx_memory_pool::TransactionDetails txd : pool) {
+  for (const CryptoNote::tx_memory_pool::TransactionDetails &txd : pool) {
     f_mempool_transaction_response mempool_transaction;
     uint64_t amount_out = getOutputAmount(txd.tx);
 
@@ -1166,11 +1166,11 @@ bool RpcServer::f_on_mempool_json(const COMMAND_RPC_GET_MEMPOOL::request& req, C
 
 bool RpcServer::on_get_transactions_pool(const COMMAND_RPC_GET_TRANSACTIONS_POOL::request& req, COMMAND_RPC_GET_TRANSACTIONS_POOL::response& res) {
   auto pool = m_core.getMemoryPool();
-  for (const CryptoNote::tx_memory_pool::TransactionDetails txd : pool) {
+  for (const CryptoNote::tx_memory_pool::TransactionDetails &txd : pool) {
     transaction_pool_response mempool_transaction;
     mempool_transaction.hash = Common::podToHex(txd.id);
     mempool_transaction.fee = txd.fee;
-    mempool_transaction.amount_out = getOutputAmount(txd.tx);;
+    mempool_transaction.amount_out = getOutputAmount(txd.tx);
     mempool_transaction.size = txd.blobSize;
     mempool_transaction.receiveTime = txd.receiveTime;
     res.transactions.push_back(mempool_transaction);
@@ -1220,7 +1220,7 @@ bool RpcServer::on_get_transactions_by_payment_id(const COMMAND_RPC_GET_TRANSACT
 /* Deprecated */
 bool RpcServer::f_on_transactions_pool_json(const F_COMMAND_RPC_GET_POOL::request& req, F_COMMAND_RPC_GET_POOL::response& res) {
   auto pool = m_core.getPoolTransactions();
-  for (const Transaction tx : pool) {
+  for (const Transaction &tx : pool) {
     f_transaction_short_response transaction_short;
     uint64_t amount_in = getInputAmount(tx);
     uint64_t amount_out = getOutputAmount(tx);
