@@ -6,14 +6,14 @@ Dynex is a next-generation platform for neuromorphic computing based on a new fl
 
 Dynex has also developed a proprietary circuit design, the Dynex Neuromorphic Chip, that complements the Dynex ecosystem and turns any modern GPU into a simulated neuromorphic computing chip that can perform orders of magnitude more efficient than classical or quantum methodologies for a wide range of applications. Due to the dominance of ASICs in the proof-of-work token mining industry, there is a large amount of dormant GPU infrastructure available which can be converted into high performance next-generation neuromorphic computing clusters. The Dynex mainnet started on September 16th 2022.
 
-For more information, read our [Dynex White Paper](https://github.com/dynexcoin/Dynex-Whitepaper)
+For more information, read our [Dynex Whitepapers](https://dynexcoin.org/learn/dynex-whitepapers)
 
 
 
 ## Using the Dynex Hosted Web Wallet to manage your DNX
 
 Users who don't want to run a node or don't want to install anything can use the Dynex Mobile Web Wallet: 
-https://dynexcoin.org/get-dnx/#wallets
+[https://dynexcoin.org/get-dnx/#wallets](https://dynexcoin.org/get-dnx#wallets)
 
 ## Using the Dynex-App to manage your DNX
 
