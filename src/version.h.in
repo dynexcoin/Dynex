@@ -8,12 +8,12 @@
 
 #define CN_PROJECT_NAME "Dynex"
 #define CN_PROJECT_SITE "https://dynexcoin.org"
-#define CN_PROJECT_COPYRIGHT "Copyright 2017-2022, Dynex Developers"
+#define CN_PROJECT_COPYRIGHT "Copyright 2017-2023, Dynex Developers"
 #define CN_VER_MAJOR 2
 #define CN_VER_MINOR 2
 #define CN_VER_REV 2
-#define CN_VER_BUILD 20221218
-#define CN_VER_REMARK "#mandatory"
+#define CN_VER_BUILD 20231028
+#define CN_VER_REMARK "#"
 #define CN_PROJECT_VERSION STR(CN_VER_MAJOR) "." STR(CN_VER_MINOR) "." STR(CN_VER_REV)
 #define CN_PROJECT_VERSION_BUILD_NO STR(CN_VER_BUILD)
 
