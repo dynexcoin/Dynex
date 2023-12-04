@@ -45,7 +45,7 @@ jobs:
           rm -rf build
           mkdir build;
           cd build;
-          cmake -DGUI=True -DCMAKE_CXX_FLAGS=-march=${{ matrix.arch }} -mtune=generic -DCMAKE_C_FLAGS=-march=${{ matrix.arch }} -mtune=generic ..;
+          cmake -DCMAKE_CXX_FLAGS=-march=${{ matrix.arch }} -mtune=generic -DCMAKE_C_FLAGS=-march=${{ matrix.arch }} -mtune=generic ..;
           make -j2;
           )
       - name: create artifacts
@@ -56,7 +56,6 @@ jobs:
           mv ./build/src/dynexd ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}/dynexd
           mv ./build/src/simplewallet ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}/simplewallet
           mv ./build/src/walletd ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}/walletd
-          mv ./build/src/WalletGui/dynexwallet ./release/Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}/dynexwallet
           mv ./release Dynex-${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.git_hash }}
       - name: Archive artifacts on GH
         if: success()
