@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -43,9 +43,9 @@
 #include "Common/CommandLine.h"
 #include "Common/StringTools.h"
 #include "crypto/crypto.h"
-#include "CryptoNoteConfig.h"
+#include "DynexCNConfig.h"
 
-namespace CryptoNote {
+namespace DynexCN {
 namespace {
 
 const command_line::arg_descriptor<std::string> arg_p2p_bind_ip        = {"p2p-bind-ip", "Interface for p2p network protocol", "0.0.0.0"};
@@ -125,7 +125,7 @@ bool NetNodeConfig::init(const boost::program_options::variables_map& vm)
     configFolder = command_line::get_arg(vm, command_line::arg_data_dir);
   }
 
-  p2pStateFilename = CryptoNote::parameters::P2P_NET_DATA_FILENAME;
+  p2pStateFilename = DynexCN::parameters::P2P_NET_DATA_FILENAME;
 
   if (command_line::has_arg(vm, arg_p2p_add_peer)) {
     std::vector<std::string> perrs = command_line::get_arg(vm, arg_p2p_add_peer);

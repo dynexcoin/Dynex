@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>TransferFrame</class>
+ <widget class="QFrame" name="TransferFrame">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>885</width>
+    <height>121</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Frame</string>
+  </property>
+  <property name="frameShape">
+   <enum>QFrame::Box</enum>
+  </property>
+  <property name="frameShadow">
+   <enum>QFrame::Sunken</enum>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <property name="leftMargin">
+    <number>5</number>
+   </property>
+   <property name="topMargin">
+    <number>5</number>
+   </property>
+   <property name="rightMargin">
+    <number>5</number>
+   </property>
+   <property name="bottomMargin">
+    <number>5</number>
+   </property>
+   <item row="0" column="0">
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>Pay To:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="3">
+    <widget class="QToolButton" name="m_addressBookButton">
+     <property name="text">
+      <string>...</string>
+     </property>
+     <property name="icon">
+      <iconset resource="../../resources.qrc">
+       <normaloff>:/icons/address-book</normaloff>:/icons/address-book</iconset>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="4">
+    <widget class="QToolButton" name="m_pasteButton">
+     <property name="text">
+      <string>...</string>
+     </property>
+     <property name="icon">
+      <iconset resource="../../resources.qrc">
+       <normaloff>:/icons/paste</normaloff>:/icons/paste</iconset>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1" colspan="5">
+    <widget class="QLineEdit" name="m_labelEdit">
+     <property name="placeholderText">
+      <string>Enter a label for this address to add it to your address book</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="label_3">
+     <property name="text">
+      <string>Amount:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="5">
+    <widget class="QToolButton" name="m_removeButton">
+     <property name="text">
+      <string>...</string>
+     </property>
+     <property name="icon">
+      <iconset resource="../../resources.qrc">
+       <normaloff>:/icons/remove</normaloff>:/icons/remove</iconset>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="2" colspan="4">
+    <spacer name="horizontalSpacer">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>558</width>
+       <height>17</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="label_2">
+     <property name="text">
+      <string>Label:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <widget class="QDoubleSpinBox" name="m_amountSpin">
+     <property name="layoutDirection">
+      <enum>Qt::LeftToRight</enum>
+     </property>
+     <property name="suffix">
+      <string notr="true"/>
+     </property>
+     <property name="decimals">
+      <number>8</number>
+     </property>
+     <property name="maximum">
+      <double>999999999.999999046325684</double>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1" colspan="2">
+    <widget class="QLineEdit" name="m_addressEdit"/>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>m_addressEdit</tabstop>
+  <tabstop>m_labelEdit</tabstop>
+  <tabstop>m_amountSpin</tabstop>
+  <tabstop>m_addressBookButton</tabstop>
+  <tabstop>m_pasteButton</tabstop>
+  <tabstop>m_removeButton</tabstop>
+ </tabstops>
+ <resources>
+  <include location="../../resources.qrc"/>
+ </resources>
+ <connections>
+  <connection>
+   <sender>m_removeButton</sender>
+   <signal>clicked()</signal>
+   <receiver>TransferFrame</receiver>
+   <slot>close()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>862</x>
+     <y>21</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>442</x>
+     <y>60</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>m_addressBookButton</sender>
+   <signal>clicked()</signal>
+   <receiver>TransferFrame</receiver>
+   <slot>addressBookClicked()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>786</x>
+     <y>21</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>442</x>
+     <y>60</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>m_pasteButton</sender>
+   <signal>clicked()</signal>
+   <receiver>TransferFrame</receiver>
+   <slot>pasteClicked()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>824</x>
+     <y>21</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>442</x>
+     <y>60</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+ <slots>
+  <slot>addressBookClicked()</slot>
+  <slot>pasteClicked()</slot>
+ </slots>
+</ui>

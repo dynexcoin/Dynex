@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -37,9 +37,9 @@
 
 #include "JsonRpc.h"
 #include "HttpClient.h"
-#include "CryptoNoteCore/TransactionPool.h"
+#include "DynexCNCore/TransactionPool.h"
 
-namespace CryptoNote {
+namespace DynexCN {
 
 namespace JsonRpc {
 

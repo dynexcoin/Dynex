@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2017-2019, The CROAT.community developers
 //
 // This file is part of Bytecoin.
@@ -20,7 +20,7 @@
 
 #include <cstdint>
 
-namespace CryptoNote {
+namespace DynexCN {
 
 const uint32_t PORTABLE_STORAGE_SIGNATUREA = 0x01011101;
 const uint32_t PORTABLE_STORAGE_SIGNATUREB = 0x01020101; // bender's nightmare 

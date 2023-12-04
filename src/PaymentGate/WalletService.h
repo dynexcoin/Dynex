@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -42,7 +42,7 @@
 #include <System/Event.h>
 #include "IWallet.h"
 #include "INode.h"
-#include "CryptoNoteCore/Currency.h"
+#include "DynexCNCore/Currency.h"
 #include "PaymentServiceJsonRpcMessages.h"
 #undef ERROR //TODO: workaround for windows build. fix it
 #include "Logging/LoggerRef.h"
@@ -53,7 +53,7 @@
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/hashed_index.hpp>
 
-namespace CryptoNote {
+namespace DynexCN {
 class IFusionManager;
 }
 
@@ -68,14 +68,14 @@ struct WalletConfiguration {
   bool generateDeterministic;
 };
 
-void generateNewWallet(const CryptoNote::Currency& currency, const WalletConfiguration& conf, Logging::ILogger& logger, System::Dispatcher& dispatcher);
+void generateNewWallet(const DynexCN::Currency& currency, const WalletConfiguration& conf, Logging::ILogger& logger, System::Dispatcher& dispatcher);
 
 struct TransactionsInBlockInfoFilter;
 
 class WalletService {
 public:
-  WalletService(const CryptoNote::Currency& currency, System::Dispatcher& sys, CryptoNote::INode& node, CryptoNote::IWallet& wallet,
-    CryptoNote::IFusionManager& fusionManager, const WalletConfiguration& conf, Logging::ILogger& logger);
+  WalletService(const DynexCN::Currency& currency, System::Dispatcher& sys, DynexCN::INode& node, DynexCN::IWallet& wallet,
+    DynexCN::IFusionManager& fusionManager, const WalletConfiguration& conf, Logging::ILogger& logger);
   virtual ~WalletService();
 
   void init();
@@ -137,8 +137,8 @@ private:
   void replaceWithNewWallet(const Crypto::SecretKey& viewSecretKey);
   void replaceWithNewWallet(const Crypto::SecretKey& viewSecretKey, const uint32_t scanHeight);
 
-  std::vector<CryptoNote::TransactionsInBlockInfo> getTransactions(const Crypto::Hash& blockHash, size_t blockCount) const;
-  std::vector<CryptoNote::TransactionsInBlockInfo> getTransactions(uint32_t firstBlockIndex, size_t blockCount) const;
+  std::vector<DynexCN::TransactionsInBlockInfo> getTransactions(const Crypto::Hash& blockHash, size_t blockCount) const;
+  std::vector<DynexCN::TransactionsInBlockInfo> getTransactions(uint32_t firstBlockIndex, size_t blockCount) const;
 
   std::vector<TransactionHashesInBlockRpcInfo> getRpcTransactionHashes(const Crypto::Hash& blockHash, size_t blockCount, const TransactionsInBlockInfoFilter& filter) const;
   std::vector<TransactionHashesInBlockRpcInfo> getRpcTransactionHashes(uint32_t firstBlockIndex, size_t blockCount, const TransactionsInBlockInfoFilter& filter) const;
@@ -146,10 +146,10 @@ private:
   std::vector<TransactionsInBlockRpcInfo> getRpcTransactions(const Crypto::Hash& blockHash, size_t blockCount, const TransactionsInBlockInfoFilter& filter) const;
   std::vector<TransactionsInBlockRpcInfo> getRpcTransactions(uint32_t firstBlockIndex, size_t blockCount, const TransactionsInBlockInfoFilter& filter) const;
 
-  const CryptoNote::Currency& currency;
-  CryptoNote::IWallet& wallet;
-  CryptoNote::IFusionManager& fusionManager;
-  CryptoNote::INode& node;
+  const DynexCN::Currency& currency;
+  DynexCN::IWallet& wallet;
+  DynexCN::IFusionManager& fusionManager;
+  DynexCN::INode& node;
   const WalletConfiguration& config;
   bool inited;
   Logging::LoggerRef logger;

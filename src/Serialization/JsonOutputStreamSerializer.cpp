@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2017-2019, The CROAT.community developers
 //
 // This file is part of Bytecoin.
@@ -22,9 +22,9 @@
 #include "Common/StringTools.h"
 
 using Common::JsonValue;
-using namespace CryptoNote;
+using namespace DynexCN;
 
-namespace CryptoNote {
+namespace DynexCN {
 std::ostream& operator<<(std::ostream& out, const JsonOutputStreamSerializer& enumerator) {
   out << enumerator.root;
   return out;

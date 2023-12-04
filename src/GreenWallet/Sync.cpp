@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -42,6 +42,7 @@
 #include <Common/StringTools.h>
 
 #include <iostream>
+#include <thread>
 
 #include <GreenWallet/ColouredMsg.h>
 #include <GreenWallet/CommandImplementations.h>
@@ -61,7 +62,7 @@ void checkForNewTransactions(std::shared_ptr<WalletInfo> walletInfo)
         for (size_t i = walletInfo->knownTransactionCount; 
                     i < newTransactionCount; i++)
         {
-            const CryptoNote::WalletTransaction t 
+            const DynexCN::WalletTransaction t 
                 = walletInfo->wallet.getTransaction(i);
 
             /* Don't print outgoing or fusion transfers */
@@ -86,7 +87,7 @@ void checkForNewTransactions(std::shared_ptr<WalletInfo> walletInfo)
     }
 }
 
-void syncWallet(CryptoNote::INode &node,
+void syncWallet(DynexCN::INode &node,
                 std::shared_ptr<WalletInfo> walletInfo)
 {
     uint32_t localHeight = node.getLastLocalBlockHeight();
@@ -213,7 +214,7 @@ void syncWallet(CryptoNote::INode &node,
             {
                 for (size_t i = transactionCount; i < tmpTransactionCount; i++)
                 {
-                    CryptoNote::WalletTransaction t
+                    DynexCN::WalletTransaction t
                         = walletInfo->wallet.getTransaction(i);
 
                     /* Don't print out fusion transactions */

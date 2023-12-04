@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -39,12 +39,12 @@
 
 #include <Wallet/WalletGreen.h>
 
-bool fusionTX(CryptoNote::WalletGreen &wallet, 
-              CryptoNote::TransactionParameters p);
+bool fusionTX(DynexCN::WalletGreen &wallet, 
+              DynexCN::TransactionParameters p);
 
-bool optimize(CryptoNote::WalletGreen &wallet, uint64_t threshold);
+bool optimize(DynexCN::WalletGreen &wallet, uint64_t threshold);
 
-void fullOptimize(CryptoNote::WalletGreen &wallet);
+void fullOptimize(DynexCN::WalletGreen &wallet);
 
-size_t makeFusionTransaction(CryptoNote::WalletGreen &wallet, 
+size_t makeFusionTransaction(DynexCN::WalletGreen &wallet, 
                              uint64_t threshold);

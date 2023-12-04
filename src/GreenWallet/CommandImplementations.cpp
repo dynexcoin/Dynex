@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -44,8 +44,8 @@
 #include "Common/Base58.h"
 #include "Common/StringTools.h"
 #include "Common/FormatTools.h"
-#include "CryptoNoteCore/Account.h"
-#include "CryptoNoteCore/CryptoNoteBasicImpl.h"
+#include "DynexCNCore/Account.h"
+#include "DynexCNCore/DynexCNBasicImpl.h"
 
 #ifndef MSVC
 #include <fstream>
@@ -92,18 +92,18 @@ void exportKeys(std::shared_ptr<WalletInfo> walletInfo)
     printPrivateKeys(walletInfo->wallet, walletInfo->viewWallet);
 }
 
-std::string getGUIPrivateKey(CryptoNote::WalletGreen &wallet)
+std::string getGUIPrivateKey(DynexCN::WalletGreen &wallet)
 {
     auto viewKey = wallet.getViewKey();
     auto spendKey = wallet.getAddressSpendKey(0);
 
-    CryptoNote::AccountPublicAddress addr
+    DynexCN::AccountPublicAddress addr
     {
         spendKey.publicKey,
         viewKey.publicKey,
     };
 
-    CryptoNote::AccountKeys keys
+    DynexCN::AccountKeys keys
     {
         addr,
         spendKey.secretKey,
@@ -112,12 +112,12 @@ std::string getGUIPrivateKey(CryptoNote::WalletGreen &wallet)
 
     return Tools::Base58::encode_addr
     (
-        CryptoNote::parameters::CRYPTONOTE_PUBLIC_ADDRESS_BASE58_PREFIX,
+        DynexCN::parameters::CRYPTONOTE_PUBLIC_ADDRESS_BASE58_PREFIX,
         std::string(reinterpret_cast<char*>(&keys), sizeof(keys))
     );
 }
 
-void printPrivateKeys(CryptoNote::WalletGreen &wallet, bool viewWallet)
+void printPrivateKeys(DynexCN::WalletGreen &wallet, bool viewWallet)
 {
     auto privateViewKey = wallet.getViewKey().secretKey;
 
@@ -134,7 +134,7 @@ void printPrivateKeys(CryptoNote::WalletGreen &wallet, bool viewWallet)
 
     Crypto::SecretKey derivedPrivateViewKey;
 
-    CryptoNote::AccountBase::generateViewFromSpend(privateSpendKey,
+    DynexCN::AccountBase::generateViewFromSpend(privateSpendKey,
                                                    derivedPrivateViewKey);
 
     const bool deterministicPrivateKeys
@@ -172,7 +172,7 @@ void printPrivateKeys(CryptoNote::WalletGreen &wallet, bool viewWallet)
               << std::endl;
 }
 
-void balance(CryptoNote::INode &node, CryptoNote::WalletGreen &wallet,
+void balance(DynexCN::INode &node, DynexCN::WalletGreen &wallet,
              bool viewWallet)
 {
     const uint64_t unconfirmedBalance = wallet.getPendingBalance();
@@ -222,7 +222,7 @@ void balance(CryptoNote::INode &node, CryptoNote::WalletGreen &wallet,
     }
 }
 
-void blockchainHeight(CryptoNote::INode &node, CryptoNote::WalletGreen &wallet)
+void blockchainHeight(DynexCN::INode &node, DynexCN::WalletGreen &wallet)
 {
     const uint32_t localHeight = node.getLastLocalBlockHeight();
     const uint32_t remoteHeight = node.getLastKnownBlockHeight();
@@ -398,7 +398,7 @@ void printHashrate(uint64_t difficulty)
 
     /* Hashrate is difficulty divided by block target time */
     uint32_t hashrate = static_cast<uint32_t>(
-        round(difficulty / CryptoNote::parameters::DIFFICULTY_TARGET)
+        round(difficulty / DynexCN::parameters::DIFFICULTY_TARGET)
     );
 
     std::cout << "Network hashrate: "
@@ -409,7 +409,7 @@ void printHashrate(uint64_t difficulty)
 /* This makes sure to call functions on the node which only return cached
    data. This ensures it returns promptly, and doesn't hang waiting for a
    response when the node is having issues. */
-void status(CryptoNote::INode &node, CryptoNote::WalletGreen &wallet)
+void status(DynexCN::INode &node, DynexCN::WalletGreen &wallet)
 {
     uint32_t localHeight = node.getLastLocalBlockHeight();
     uint32_t remoteHeight = node.getLastKnownBlockHeight();
@@ -437,7 +437,7 @@ void status(CryptoNote::INode &node, CryptoNote::WalletGreen &wallet)
     printSyncSummary(localHeight, remoteHeight, walletHeight);
 }
 
-void reset(CryptoNote::INode &node, std::shared_ptr<WalletInfo> walletInfo)
+void reset(DynexCN::INode &node, std::shared_ptr<WalletInfo> walletInfo)
 {
 	uint64_t scanHeight = getScanHeight();
 
@@ -460,7 +460,7 @@ void reset(CryptoNote::INode &node, std::shared_ptr<WalletInfo> walletInfo)
 	syncWallet(node, walletInfo);
 }
 
-void saveCSV(CryptoNote::WalletGreen &wallet, CryptoNote::INode &node)
+void saveCSV(DynexCN::WalletGreen &wallet, DynexCN::INode &node)
 {
     const size_t numTransactions = wallet.getTransactionCount();
 
@@ -487,7 +487,7 @@ void saveCSV(CryptoNote::WalletGreen &wallet, CryptoNote::INode &node)
     /* Loop through transactions */
     for (size_t i = 0; i < numTransactions; i++)
     {
-        const CryptoNote::WalletTransaction t = wallet.getTransaction(i);
+        const DynexCN::WalletTransaction t = wallet.getTransaction(i);
 
         /* Ignore fusion transactions */
         if (t.totalAmount == 0)
@@ -515,8 +515,8 @@ void saveCSV(CryptoNote::WalletGreen &wallet, CryptoNote::INode &node)
               << std::endl;
 }
 
-void printOutgoingTransfer(CryptoNote::WalletTransaction t,
-                           CryptoNote::INode &node)
+void printOutgoingTransfer(DynexCN::WalletTransaction t,
+                           DynexCN::INode &node)
 {
     std::cout << WarningMsg("Outgoing transfer:")
               << std::endl
@@ -551,8 +551,8 @@ void printOutgoingTransfer(CryptoNote::WalletTransaction t,
     std::cout << std::endl;
 }
 
-void printIncomingTransfer(CryptoNote::WalletTransaction t,
-                           CryptoNote::INode &node)
+void printIncomingTransfer(DynexCN::WalletTransaction t,
+                           DynexCN::INode &node)
 {
     std::cout << SuccessMsg("Incoming transfer:")
               << std::endl
@@ -586,7 +586,7 @@ void printIncomingTransfer(CryptoNote::WalletTransaction t,
 }
 
 void listTransfers(bool incoming, bool outgoing, 
-                   CryptoNote::WalletGreen &wallet, CryptoNote::INode &node)
+                   DynexCN::WalletGreen &wallet, DynexCN::INode &node)
 {
     const size_t numTransactions = wallet.getTransactionCount();
 
@@ -595,7 +595,7 @@ void listTransfers(bool incoming, bool outgoing,
 
     for (size_t i = 0; i < numTransactions; i++)
     {
-        const CryptoNote::WalletTransaction t = wallet.getTransaction(i);
+        const DynexCN::WalletTransaction t = wallet.getTransaction(i);
 
         if (t.totalAmount < 0 && outgoing)
         {
@@ -623,7 +623,7 @@ void listTransfers(bool incoming, bool outgoing,
     }
 }
 
-void save(CryptoNote::WalletGreen &wallet)
+void save(DynexCN::WalletGreen &wallet)
 {
 	std::cout << InformationMsg("Saving.") << std::endl;
 	wallet.save();
@@ -658,7 +658,7 @@ void advanced(std::shared_ptr<WalletInfo> wallet)
     }
 }
 
-void txSecretKey(CryptoNote::WalletGreen &wallet)
+void txSecretKey(DynexCN::WalletGreen &wallet)
 {
     std::string hashStr;
 	Crypto::Hash txid;
@@ -686,7 +686,7 @@ void txSecretKey(CryptoNote::WalletGreen &wallet)
 
     Crypto::SecretKey txSecretKey = wallet.getTransactionSecretKey(txid);
 
-    if (txSecretKey == CryptoNote::NULL_SECRET_KEY) {
+    if (txSecretKey == DynexCN::NULL_SECRET_KEY) {
         std::cout << WarningMsg("Transaction ") 
                   << WarningMsg(hashStr)
                   << WarningMsg(" secret key is not available")
@@ -700,7 +700,7 @@ void txSecretKey(CryptoNote::WalletGreen &wallet)
               << std::endl;
 }
 
-void txProof(CryptoNote::WalletGreen &wallet)
+void txProof(DynexCN::WalletGreen &wallet)
 {
     std::string txHashStr;
     Crypto::Hash txid;
@@ -728,7 +728,7 @@ void txProof(CryptoNote::WalletGreen &wallet)
 	  
     Crypto::SecretKey txSecretKey = wallet.getTransactionSecretKey(txid);
 
-    if (txSecretKey == CryptoNote::NULL_SECRET_KEY) {
+    if (txSecretKey == DynexCN::NULL_SECRET_KEY) {
         std::cout << InformationMsg("Transaction ")
                   << InformationMsg(txHashStr)
                   << InformationMsg(" secret key is not available.")
@@ -767,7 +767,7 @@ void txProof(CryptoNote::WalletGreen &wallet)
         }
     }
 
-    CryptoNote::AccountPublicAddress destAddress;
+    DynexCN::AccountPublicAddress destAddress;
 
     while (true)
     {
@@ -779,7 +779,7 @@ void txProof(CryptoNote::WalletGreen &wallet)
         std::getline(std::cin, addrStr);
         boost::algorithm::trim(addrStr);
 
-        if (!CryptoNote::parseAccountAddressString(prefix, destAddress, addrStr))
+        if (!DynexCN::parseAccountAddressString(prefix, destAddress, addrStr))
         {
             std::cout << WarningMsg("Failed to parse address") << std::endl;
         }

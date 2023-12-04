@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -45,9 +45,9 @@
 #include <boost/multi_index/member.hpp>
 
 #include "P2pProtocolTypes.h"
-#include "CryptoNoteConfig.h"
+#include "DynexCNConfig.h"
 
-namespace CryptoNote {
+namespace DynexCN {
 
 class ISerializer;
 /************************************************************************/
@@ -88,7 +88,7 @@ public:
   size_t get_white_peers_count() const { return m_peers_white.size(); }
   size_t get_gray_peers_count() const { return m_peers_gray.size(); }
   bool merge_peerlist(const std::list<PeerlistEntry>& outer_bs);
-  bool get_peerlist_head(std::list<PeerlistEntry>& bs_head, uint32_t depth = CryptoNote::P2P_DEFAULT_PEERS_IN_HANDSHAKE) const;
+  bool get_peerlist_head(std::list<PeerlistEntry>& bs_head, uint32_t depth = DynexCN::P2P_DEFAULT_PEERS_IN_HANDSHAKE) const;
   bool get_peerlist_full(std::list<PeerlistEntry>& pl_gray, std::list<PeerlistEntry>& pl_white) const;
   bool get_white_peer_by_index(PeerlistEntry& p, size_t i) const;
   bool get_gray_peer_by_index(PeerlistEntry& p, size_t i) const;

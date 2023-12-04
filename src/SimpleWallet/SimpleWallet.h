@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -49,8 +49,8 @@
 #include "Common/PasswordContainer.h"
 
 #include "Common/ConsoleHandler.h"
-#include "CryptoNoteCore/CryptoNoteBasicImpl.h"
-#include "CryptoNoteCore/Currency.h"
+#include "DynexCNCore/DynexCNBasicImpl.h"
+#include "DynexCNCore/Currency.h"
 #include "NodeRpcProxy/NodeRpcProxy.h"
 #include "WalletLegacy/WalletHelper.h"
 #include "WalletLegacy/WalletLegacy.h"
@@ -66,14 +66,14 @@ namespace{
 	Tools::PasswordContainer pwd_container;
 }
 
-namespace CryptoNote
+namespace DynexCN
 {
   /************************************************************************/
   /*                                                                      */
   /************************************************************************/
-  class simple_wallet : public CryptoNote::INodeObserver, public CryptoNote::IWalletLegacyObserver, public CryptoNote::INodeRpcProxyObserver {
+  class simple_wallet : public DynexCN::INodeObserver, public DynexCN::IWalletLegacyObserver, public DynexCN::INodeRpcProxyObserver {
   public:
-    simple_wallet(System::Dispatcher& dispatcher, const CryptoNote::Currency& currency, Logging::LoggerManager& log);
+    simple_wallet(System::Dispatcher& dispatcher, const DynexCN::Currency& currency, Logging::LoggerManager& log);
 
     bool init(const boost::program_options::variables_map& vm);
     bool deinit();
@@ -84,7 +84,7 @@ namespace CryptoNote
     std::string get_commands_str();
     std::string getFeeAddress();
 
-    const CryptoNote::Currency& currency() const { return m_currency; }
+    const DynexCN::Currency& currency() const { return m_currency; }
 
   private:
 
@@ -142,7 +142,7 @@ namespace CryptoNote
 
     //---------------- IWalletLegacyObserver -------------------------
     virtual void initCompleted(std::error_code result) override;
-    virtual void externalTransactionCreated(CryptoNote::TransactionId transactionId) override;
+    virtual void externalTransactionCreated(DynexCN::TransactionId transactionId) override;
     virtual void synchronizationCompleted(std::error_code result) override;
     virtual void synchronizationProgressUpdated(uint32_t current, uint32_t total) override;
     //----------------------------------------------------------
@@ -156,7 +156,7 @@ namespace CryptoNote
     class refresh_progress_reporter_t
     {
     public:
-      refresh_progress_reporter_t(CryptoNote::simple_wallet& simple_wallet)
+      refresh_progress_reporter_t(DynexCN::simple_wallet& simple_wallet)
         : m_simple_wallet(simple_wallet)
         , m_blockchain_height(0)
         , m_blockchain_height_update_time()
@@ -188,7 +188,7 @@ namespace CryptoNote
       }
 
     private:
-      CryptoNote::simple_wallet& m_simple_wallet;
+      DynexCN::simple_wallet& m_simple_wallet;
       uint64_t m_blockchain_height;
       std::chrono::system_clock::time_point m_blockchain_height_update_time;
       std::chrono::system_clock::time_point m_print_time;
@@ -215,13 +215,13 @@ namespace CryptoNote
     std::unique_ptr<std::promise<std::error_code>> m_initResultPromise;
 
     Common::ConsoleHandler m_consoleHandler;
-    const CryptoNote::Currency& m_currency;
+    const DynexCN::Currency& m_currency;
     Logging::LoggerManager& m_logManager;
     System::Dispatcher& m_dispatcher;
     Logging::LoggerRef logger;
 
-    std::unique_ptr<CryptoNote::NodeRpcProxy> m_node;
-    std::unique_ptr<CryptoNote::IWalletLegacy> m_wallet;
+    std::unique_ptr<DynexCN::NodeRpcProxy> m_node;
+    std::unique_ptr<DynexCN::IWalletLegacy> m_wallet;
     refresh_progress_reporter_t m_refresh_progress_reporter;
 
     bool m_walletSynchronized;

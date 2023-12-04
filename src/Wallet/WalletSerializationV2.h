@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -43,7 +43,7 @@
 #include "Transfers/TransfersSynchronizer.h"
 #include "Wallet/WalletIndices.h"
 
-namespace CryptoNote {
+namespace DynexCN {
 
 class WalletSerializerV2 {
 public:
@@ -73,20 +73,20 @@ public:
   static const uint8_t SERIALIZATION_VERSION = 6;
 
 private:
-  void loadKeyListAndBalances(CryptoNote::ISerializer& serializer, bool saveCache);
-  void saveKeyListAndBanalces(CryptoNote::ISerializer& serializer, bool saveCache);
+  void loadKeyListAndBalances(DynexCN::ISerializer& serializer, bool saveCache);
+  void saveKeyListAndBanalces(DynexCN::ISerializer& serializer, bool saveCache);
     
-  void loadTransactions(CryptoNote::ISerializer& serializer);
-  void saveTransactions(CryptoNote::ISerializer& serializer);
+  void loadTransactions(DynexCN::ISerializer& serializer);
+  void saveTransactions(DynexCN::ISerializer& serializer);
 
-  void loadTransfers(CryptoNote::ISerializer& serializer);
-  void saveTransfers(CryptoNote::ISerializer& serializer);
+  void loadTransfers(DynexCN::ISerializer& serializer);
+  void saveTransfers(DynexCN::ISerializer& serializer);
 
-  void loadTransfersSynchronizer(CryptoNote::ISerializer& serializer);
-  void saveTransfersSynchronizer(CryptoNote::ISerializer& serializer);
+  void loadTransfersSynchronizer(DynexCN::ISerializer& serializer);
+  void saveTransfersSynchronizer(DynexCN::ISerializer& serializer);
 
-  void loadUnlockTransactionsJobs(CryptoNote::ISerializer& serializer);
-  void saveUnlockTransactionsJobs(CryptoNote::ISerializer& serializer);
+  void loadUnlockTransactionsJobs(DynexCN::ISerializer& serializer);
+  void saveUnlockTransactionsJobs(DynexCN::ISerializer& serializer);
 
   ITransfersObserver& m_transfersObserver;
   uint64_t& m_actualBalance;
@@ -104,4 +104,4 @@ private:
   std::unordered_set<Crypto::PublicKey> m_deletedKeys;
 };
 
-} //namespace CryptoNote
+} //namespace DynexCN

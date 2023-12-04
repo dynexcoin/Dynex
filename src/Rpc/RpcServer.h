@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -49,16 +49,16 @@
 
 #include "Common/Math.h"
 
-namespace CryptoNote {
+namespace DynexCN {
 
 class core;
 class NodeServer;
 class BlockchainExplorer;
-class ICryptoNoteProtocolQuery;
+class IDynexCNProtocolQuery;
 
 class RpcServer : public HttpServer {
 public:
-  RpcServer(System::Dispatcher& dispatcher, Logging::ILogger& log, core& c, NodeServer& p2p, ICryptoNoteProtocolQuery& protocolQuery);
+  RpcServer(System::Dispatcher& dispatcher, Logging::ILogger& log, core& c, NodeServer& p2p, IDynexCNProtocolQuery& protocolQuery);
 
   typedef std::function<bool(RpcServer*, const HttpRequest& request, HttpResponse& response)> HandlerFunction;
   bool restrictRPC(const bool is_resctricted);
@@ -130,6 +130,11 @@ private:
   bool on_check_reserve_proof(const K_COMMAND_RPC_CHECK_RESERVE_PROOF::request& req, K_COMMAND_RPC_CHECK_RESERVE_PROOF::response& res);
   bool on_validate_address(const COMMAND_RPC_VALIDATE_ADDRESS::request& req, COMMAND_RPC_VALIDATE_ADDRESS::response& res);
   bool on_verify_message(const COMMAND_RPC_VERIFY_MESSAGE::request& req, COMMAND_RPC_VERIFY_MESSAGE::response& res);
+  
+  // non-privacy functions:
+  bool on_get_transactions_by_address(const COMMAND_RPC_GET_TRANSACTIONS_BY_ADDRESS::request& req, COMMAND_RPC_GET_TRANSACTIONS_BY_ADDRESS::response& res);
+  bool on_get_balance_of_address(const COMMAND_RPC_GET_BALANCE_OF_ADDRESS::request& req, COMMAND_RPC_GET_BALANCE_OF_ADDRESS::response& res);
+  bool on_get_validate_transaction(const COMMAND_RPC_VALIDATE_TRANSACTION::request& req, COMMAND_RPC_VALIDATE_TRANSACTION::response& res);
 
   /* Forknote methods - Deprecated */
   void fill_block_header_response(const Block& blk, bool orphan_status, uint32_t height, const Crypto::Hash& hash, block_header_response& responce);
@@ -143,7 +148,7 @@ private:
   core& m_core;
   NodeServer& m_p2p;
   BlockchainExplorerDataBuilder blockchainExplorerDataBuilder;
-  const ICryptoNoteProtocolQuery& m_protocolQuery;
+  const IDynexCNProtocolQuery& m_protocolQuery;
   bool m_restricted_rpc;
   std::string m_cors_domain;
   std::string m_fee_address;

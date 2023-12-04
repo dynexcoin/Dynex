@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -44,8 +44,8 @@
 #include "Common/StdOutputStream.h"
 #include "Serialization/BinaryOutputStreamSerializer.h"
 #include "Serialization/BinaryInputStreamSerializer.h"
-#include "CryptoNoteCore/Account.h"
-#include "CryptoNoteCore/CryptoNoteSerialization.h"
+#include "DynexCNCore/Account.h"
+#include "DynexCNCore/DynexCNSerialization.h"
 #include "WalletLegacy/WalletUserTransactionsCache.h"
 #include "Wallet/WalletErrors.h"
 #include "Wallet/WalletUtils.h"
@@ -53,11 +53,11 @@
 
 using namespace Common;
 
-namespace CryptoNote {
+namespace DynexCN {
 
 uint32_t WALLET_LEGACY_SERIALIZATION_VERSION = 2;
 
-WalletLegacySerializer::WalletLegacySerializer(CryptoNote::AccountBase& account, WalletUserTransactionsCache& transactionsCache) :
+WalletLegacySerializer::WalletLegacySerializer(DynexCN::AccountBase& account, WalletUserTransactionsCache& transactionsCache) :
   account(account),
   transactionsCache(transactionsCache),
   walletSerializationVersion(2)
@@ -66,11 +66,11 @@ WalletLegacySerializer::WalletLegacySerializer(CryptoNote::AccountBase& account,
 
 void WalletLegacySerializer::serialize(std::ostream& stream, const std::string& password, bool saveDetailed, const std::string& cache) {
   // set serialization version global variable
-  CryptoNote::WALLET_LEGACY_SERIALIZATION_VERSION = walletSerializationVersion;
+  DynexCN::WALLET_LEGACY_SERIALIZATION_VERSION = walletSerializationVersion;
 
   std::stringstream plainArchive;
   StdOutputStream plainStream(plainArchive);
-  CryptoNote::BinaryOutputStreamSerializer serializer(plainStream);
+  DynexCN::BinaryOutputStreamSerializer serializer(plainStream);
   saveKeys(serializer);
 
   serializer(saveDetailed, "has_details");
@@ -88,7 +88,7 @@ void WalletLegacySerializer::serialize(std::ostream& stream, const std::string& 
 
   uint32_t version = walletSerializationVersion;
   StdOutputStream output(stream);
-  CryptoNote::BinaryOutputStreamSerializer s(output);
+  DynexCN::BinaryOutputStreamSerializer s(output);
   s.beginObject("wallet");
   s(version, "version");
   s(iv, "iv");
@@ -98,9 +98,9 @@ void WalletLegacySerializer::serialize(std::ostream& stream, const std::string& 
   stream.flush();
 }
 
-void WalletLegacySerializer::saveKeys(CryptoNote::ISerializer& serializer) {
-  CryptoNote::KeysStorage keys;
-  CryptoNote::AccountKeys acc = account.getAccountKeys();
+void WalletLegacySerializer::saveKeys(DynexCN::ISerializer& serializer) {
+  DynexCN::KeysStorage keys;
+  DynexCN::AccountKeys acc = account.getAccountKeys();
 
   keys.creationTimestamp = account.get_createtime();
   keys.spendPublicKey = acc.address.spendPublicKey;
@@ -127,14 +127,14 @@ Crypto::chacha8_iv WalletLegacySerializer::encrypt(const std::string& plain, con
 
 void WalletLegacySerializer::deserialize(std::istream& stream, const std::string& password, std::string& cache) {
   StdInputStream stdStream(stream);
-  CryptoNote::BinaryInputStreamSerializer serializerEncrypted(stdStream);
+  DynexCN::BinaryInputStreamSerializer serializerEncrypted(stdStream);
 
   serializerEncrypted.beginObject("wallet");
 
   uint32_t version;
   serializerEncrypted(version, "version");
   // set serialization version global variable
-  CryptoNote::WALLET_LEGACY_SERIALIZATION_VERSION = version;
+  DynexCN::WALLET_LEGACY_SERIALIZATION_VERSION = version;
 
   Crypto::chacha8_iv iv;
   serializerEncrypted(iv, "iv");
@@ -148,7 +148,7 @@ void WalletLegacySerializer::deserialize(std::istream& stream, const std::string
   decrypt(cipher, plain, iv, password);
 
   MemoryInputStream decryptedStream(plain.data(), plain.size()); 
-  CryptoNote::BinaryInputStreamSerializer serializer(decryptedStream);
+  DynexCN::BinaryInputStreamSerializer serializer(decryptedStream);
 
   loadKeys(serializer);
   throwIfKeysMissmatch(account.getAccountKeys().viewSecretKey, account.getAccountKeys().address.viewPublicKey);
@@ -157,7 +157,7 @@ void WalletLegacySerializer::deserialize(std::istream& stream, const std::string
     throwIfKeysMissmatch(account.getAccountKeys().spendSecretKey, account.getAccountKeys().address.spendPublicKey);
   } else {
     if (!Crypto::check_key(account.getAccountKeys().address.spendPublicKey)) {
-      throw std::system_error(make_error_code(CryptoNote::error::WRONG_PASSWORD));
+      throw std::system_error(make_error_code(DynexCN::error::WRONG_PASSWORD));
     }
   }
 
@@ -182,16 +182,16 @@ void WalletLegacySerializer::decrypt(const std::string& cipher, std::string& pla
   Crypto::chacha8(cipher.data(), cipher.size(), key, iv, &plain[0]);
 }
 
-void WalletLegacySerializer::loadKeys(CryptoNote::ISerializer& serializer) {
-  CryptoNote::KeysStorage keys;
+void WalletLegacySerializer::loadKeys(DynexCN::ISerializer& serializer) {
+  DynexCN::KeysStorage keys;
 
   try {
     keys.serialize(serializer, "keys");
   } catch (const std::runtime_error&) {
-    throw std::system_error(make_error_code(CryptoNote::error::WRONG_PASSWORD));
+    throw std::system_error(make_error_code(DynexCN::error::WRONG_PASSWORD));
   }
 
-  CryptoNote::AccountKeys acc;
+  DynexCN::AccountKeys acc;
   acc.address.spendPublicKey = keys.spendPublicKey;
   acc.spendSecretKey = keys.spendSecretKey;
   acc.address.viewPublicKey = keys.viewPublicKey;

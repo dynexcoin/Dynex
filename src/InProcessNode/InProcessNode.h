@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -39,23 +39,23 @@
 
 #include "INode.h"
 #include "ITransaction.h"
-#include "CryptoNoteProtocol/ICryptoNoteProtocolQuery.h"
-#include "CryptoNoteProtocol/ICryptoNoteProtocolObserver.h"
-#include "CryptoNoteCore/ICore.h"
-#include "CryptoNoteCore/ICoreObserver.h"
+#include "DynexCNProtocol/IDynexCNProtocolQuery.h"
+#include "DynexCNProtocol/IDynexCNProtocolObserver.h"
+#include "DynexCNCore/ICore.h"
+#include "DynexCNCore/ICoreObserver.h"
 #include "Common/ObserverManager.h"
 #include "BlockchainExplorer/BlockchainExplorerDataBuilder.h"
 
 #include <thread>
 #include <boost/asio.hpp>
 
-namespace CryptoNote {
+namespace DynexCN {
 
 class core;
 
-class InProcessNode : public INode, public CryptoNote::ICryptoNoteProtocolObserver, public CryptoNote::ICoreObserver {
+class InProcessNode : public INode, public DynexCN::IDynexCNProtocolObserver, public DynexCN::ICoreObserver {
 public:
-  InProcessNode(CryptoNote::ICore& core, CryptoNote::ICryptoNoteProtocolQuery& protocol);
+  InProcessNode(DynexCN::ICore& core, DynexCN::IDynexCNProtocolQuery& protocol);
 
   InProcessNode(const InProcessNode&) = delete;
   InProcessNode(InProcessNode&&) = delete;
@@ -84,11 +84,11 @@ public:
   virtual void getFeeAddress() override;
   virtual std::string feeAddress() const override;
 
-  virtual void getNewBlocks(std::vector<Crypto::Hash>&& knownBlockIds, std::vector<CryptoNote::block_complete_entry>& newBlocks, uint32_t& startHeight, const Callback& callback) override;
+  virtual void getNewBlocks(std::vector<Crypto::Hash>&& knownBlockIds, std::vector<DynexCN::block_complete_entry>& newBlocks, uint32_t& startHeight, const Callback& callback) override;
   virtual void getTransactionOutsGlobalIndices(const Crypto::Hash& transactionHash, std::vector<uint32_t>& outsGlobalIndices, const Callback& callback) override;
   virtual void getRandomOutsByAmounts(std::vector<uint64_t>&& amounts, uint64_t outsCount,
-      std::vector<CryptoNote::COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount>& result, const Callback& callback) override;
-  virtual void relayTransaction(const CryptoNote::Transaction& transaction, const Callback& callback) override;
+      std::vector<DynexCN::COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount>& result, const Callback& callback) override;
+  virtual void relayTransaction(const DynexCN::Transaction& transaction, const Callback& callback) override;
   virtual void queryBlocks(std::vector<Crypto::Hash>&& knownBlockIds, uint64_t timestamp, std::vector<BlockShortEntry>& newBlocks,
     uint32_t& startHeight, const Callback& callback) override;
   virtual void getPoolSymmetricDifference(std::vector<Crypto::Hash>&& knownPoolTxIds, Crypto::Hash knownBlockId, bool& isBcActual,
@@ -113,19 +113,19 @@ private:
 
   void updateLastLocalBlockHeaderInfo();
   void resetLastLocalBlockHeaderInfo();
-  void getNewBlocksAsync(std::vector<Crypto::Hash>& knownBlockIds, std::vector<CryptoNote::block_complete_entry>& newBlocks, uint32_t& startHeight, const Callback& callback);
-  std::error_code doGetNewBlocks(std::vector<Crypto::Hash>&& knownBlockIds, std::vector<CryptoNote::block_complete_entry>& newBlocks, uint32_t& startHeight);
+  void getNewBlocksAsync(std::vector<Crypto::Hash>& knownBlockIds, std::vector<DynexCN::block_complete_entry>& newBlocks, uint32_t& startHeight, const Callback& callback);
+  std::error_code doGetNewBlocks(std::vector<Crypto::Hash>&& knownBlockIds, std::vector<DynexCN::block_complete_entry>& newBlocks, uint32_t& startHeight);
 
   void getTransactionOutsGlobalIndicesAsync(const Crypto::Hash& transactionHash, std::vector<uint32_t>& outsGlobalIndices, const Callback& callback);
   std::error_code doGetTransactionOutsGlobalIndices(const Crypto::Hash& transactionHash, std::vector<uint32_t>& outsGlobalIndices);
 
   void getRandomOutsByAmountsAsync(std::vector<uint64_t>& amounts, uint64_t outsCount,
-      std::vector<CryptoNote::COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount>& result, const Callback& callback);
+      std::vector<DynexCN::COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount>& result, const Callback& callback);
   std::error_code doGetRandomOutsByAmounts(std::vector<uint64_t>&& amounts, uint64_t outsCount,
-      std::vector<CryptoNote::COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount>& result);
+      std::vector<DynexCN::COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount>& result);
 
-  void relayTransactionAsync(const CryptoNote::Transaction& transaction, const Callback& callback);
-  std::error_code doRelayTransaction(const CryptoNote::Transaction& transaction);
+  void relayTransactionAsync(const DynexCN::Transaction& transaction, const Callback& callback);
+  std::error_code doRelayTransaction(const DynexCN::Transaction& transaction);
 
   void queryBlocksLiteAsync(std::vector<Crypto::Hash>& knownBlockIds, uint64_t timestamp, std::vector<BlockShortEntry>& newBlocks, uint32_t& startHeight,
           const Callback& callback);
@@ -166,8 +166,8 @@ private:
   };
 
   State state;
-  CryptoNote::ICore& core;
-  CryptoNote::ICryptoNoteProtocolQuery& protocol;
+  DynexCN::ICore& core;
+  DynexCN::IDynexCNProtocolQuery& protocol;
   Tools::ObserverManager<INodeObserver> observerManager;
   BlockHeaderInfo lastLocalBlockHeaderInfo;
 
@@ -180,4 +180,4 @@ private:
   mutable std::mutex mutex;
 };
 
-} //namespace CryptoNote
+} //namespace DynexCN

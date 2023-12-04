@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -37,8 +37,9 @@
 
 #pragma once
 
+#include <cstddef>
 #include <stdint.h>
-#include "CryptoNoteConfig.h"
+#include "DynexCNConfig.h"
 #include <Serialization/ISerializer.h>
 #include <Wallet/WalletGreen.h>
 
@@ -73,7 +74,7 @@ struct WalletInfo
                std::string walletPass, 
                std::string walletAddress,
                bool viewWallet,
-               CryptoNote::WalletGreen &wallet) : 
+               DynexCN::WalletGreen &wallet) : 
                walletFileName(walletFileName), 
                walletPass(walletPass), 
                walletAddress(walletAddress),
@@ -96,7 +97,7 @@ struct WalletInfo
     bool viewWallet;
 
     /* The walletgreen wallet container */
-    CryptoNote::WalletGreen &wallet;
+    DynexCN::WalletGreen &wallet;
 };
 
 struct Config
@@ -114,7 +115,7 @@ struct Config
     std::string host = "127.0.0.1";
     
     /* The daemon port */
-    uint16_t port = CryptoNote::RPC_DEFAULT_PORT;
+    uint16_t port = DynexCN::RPC_DEFAULT_PORT;
 
     /* The url path */
     std::string path = "/";
@@ -148,7 +149,7 @@ struct AddressBookEntry
     /* The payment ID associated with this address */
     std::string paymentID;
 
-    void serialize(CryptoNote::ISerializer &s)
+    void serialize(DynexCN::ISerializer &s)
     {
         KV_MEMBER(friendlyName)
         KV_MEMBER(address)

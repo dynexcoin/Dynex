@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -44,18 +44,18 @@
 #include "WalletLegacy/WalletLegacyEvent.h"
 #include "WalletLegacy/WalletUnconfirmedTransactions.h"
 
-namespace CryptoNote {
+namespace DynexCN {
 class ISerializer;
 }
 
-namespace CryptoNote {
+namespace DynexCN {
 
 class WalletUserTransactionsCache
 {
 public:
   explicit WalletUserTransactionsCache(uint64_t mempoolTxLiveTime = 60 * 60 * 24);
 
-  bool serialize(CryptoNote::ISerializer& serializer);
+  bool serialize(DynexCN::ISerializer& serializer);
 
   uint64_t unconfirmedTransactionsAmount() const;
   uint64_t unconfrimedOutsAmount() const;
@@ -63,7 +63,7 @@ public:
   size_t getTransferCount() const;
 
   TransactionId addNewTransaction(uint64_t amount, uint64_t fee, const std::string& extra, const std::vector<WalletLegacyTransfer>& transfers, uint64_t unlockTime);
-  void updateTransaction(TransactionId transactionId, const CryptoNote::Transaction& tx, uint64_t amount, const std::list<TransactionOutputInformation>& usedOutputs, Crypto::SecretKey& tx_key);
+  void updateTransaction(TransactionId transactionId, const DynexCN::Transaction& tx, uint64_t amount, const std::list<TransactionOutputInformation>& usedOutputs, Crypto::SecretKey& tx_key);
   void updateTransactionSendingState(TransactionId transactionId, std::error_code ec);
 
   std::shared_ptr<WalletLegacyEvent> onTransactionUpdated(const TransactionInformation& txInfo, int64_t txBalance);
@@ -111,4 +111,4 @@ private:
   UserPaymentIndex m_paymentsIndex;
 };
 
-} //namespace CryptoNote
+} //namespace DynexCN

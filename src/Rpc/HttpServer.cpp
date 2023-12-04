@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -47,15 +47,15 @@
 using namespace Logging;
 
 namespace {
-	void fillUnauthorizedResponse(CryptoNote::HttpResponse& response) {
-		response.setStatus(CryptoNote::HttpResponse::STATUS_401);
+	void fillUnauthorizedResponse(DynexCN::HttpResponse& response) {
+		response.setStatus(DynexCN::HttpResponse::STATUS_401);
 		response.addHeader("WWW-Authenticate", "Basic realm=\"RPC\"");
 		response.addHeader("Content-Type", "text/plain");
 		response.setBody("Authorization required");
 	}
 }
 
-namespace CryptoNote {
+namespace DynexCN {
 
 HttpServer::HttpServer(System::Dispatcher& dispatcher, Logging::ILogger& log)
   : m_dispatcher(dispatcher), workingContextGroup(dispatcher), logger(log, "HttpServer") {

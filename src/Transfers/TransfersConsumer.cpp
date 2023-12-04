@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -43,8 +43,8 @@
 #include "CommonTypes.h"
 #include "Common/StringTools.h"
 #include "Common/BlockingQueue.h"
-#include "CryptoNoteCore/CryptoNoteFormatUtils.h"
-#include "CryptoNoteCore/TransactionApi.h"
+#include "DynexCNCore/DynexCNFormatUtils.h"
+#include "DynexCNCore/TransactionApi.h"
 
 #include "IWallet.h"
 #include "INode.h"
@@ -59,7 +59,7 @@ std::mutex seen_mutex;
 
 namespace {
 
-using namespace CryptoNote;
+using namespace DynexCN;
 
 void checkOutputKey(
   const KeyDerivation& derivation,
@@ -122,7 +122,7 @@ void findMyOutputs(
   }
 }
 
-std::vector<Crypto::Hash> getBlockHashes(const CryptoNote::CompleteBlock* blocks, size_t count) {
+std::vector<Crypto::Hash> getBlockHashes(const DynexCN::CompleteBlock* blocks, size_t count) {
   std::vector<Crypto::Hash> result;
   result.reserve(count);
 
@@ -135,9 +135,9 @@ std::vector<Crypto::Hash> getBlockHashes(const CryptoNote::CompleteBlock* blocks
 
 }
 
-namespace CryptoNote {
+namespace DynexCN {
 
-TransfersConsumer::TransfersConsumer(const CryptoNote::Currency& currency, INode& node, Logging::ILogger& logger, const SecretKey& viewSecret) :
+TransfersConsumer::TransfersConsumer(const DynexCN::Currency& currency, INode& node, Logging::ILogger& logger, const SecretKey& viewSecret) :
   m_node(node), m_viewSecret(viewSecret), m_currency(currency), m_logger(logger, "TransfersConsumer") {
   updateSyncStart();
 }
@@ -444,8 +444,8 @@ std::error_code TransfersConsumer::createTransfers(
       KeyOutput out;
       tx.getOutput(idx, out, amount);
 
-      CryptoNote::KeyPair in_ephemeral;
-      CryptoNote::generate_key_image_helper(
+      DynexCN::KeyPair in_ephemeral;
+      DynexCN::generate_key_image_helper(
         account,
         txPubKey,
         idx,

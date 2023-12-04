@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -42,15 +42,15 @@
 #include <boost/algorithm/string.hpp>
 
 #include <cmath>
-
 #include <Common/Base58.h>
 #include <Common/StringTools.h>
 
-#include <CryptoNoteCore/CryptoNoteBasicImpl.h>
-#include <CryptoNoteCore/CryptoNoteTools.h>
-#include <CryptoNoteCore/TransactionExtra.h>
+#include <DynexCNCore/DynexCNBasicImpl.h>
+#include <DynexCNCore/DynexCNTools.h>
+#include <DynexCNCore/TransactionExtra.h>
 
 #include <iostream>
+#include <thread>
 
 #include <GreenWallet/ColouredMsg.h>
 #include <Common/PasswordContainer.h>
@@ -216,7 +216,7 @@ std::string getPaymentIDFromExtra(std::string extra)
 
 		Crypto::Hash paymentIdHash;
 
-		if (CryptoNote::getPaymentIdFromTxExtra(vecExtra, paymentIdHash))
+		if (DynexCN::getPaymentIdFromTxExtra(vecExtra, paymentIdHash))
 		{
 			return Common::podToHex(paymentIdHash);
 		}
@@ -237,20 +237,20 @@ std::string createIntegratedAddress(std::string address, std::string paymentID)
 {
 	uint64_t prefix;
 
-	CryptoNote::AccountPublicAddress addr;
+	DynexCN::AccountPublicAddress addr;
 
 	/* Get the private + public key from the address */
-	CryptoNote::parseAccountAddressString(prefix, addr, address);
+	DynexCN::parseAccountAddressString(prefix, addr, address);
 
 	/* Pack as a binary array */
-	CryptoNote::BinaryArray ba;
-	CryptoNote::toBinaryArray(addr, ba);
+	DynexCN::BinaryArray ba;
+	DynexCN::toBinaryArray(addr, ba);
 	std::string keys = Common::asString(ba);
 
 	/* Encode prefix + paymentID + keys as an address */
 	return Tools::Base58::encode_addr
 	(
-		CryptoNote::parameters::CRYPTONOTE_PUBLIC_ADDRESS_BASE58_PREFIX,
+		DynexCN::parameters::CRYPTONOTE_PUBLIC_ADDRESS_BASE58_PREFIX,
 		paymentID + keys
 	);
 }
@@ -299,7 +299,7 @@ uint64_t getScanHeight()
 	}
 }
 
-bool shutdown(std::shared_ptr<WalletInfo> walletInfo, CryptoNote::INode &node,
+bool shutdown(std::shared_ptr<WalletInfo> walletInfo, DynexCN::INode &node,
               bool &alreadyShuttingDown)
 {
     if (alreadyShuttingDown)

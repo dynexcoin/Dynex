@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -39,16 +39,17 @@
 
 #include <boost/utility/value_init.hpp>
 #include <boost/range/combine.hpp>
-
+#include <iostream>
+#include <iomanip>
 #include "Common/StringTools.h"
-#include "CryptoNoteCore/CryptoNoteFormatUtils.h"
-#include "CryptoNoteCore/CryptoNoteTools.h"
-#include "CryptoNoteCore/TransactionExtra.h"
-#include "CryptoNoteConfig.h"
+#include "DynexCNCore/DynexCNFormatUtils.h"
+#include "DynexCNCore/DynexCNTools.h"
+#include "DynexCNCore/TransactionExtra.h"
+#include "DynexCNConfig.h"
 
-namespace CryptoNote {
+namespace DynexCN {
 
-BlockchainExplorerDataBuilder::BlockchainExplorerDataBuilder(CryptoNote::ICore& core, CryptoNote::ICryptoNoteProtocolQuery& protocol) :
+BlockchainExplorerDataBuilder::BlockchainExplorerDataBuilder(DynexCN::ICore& core, DynexCN::IDynexCNProtocolQuery& protocol) :
 core(core),
 protocol(protocol) {
 }
@@ -77,7 +78,29 @@ bool BlockchainExplorerDataBuilder::getPaymentId(const Transaction& transaction,
   return getPaymentIdFromTransactionExtraNonce(extraNonce.nonce, paymentId);
 }
 
+bool BlockchainExplorerDataBuilder::getAddresses(const Transaction& transaction, std::vector<std::string>& addresses) {
+
+  std::vector<TransactionExtraField> txExtraFields;
+  parseTransactionExtra(transaction.extra, txExtraFields);
+
+  for (const TransactionExtraField& field : txExtraFields) {
+    if (typeid(TransactionExtraFromAddress) == field.type()) {
+      AccountPublicAddress address_vec = boost::get<TransactionExtraFromAddress>(field).address;
+      std::string address_str = getAccountAddressAsStr(address_vec);
+      addresses.push_back(address_str);
+    } else if (typeid(TransactionExtraToAddress) == field.type()) {
+      AccountPublicAddress address_vec = boost::get<TransactionExtraToAddress>(field).address;
+      std::string address_str = getAccountAddressAsStr(address_vec);
+      addresses.push_back(address_str);
+    } 
+  }
+
+  return true;
+}
+// ---
+
 bool BlockchainExplorerDataBuilder::fillTxExtra(const std::vector<uint8_t>& rawExtra, TransactionExtraDetails2& extraDetails) {
+
   extraDetails.raw = rawExtra;
   std::vector<TransactionExtraField> txExtraFields;
   parseTransactionExtra(rawExtra, txExtraFields);
@@ -88,8 +111,25 @@ bool BlockchainExplorerDataBuilder::fillTxExtra(const std::vector<uint8_t>& rawE
       extraDetails.publicKey = std::move(boost::get<TransactionExtraPublicKey>(field).publicKey);
     } else if (typeid(TransactionExtraNonce) == field.type()) {
       extraDetails.nonce = boost::get<TransactionExtraNonce>(field).nonce;
+    } else if (typeid(TransactionExtraFromAddress) == field.type()) {
+      AccountPublicAddress address_vec = boost::get<TransactionExtraFromAddress>(field).address;
+      std::string address_str = getAccountAddressAsStr(address_vec);
+      extraDetails.from_address = address_str;
+    } else if (typeid(TransactionExtraToAddress) == field.type()) {
+      AccountPublicAddress address_vec = boost::get<TransactionExtraToAddress>(field).address;
+      std::string address_str = getAccountAddressAsStr(address_vec);
+      extraDetails.to_address.push_back(address_str);
+    } else if (typeid(TransactionExtraAmount) == field.type()) {
+      std::vector<uint8_t> amount_vec = boost::get<TransactionExtraAmount>(field).amount;
+      int64_t amtint = getAmountInt64(amount_vec);
+      std::stringstream amt;
+      amt << std::setfill('0') << std::setw(16) << std::hex << amtint;
+      extraDetails.amount.push_back(amt.str());
+    } else if (typeid(TransactionExtraTxkey) == field.type()) {
+      extraDetails.tx_key = boost::get<TransactionExtraTxkey>(field).tx_key;
     }
   }
+
   return true;
 }
 
@@ -152,7 +192,7 @@ bool BlockchainExplorerDataBuilder::fillBlockDetails(const Block &block, BlockDe
   }
   blockDetails.sizeMedian = median(blocksSizes);
 
-  size_t blockGrantedFullRewardZone = CryptoNote::parameters::CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE;
+  size_t blockGrantedFullRewardZone = DynexCN::parameters::CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE;
   blockDetails.effectiveSizeMedian = std::max(blockDetails.sizeMedian, (uint64_t) blockGrantedFullRewardZone);
 
   size_t blockSize = 0;
@@ -286,6 +326,13 @@ bool BlockchainExplorerDataBuilder::fillTransactionDetails(const Transaction& tr
     transactionDetails.paymentId = boost::value_initialized<Crypto::Hash>();
   }
   fillTxExtra(transaction.extra, transactionDetails.extra);
+
+  // add non-privacy fields:
+  transactionDetails.from_address = transactionDetails.extra.from_address;
+  transactionDetails.to_address = transactionDetails.extra.to_address;
+  transactionDetails.amount = transactionDetails.extra.amount;
+  transactionDetails.tx_key = transactionDetails.extra.tx_key;
+
   transactionDetails.signatures.reserve(transaction.signatures.size());
   for (const std::vector<Crypto::Signature>& signatures : transaction.signatures) {
     std::vector<Crypto::Signature> signaturesDetails;
@@ -308,7 +355,7 @@ bool BlockchainExplorerDataBuilder::fillTransactionDetails(const Transaction& tr
       }
 	  txInDetails = txInGenDetails;
     } else if (txIn.type() == typeid(KeyInput)) {
-      CryptoNote::KeyInputDetails txInToKeyDetails;
+      DynexCN::KeyInputDetails txInToKeyDetails;
       const KeyInput& txInToKey = boost::get<KeyInput>(txIn);
       txInToKeyDetails.input = txInToKey; 
       std::list<std::pair<Crypto::Hash, size_t>> outputReferences;
@@ -354,8 +401,8 @@ bool BlockchainExplorerDataBuilder::fillTransactionDetails(const Transaction& tr
   for (const outputWithIndex& txOutput : range) {
     transactionOutputDetails2 txOutDetails;
     txOutDetails.globalIndex = txOutput.get<1>();
-	txOutDetails.output.amount = txOutput.get<0>().amount;
-	txOutDetails.output.target = txOutput.get<0>().target;
+	  txOutDetails.output.amount = txOutput.get<0>().amount;
+	  txOutDetails.output.target = txOutput.get<0>().target;
     transactionDetails.outputs.push_back(std::move(txOutDetails));
   }
 

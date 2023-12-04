@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -37,7 +37,7 @@
 
 #pragma once
 
-#include "CryptoNoteConfig.h"
+#include "DynexCNConfig.h"
 
 /* Make sure everything in here is const - or it won't compile! */
 namespace WalletConfig
@@ -71,22 +71,22 @@ namespace WalletConfig
     const std::string contactLink = "https://dynexcoin.org";
 
     /* The number of decimals your coin has */
-    const int numDecimalPlaces = CryptoNote::parameters
+    const int numDecimalPlaces = DynexCN::parameters
                                            ::CRYPTONOTE_DISPLAY_DECIMAL_POINT;
 
 
     /* The length of a standard address for your coin */
-    const long unsigned int addressLength = 95;
+    const long unsigned int addressLength = 97;
 
 
     /* The mixin value to use with transactions */
     const uint64_t defaultMixin = 2;
 
     /* The default fee value to use with transactions (in ATOMIC units!) */
-    const uint64_t defaultFee = CryptoNote::parameters::MINIMUM_FEE; 
+    const uint64_t defaultFee = DynexCN::parameters::MINIMUM_FEE; 
 
     /* The minimum fee value to allow with transactions (in ATOMIC units!) */
-    const uint64_t minimumFee = CryptoNote::parameters::MINIMUM_FEE;
+    const uint64_t minimumFee = DynexCN::parameters::MINIMUM_FEE;
 
     /* The minimum amount allowed to be sent - usually 1 (in ATOMIC units!) */
     const uint64_t minimumSend = 1;

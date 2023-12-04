@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -383,7 +383,7 @@ AddressBook getAddressBook()
         buffer << input.rdbuf();
         input.close();
 
-        CryptoNote::loadFromJson(addressBook, buffer.str());
+        DynexCN::loadFromJson(addressBook, buffer.str());
     }
 
     return addressBook;
@@ -391,7 +391,7 @@ AddressBook getAddressBook()
 
 bool saveAddressBook(AddressBook addressBook)
 {
-    std::string jsonString = CryptoNote::storeToJson(addressBook);
+    std::string jsonString = DynexCN::storeToJson(addressBook);
 
     std::ofstream output(WalletConfig::addressBookFilename);
 

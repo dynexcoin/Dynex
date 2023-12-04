@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -44,7 +44,7 @@
 #include <thread>
 #include <unordered_set>
 
-#include "../CryptoNoteConfig.h"
+#include "../DynexCNConfig.h"
 #include "Common/ObserverManager.h"
 #include "INode.h"
 #include "Rpc/CoreRpcServerCommandsDefinitions.h"
@@ -55,7 +55,7 @@ namespace System {
   class Event;
 }
 
-namespace CryptoNote {
+namespace DynexCN {
 
 class HttpClient;
 
@@ -65,16 +65,16 @@ public:
   virtual void connectionStatusUpdated(bool connected) {}
 };
 
-class NodeRpcProxy : public CryptoNote::INode {
+class NodeRpcProxy : public DynexCN::INode {
 public:
   NodeRpcProxy(const std::string& nodeHost, unsigned short nodePort);
   virtual ~NodeRpcProxy();
 
-  virtual bool addObserver(CryptoNote::INodeObserver* observer) override;
-  virtual bool removeObserver(CryptoNote::INodeObserver* observer) override;
+  virtual bool addObserver(DynexCN::INodeObserver* observer) override;
+  virtual bool removeObserver(DynexCN::INodeObserver* observer) override;
 
-  virtual bool addObserver(CryptoNote::INodeRpcProxyObserver* observer);
-  virtual bool removeObserver(CryptoNote::INodeRpcProxyObserver* observer);
+  virtual bool addObserver(DynexCN::INodeRpcProxyObserver* observer);
+  virtual bool removeObserver(DynexCN::INodeRpcProxyObserver* observer);
 
   virtual void init(const Callback& callback) override;
   virtual bool shutdown() override;
@@ -90,9 +90,9 @@ public:
   virtual BlockHeaderInfo getLastLocalBlockHeaderInfo() const override;
   virtual void getFeeAddress() override;
 
-  virtual void relayTransaction(const CryptoNote::Transaction& transaction, const Callback& callback) override;
+  virtual void relayTransaction(const DynexCN::Transaction& transaction, const Callback& callback) override;
   virtual void getRandomOutsByAmounts(std::vector<uint64_t>&& amounts, uint64_t outsCount, std::vector<COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount>& result, const Callback& callback) override;
-  virtual void getNewBlocks(std::vector<Crypto::Hash>&& knownBlockIds, std::vector<CryptoNote::block_complete_entry>& newBlocks, uint32_t& startHeight, const Callback& callback) override;
+  virtual void getNewBlocks(std::vector<Crypto::Hash>&& knownBlockIds, std::vector<DynexCN::block_complete_entry>& newBlocks, uint32_t& startHeight, const Callback& callback) override;
   virtual void getTransactionOutsGlobalIndices(const Crypto::Hash& transactionHash, std::vector<uint32_t>& outsGlobalIndices, const Callback& callback) override;
   virtual void queryBlocks(std::vector<Crypto::Hash>&& knownBlockIds, uint64_t timestamp, std::vector<BlockShortEntry>& newBlocks, uint32_t& startHeight, const Callback& callback) override;
   virtual void getPoolSymmetricDifference(std::vector<Crypto::Hash>&& knownPoolTxIds, Crypto::Hash knownBlockId, bool& isBcActual,
@@ -127,15 +127,15 @@ private:
   void updatePeerCount(size_t peerCount);
   void updatePoolState(const std::vector<std::unique_ptr<ITransactionReader>>& addedTxs, const std::vector<Crypto::Hash>& deletedTxsIds);
 
-  std::error_code doRelayTransaction(const CryptoNote::Transaction& transaction);
+  std::error_code doRelayTransaction(const DynexCN::Transaction& transaction);
   std::error_code doGetRandomOutsByAmounts(std::vector<uint64_t>& amounts, uint64_t outsCount,
                                            std::vector<COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount>& result);
   std::error_code doGetNewBlocks(std::vector<Crypto::Hash>& knownBlockIds,
-    std::vector<CryptoNote::block_complete_entry>& newBlocks, uint32_t& startHeight);
+    std::vector<DynexCN::block_complete_entry>& newBlocks, uint32_t& startHeight);
   std::error_code doGetTransactionOutsGlobalIndices(const Crypto::Hash& transactionHash,
                                                     std::vector<uint32_t>& outsGlobalIndices);
   std::error_code doQueryBlocksLite(const std::vector<Crypto::Hash>& knownBlockIds, uint64_t timestamp,
-    std::vector<CryptoNote::BlockShortEntry>& newBlocks, uint32_t& startHeight);
+    std::vector<DynexCN::BlockShortEntry>& newBlocks, uint32_t& startHeight);
   std::error_code doGetPoolSymmetricDifference(std::vector<Crypto::Hash>&& knownPoolTxIds, Crypto::Hash knownBlockId, bool& isBcActual,
           std::vector<std::unique_ptr<ITransactionReader>>& newTxs, std::vector<Crypto::Hash>& deletedTxIds);
   std::error_code doGetBlocksByHeight(const std::vector<uint32_t>& blockHeights, std::vector<std::vector<BlockDetails>>& blocks);
@@ -165,8 +165,8 @@ private:
   std::thread m_workerThread;
   System::Dispatcher* m_dispatcher = nullptr;
   System::ContextGroup* m_context_group = nullptr;
-  Tools::ObserverManager<CryptoNote::INodeObserver> m_observerManager;
-  Tools::ObserverManager<CryptoNote::INodeRpcProxyObserver> m_rpcProxyObserverManager;
+  Tools::ObserverManager<DynexCN::INodeObserver> m_observerManager;
+  Tools::ObserverManager<DynexCN::INodeRpcProxyObserver> m_rpcProxyObserverManager;
 
   unsigned int m_rpcTimeout;
   HttpClient* m_httpClient = nullptr;

@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -55,8 +55,10 @@
 #include "WalletLegacy/WalletLegacySerializer.h"
 #include "WalletLegacy/WalletUtils.h"
 #include "Common/StringTools.h"
-#include "CryptoNoteCore/CryptoNoteTools.h"
+#include "DynexCNCore/DynexCNTools.h"
 #include "Mnemonics/electrum-words.h"
+
+#include "DynexCNConfig.h"
 
 extern "C"
 {
@@ -77,11 +79,11 @@ void throwNotDefined() {
 class ContextCounterHolder
 {
 public:
-  ContextCounterHolder(CryptoNote::WalletAsyncContextCounter& shutdowner) : m_shutdowner(shutdowner) {}
+  ContextCounterHolder(DynexCN::WalletAsyncContextCounter& shutdowner) : m_shutdowner(shutdowner) {}
   ~ContextCounterHolder() { m_shutdowner.delAsyncContext(); }
 
 private:
-  CryptoNote::WalletAsyncContextCounter& m_shutdowner;
+  DynexCN::WalletAsyncContextCounter& m_shutdowner;
 };
 
 template <typename F>
@@ -90,7 +92,7 @@ void runAtomic(std::mutex& mutex, F f) {
   f();
 }
 
-class InitWaiter : public CryptoNote::IWalletLegacyObserver {
+class InitWaiter : public DynexCN::IWalletLegacyObserver {
 public:
   InitWaiter() : future(promise.get_future()) {}
 
@@ -107,7 +109,7 @@ private:
 };
 
 
-class SaveWaiter : public CryptoNote::IWalletLegacyObserver {
+class SaveWaiter : public DynexCN::IWalletLegacyObserver {
 public:
   SaveWaiter() : future(promise.get_future()) {}
 
@@ -128,9 +130,9 @@ private:
 
 using namespace Logging;
 
-namespace CryptoNote {
+namespace DynexCN {
 
-class SyncStarter : public CryptoNote::IWalletLegacyObserver {
+class SyncStarter : public DynexCN::IWalletLegacyObserver {
 public:
   SyncStarter(BlockchainSynchronizer& sync) : m_sync(sync) {}
   virtual ~SyncStarter() {}
@@ -144,7 +146,7 @@ public:
   BlockchainSynchronizer& m_sync;
 };
 
-WalletLegacy::WalletLegacy(const CryptoNote::Currency& currency, INode& node, Logging::ILogger& loggerGroup) :
+WalletLegacy::WalletLegacy(const DynexCN::Currency& currency, INode& node, Logging::ILogger& loggerGroup) :
   m_state(NOT_INITIALIZED),
   m_currency(currency),
   m_node(node),
@@ -256,8 +258,8 @@ void WalletLegacy::initWithKeys(const AccountKeys& accountKeys, const std::strin
   m_observerManager.notify(&IWalletLegacyObserver::initCompleted, std::error_code());
 }
 
-CryptoNote::BlockDetails WalletLegacy::getBlock(const uint32_t blockHeight) {
-  CryptoNote::BlockDetails block;
+DynexCN::BlockDetails WalletLegacy::getBlock(const uint32_t blockHeight) {
+  DynexCN::BlockDetails block;
 
   if (m_node.getLastKnownBlockHeight() == 0)
   {
@@ -286,8 +288,8 @@ uint64_t getCurrentTimestampAdjusted() {
 
   /* Take the amount of time a block can potentially be in the past/future */
   std::initializer_list<uint64_t> limits = {
-    CryptoNote::parameters::CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT,
-    CryptoNote::parameters::CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT_V1
+    DynexCN::parameters::CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT,
+    DynexCN::parameters::CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT_V1
   };
 
   /* Get the largest adjustment possible */
@@ -310,14 +312,14 @@ uint64_t WalletLegacy::scanHeightToTimestamp(const uint32_t scanHeight) {
   }
 
   /* Get the amount of seconds since the blockchain launched */
-  uint64_t secondsSinceLaunch = scanHeight * CryptoNote::parameters::DIFFICULTY_TARGET;
+  uint64_t secondsSinceLaunch = scanHeight * DynexCN::parameters::DIFFICULTY_TARGET;
 
   /* Add a bit of a buffer in case of difficulty weirdness, blocks coming
      out too fast */
   secondsSinceLaunch = static_cast<uint64_t>(secondsSinceLaunch * 0.95);
 
   /* Get the genesis block timestamp and add the time since launch */
-  timestamp = UINT64_C(1464595534) + secondsSinceLaunch;
+  timestamp = DynexCN::GENESIS_TIMESTAMP + secondsSinceLaunch;
 
   /* Timestamp in the future */
   if (timestamp >= static_cast<uint64_t>(std::time(nullptr))) {
@@ -364,7 +366,7 @@ void WalletLegacy::initAndLoad(std::istream& source, const std::string& password
 void WalletLegacy::initSync() {
   AccountSubscription sub;
   sub.keys = reinterpret_cast<const AccountKeys&>(m_account.getAccountKeys());
-  sub.transactionSpendableAge = CryptoNote::parameters::CRYPTONOTE_TX_SPENDABLE_AGE;
+  sub.transactionSpendableAge = DynexCN::parameters::CRYPTONOTE_TX_SPENDABLE_AGE;
   sub.syncStart.height = 0;
   sub.syncStart.timestamp = std::max(m_account.get_createtime(), ACCOUNT_CREATE_TIME_ACCURACY) - ACCOUNT_CREATE_TIME_ACCURACY;
   
@@ -415,7 +417,7 @@ void WalletLegacy::doLoad(std::istream& source) {
     return;
   } catch (std::exception&) {
     runAtomic(m_cacheMutex, [this] () {this->m_state = WalletLegacy::NOT_INITIALIZED;} );
-    m_observerManager.notify(&IWalletLegacyObserver::initCompleted, make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR));
+    m_observerManager.notify(&IWalletLegacyObserver::initCompleted, make_error_code(DynexCN::error::INTERNAL_WALLET_ERROR));
     return;
   }
 
@@ -486,14 +488,14 @@ void WalletLegacy::reset() {
 
 void WalletLegacy::save(std::ostream& destination, bool saveDetailed, bool saveCache) {
   if(m_isStopping) {
-    m_observerManager.notify(&IWalletLegacyObserver::saveCompleted, make_error_code(CryptoNote::error::OPERATION_CANCELLED));
+    m_observerManager.notify(&IWalletLegacyObserver::saveCompleted, make_error_code(DynexCN::error::OPERATION_CANCELLED));
     return;
   }
 
   {
     std::unique_lock<std::mutex> lock(m_cacheMutex);
 
-    throwIf(m_state != INITIALIZED, CryptoNote::error::WRONG_STATE);
+    throwIf(m_state != INITIALIZED, DynexCN::error::WRONG_STATE);
 
     m_state = SAVING;
   }
@@ -531,7 +533,7 @@ void WalletLegacy::doSave(std::ostream& destination, bool saveDetailed, bool sav
   }
   catch (std::exception&) {
     runAtomic(m_cacheMutex, [this] () {this->m_state = WalletLegacy::INITIALIZED;} );
-    m_observerManager.notify(&IWalletLegacyObserver::saveCompleted, make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR));
+    m_observerManager.notify(&IWalletLegacyObserver::saveCompleted, make_error_code(DynexCN::error::INTERNAL_WALLET_ERROR));
     return;
   }
 
@@ -544,7 +546,7 @@ std::error_code WalletLegacy::changePassword(const std::string& oldPassword, con
   throwIfNotInitialised();
 
   if (m_password.compare(oldPassword))
-    return make_error_code(CryptoNote::error::WRONG_PASSWORD);
+    return make_error_code(DynexCN::error::WRONG_PASSWORD);
 
   //we don't let the user to change the password while saving
   m_password = newPassword;
@@ -575,13 +577,13 @@ std::string WalletLegacy::getAddress() {
 std::string WalletLegacy::sign_message(const std::string &message) {
   Crypto::Hash hash;
   Crypto::cn_fast_hash(message.data(), message.size(), hash);
-  const CryptoNote::AccountKeys &keys = m_account.getAccountKeys();
+  const DynexCN::AccountKeys &keys = m_account.getAccountKeys();
   Crypto::Signature signature;
   Crypto::generate_signature(hash, keys.address.spendPublicKey, keys.spendSecretKey, signature);
   return std::string("SigV1") + Tools::Base58::encode(std::string((const char *)&signature, sizeof(signature)));
 }
 
-bool WalletLegacy::verify_message(const std::string &message, const CryptoNote::AccountPublicAddress &address, const std::string &signature) {
+bool WalletLegacy::verify_message(const std::string &message, const DynexCN::AccountPublicAddress &address, const std::string &signature) {
   const size_t header_len = strlen("SigV1");
   if (signature.size() < header_len || signature.substr(0, header_len) != "SigV1") {
     std::cout << "Signature header check error";
@@ -784,6 +786,17 @@ TransactionId WalletLegacy::sendTransaction(const WalletLegacyTransfer& transfer
 }
 
 TransactionId WalletLegacy::sendTransaction(const std::vector<WalletLegacyTransfer>& transfers, uint64_t fee, const std::string& extra, uint64_t mixIn, uint64_t unlockTimestamp) {
+
+  std::string extraString = "";
+  std::stringstream faddress;
+  faddress << getAddress();
+  addFromAddressToExtraString(faddress.str(), extraString);
+  
+  for (auto to: transfers) {
+        addToAddressAmountToExtraString(to.address, to.amount, extraString);
+    }
+  extraString += extra;
+  
   TransactionId txId = 0;
   std::shared_ptr<WalletRequest> request;
   std::deque<std::shared_ptr<WalletLegacyEvent>> events;
@@ -791,7 +804,7 @@ TransactionId WalletLegacy::sendTransaction(const std::vector<WalletLegacyTransf
 
   {
     std::unique_lock<std::mutex> lock(m_cacheMutex);
-    request = m_sender->makeSendRequest(txId, events, transfers, fee, extra, mixIn, unlockTimestamp);
+    request = m_sender->makeSendRequest(txId, events, transfers, fee, extraString, 0, unlockTimestamp);
   }
 
   notifyClients(events);
@@ -892,7 +905,7 @@ void WalletLegacy::synchronizationCallback(WalletRequest::Callback callback, std
 }
 
 std::error_code WalletLegacy::cancelTransaction(size_t transactionId) {
-  return make_error_code(CryptoNote::error::TX_CANCEL_IMPOSSIBLE);
+  return make_error_code(DynexCN::error::TX_CANCEL_IMPOSSIBLE);
 }
 
 void WalletLegacy::synchronizationProgressUpdated(uint32_t current, uint32_t total) {
@@ -957,7 +970,7 @@ void WalletLegacy::onTransactionDeleted(ITransfersSubscription* object, const Ha
 
 void WalletLegacy::throwIfNotInitialised() {
   if (m_state == NOT_INITIALIZED || m_state == LOADING) {
-    throw std::system_error(make_error_code(CryptoNote::error::NOT_INITIALIZED));
+    throw std::system_error(make_error_code(DynexCN::error::NOT_INITIALIZED));
   }
   assert(m_transferDetails);
 }
@@ -996,7 +1009,7 @@ void WalletLegacy::notifyIfBalanceChanged() {
 
 void WalletLegacy::getAccountKeys(AccountKeys& keys) {
   if (m_state == NOT_INITIALIZED) {
-    throw std::system_error(make_error_code(CryptoNote::error::NOT_INITIALIZED));
+    throw std::system_error(make_error_code(DynexCN::error::NOT_INITIALIZED));
   }
 
   keys = m_account.getAccountKeys();
@@ -1037,7 +1050,7 @@ bool WalletLegacy::get_tx_key(Crypto::Hash& txid, Crypto::SecretKey& txSecretKey
   return true;
 }
 
-bool WalletLegacy::getTxProof(Crypto::Hash& txid, CryptoNote::AccountPublicAddress& address, Crypto::SecretKey& tx_key, std::string& sig_str) {
+bool WalletLegacy::getTxProof(Crypto::Hash& txid, DynexCN::AccountPublicAddress& address, Crypto::SecretKey& tx_key, std::string& sig_str) {
   Crypto::KeyImage p = *reinterpret_cast<Crypto::KeyImage*>(&address.viewPublicKey);
   Crypto::KeyImage k = *reinterpret_cast<Crypto::KeyImage*>(&tx_key);
   Crypto::KeyImage pk = Crypto::scalarmultKey(p, k);
@@ -1065,7 +1078,7 @@ bool compareTransactionOutputInformationByAmount(const TransactionOutputInformat
 }
 
 std::string WalletLegacy::getReserveProof(const uint64_t &reserve, const std::string &message) {
-	const CryptoNote::AccountKeys keys = m_account.getAccountKeys();
+	const DynexCN::AccountKeys keys = m_account.getAccountKeys();
 	Crypto::SecretKey viewSecretKey = keys.viewSecretKey;
 
 	if (keys.spendSecretKey == NULL_SECRET_KEY) {
@@ -1098,10 +1111,10 @@ std::string WalletLegacy::getReserveProof(const uint64_t &reserve, const std::st
 	
 	// compute signature prefix hash
 	std::string prefix_data = message;
-	prefix_data.append((const char*)&keys.address, sizeof(CryptoNote::AccountPublicAddress));
+	prefix_data.append((const char*)&keys.address, sizeof(DynexCN::AccountPublicAddress));
 	
 	std::vector<Crypto::KeyImage> kimages;
-	CryptoNote::KeyPair ephemeral;
+	DynexCN::KeyPair ephemeral;
 
 	for (size_t i = 0; i < selected_transfers.size(); ++i) {
 
@@ -1111,7 +1124,7 @@ std::string WalletLegacy::getReserveProof(const uint64_t &reserve, const std::st
 
 		// derive ephemeral secret key
 		Crypto::KeyImage ki;
-		const bool r = CryptoNote::generate_key_image_helper(m_account.getAccountKeys(), td.transactionPublicKey, td.outputInTransaction, ephemeral, ki);
+		const bool r = DynexCN::generate_key_image_helper(m_account.getAccountKeys(), td.transactionPublicKey, td.outputInTransaction, ephemeral, ki);
 		if (!r) {
 			throw std::runtime_error("Failed to generate key image");
 		}
@@ -1150,9 +1163,9 @@ std::string WalletLegacy::getReserveProof(const uint64_t &reserve, const std::st
 
 		// derive ephemeral secret key
 		Crypto::KeyImage ki;
-		CryptoNote::KeyPair ephemeral;
+		DynexCN::KeyPair ephemeral;
 
-		const bool r = CryptoNote::generate_key_image_helper(m_account.getAccountKeys(), td.transactionPublicKey, td.outputInTransaction, ephemeral, ki);
+		const bool r = DynexCN::generate_key_image_helper(m_account.getAccountKeys(), td.transactionPublicKey, td.outputInTransaction, ephemeral, ki);
 		if (!r) {
 			throw std::runtime_error("Failed to generate key image");
 		}
@@ -1196,7 +1209,7 @@ std::vector<TransactionOutputInformation> WalletLegacy::getTransactionInputs(con
   return m_transferDetails->getTransactionInputs(transactionHash, flags);
 };
 
-bool WalletLegacy::isFusionTransaction(const CryptoNote::WalletLegacyTransaction& walletTx) const {
+bool WalletLegacy::isFusionTransaction(const DynexCN::WalletLegacyTransaction& walletTx) const {
   if (walletTx.fee != 0) {
     return false;
   }
@@ -1206,11 +1219,11 @@ bool WalletLegacy::isFusionTransaction(const CryptoNote::WalletLegacyTransaction
   std::vector<uint64_t> outputsAmounts;
   std::vector<uint64_t> inputsAmounts;
 
-  CryptoNote::TransactionInformation txInfo;
+  DynexCN::TransactionInformation txInfo;
 
-  for (const CryptoNote::TransactionOutputInformation& output :
-       getTransactionOutputs(walletTx.hash, CryptoNote::ITransfersContainer::Flags::IncludeTypeKey
-                                       | CryptoNote::ITransfersContainer::Flags::IncludeStateAll)) {
+  for (const DynexCN::TransactionOutputInformation& output :
+       getTransactionOutputs(walletTx.hash, DynexCN::ITransfersContainer::Flags::IncludeTypeKey
+                                       | DynexCN::ITransfersContainer::Flags::IncludeStateAll)) {
     if (outputsAmounts.size() <= output.outputInTransaction) {
         outputsAmounts.resize(output.outputInTransaction + 1, 0);
     }
@@ -1221,8 +1234,8 @@ bool WalletLegacy::isFusionTransaction(const CryptoNote::WalletLegacyTransaction
     outputsSum += output.amount;
   }
 
-  for (const CryptoNote::TransactionOutputInformation& input :
-       getTransactionInputs(walletTx.hash, CryptoNote::ITransfersContainer::Flags::IncludeTypeKey)) {
+  for (const DynexCN::TransactionOutputInformation& input :
+       getTransactionInputs(walletTx.hash, DynexCN::ITransfersContainer::Flags::IncludeTypeKey)) {
     inputsSum += input.amount;
     inputsAmounts.push_back(input.amount);
   }
@@ -1238,4 +1251,4 @@ bool WalletLegacy::isFusionTransaction(const CryptoNote::WalletLegacyTransaction
   return m_currency.isFusionTransaction(inputsAmounts, outputsAmounts, 0, txInfo.blockHeight); //size = 0 here because can't get real size of tx in wallet.
 }
 
-} //namespace CryptoNote
+} //namespace DynexCN

@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -54,11 +54,11 @@ public:
 
 struct Save {
   struct Request {
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 
   struct Response {
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 };
 
@@ -67,11 +67,11 @@ struct Reset {
     std::string viewSecretKey;
     uint32_t scanHeight = std::numeric_limits<uint32_t>::max();
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 
   struct Response {
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 };
 
@@ -79,23 +79,23 @@ struct Export {
   struct Request {
     std::string fileName;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 
   struct Response {
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 };
 
 struct GetViewKey {
   struct Request {
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 
   struct Response {
     std::string viewSecretKey;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 };
 
@@ -103,19 +103,19 @@ struct GetMnemonicSeed {
   struct Request {
     std::string address;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 
   struct Response {
     std::string mnemonicSeed;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 };
 
 struct GetStatus {
   struct Request {
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 
   struct Response {
@@ -127,7 +127,7 @@ struct GetStatus {
     uint64_t minimalFee;
     std::string version;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 };
 
@@ -135,7 +135,7 @@ struct ValidateAddress {
 	struct Request {
 		std::string address;
 		
-		void serialize(CryptoNote::ISerializer& serializer);
+		void serialize(DynexCN::ISerializer& serializer);
 	};
 
 	struct Response {
@@ -144,19 +144,19 @@ struct ValidateAddress {
 		std::string spendPublicKey;
 		std::string viewPublicKey;
 
-		void serialize(CryptoNote::ISerializer& serializer);
+		void serialize(DynexCN::ISerializer& serializer);
 	};
 };
 
 struct GetAddresses {
   struct Request {
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 
   struct Response {
     std::vector<std::string> addresses;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 };
 
@@ -167,13 +167,13 @@ struct CreateAddress {
     uint32_t scanHeight = std::numeric_limits<uint32_t>::max();
     bool reset;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 
   struct Response {
     std::string address;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 };
 
@@ -183,13 +183,13 @@ struct CreateAddressList {
     std::vector<uint32_t> scanHeights;
     bool reset;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 
   struct Response {
     std::vector<std::string> addresses;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 };
 
@@ -197,11 +197,11 @@ struct DeleteAddress {
   struct Request {
     std::string address;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 
   struct Response {
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 };
 
@@ -209,14 +209,14 @@ struct GetSpendKeys {
   struct Request {
     std::string address;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 
   struct Response {
     std::string spendSecretKey;
     std::string spendPublicKey;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 };
 
@@ -224,14 +224,14 @@ struct GetBalance {
   struct Request {
     std::string address;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 
   struct Response {
     uint64_t availableBalance;
     uint64_t lockedAmount;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 };
 
@@ -240,13 +240,13 @@ struct GetBlockHashes {
     uint32_t firstBlockIndex;
     uint32_t blockCount;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 
   struct Response {
     std::vector<std::string> blockHashes;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 };
 
@@ -254,7 +254,7 @@ struct TransactionHashesInBlockRpcInfo {
   std::string blockHash;
   std::vector<std::string> transactionHashes;
 
-  void serialize(CryptoNote::ISerializer& serializer);
+  void serialize(DynexCN::ISerializer& serializer);
 };
 
 struct GetTransactionHashes {
@@ -265,13 +265,13 @@ struct GetTransactionHashes {
     uint32_t blockCount;
     std::string paymentId;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 
   struct Response {
     std::vector<TransactionHashesInBlockRpcInfo> items;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 };
 
@@ -280,7 +280,7 @@ struct TransferRpcInfo {
   std::string address;
   int64_t amount;
 
-  void serialize(CryptoNote::ISerializer& serializer);
+  void serialize(DynexCN::ISerializer& serializer);
 };
 
 struct TransactionRpcInfo {
@@ -297,20 +297,20 @@ struct TransactionRpcInfo {
   std::string extra;
   std::string paymentId;
 
-  void serialize(CryptoNote::ISerializer& serializer);
+  void serialize(DynexCN::ISerializer& serializer);
 };
 
 struct GetTransaction {
   struct Request {
     std::string transactionHash;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 
   struct Response {
     TransactionRpcInfo transaction;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 };
 
@@ -318,7 +318,7 @@ struct TransactionsInBlockRpcInfo {
   std::string blockHash;
   std::vector<TransactionRpcInfo> transactions;
 
-  void serialize(CryptoNote::ISerializer& serializer);
+  void serialize(DynexCN::ISerializer& serializer);
 };
 
 struct GetTransactions {
@@ -329,13 +329,13 @@ struct GetTransactions {
     uint32_t blockCount;
     std::string paymentId;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 
   struct Response {
     std::vector<TransactionsInBlockRpcInfo> items;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 };
 
@@ -343,13 +343,13 @@ struct GetUnconfirmedTransactionHashes {
   struct Request {
     std::vector<std::string> addresses;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 
   struct Response {
     std::vector<std::string> transactionHashes;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 };
 
@@ -357,13 +357,13 @@ struct GetTransactionSecretKey {
   struct Request {
     std::string transactionHash;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 
   struct Response {
     std::string transactionSecretKey;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 };
 
@@ -373,13 +373,13 @@ struct GetTransactionProof {
     std::string destinationAddress;
     std::string transactionSecretKey;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 
   struct Response {
     std::string transactionProof;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 };
 
@@ -389,13 +389,13 @@ struct GetReserveProof {
 	std::string message;
 	uint64_t amount = 0;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 
   struct Response {
     std::string reserveProof;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 };
 
@@ -403,7 +403,7 @@ struct WalletRpcOrder {
   std::string address;
   uint64_t amount;
 
-  void serialize(CryptoNote::ISerializer& serializer);
+  void serialize(DynexCN::ISerializer& serializer);
 };
 
 struct SendTransaction {
@@ -417,14 +417,14 @@ struct SendTransaction {
     std::string paymentId;
     uint64_t unlockTime = 0;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 
   struct Response {
     std::string transactionHash;
 	std::string transactionSecretKey;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 };
 
@@ -439,25 +439,25 @@ struct CreateDelayedTransaction {
     std::string paymentId;
     uint64_t unlockTime = 0;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 
   struct Response {
     std::string transactionHash;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 };
 
 struct GetDelayedTransactionHashes {
   struct Request {
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 
   struct Response {
     std::vector<std::string> transactionHashes;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 };
 
@@ -465,11 +465,11 @@ struct DeleteDelayedTransaction {
   struct Request {
     std::string transactionHash;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 
   struct Response {
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 };
 
@@ -477,11 +477,11 @@ struct SendDelayedTransaction {
   struct Request {
     std::string transactionHash;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 
   struct Response {
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 };
 
@@ -492,13 +492,13 @@ struct SendFusionTransaction {
     std::vector<std::string> addresses;
     std::string destinationAddress;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 
   struct Response {
     std::string transactionHash;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 };
 
@@ -507,14 +507,14 @@ struct EstimateFusion {
     uint64_t threshold;
     std::vector<std::string> addresses;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 
   struct Response {
     uint32_t fusionReadyCount;
     uint32_t totalOutputCount;
 
-    void serialize(CryptoNote::ISerializer& serializer);
+    void serialize(DynexCN::ISerializer& serializer);
   };
 };
 

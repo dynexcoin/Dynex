@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2017, The CN developers, The Bytecoin developers
 // Copyright (c) 2018, The Karbo developers
 // Copyright (c) 2017-2019, The CROAT.community developers
 //
@@ -23,7 +23,7 @@
 
 #include "Serialization/ISerializer.h"
 
-namespace CryptoNote {
+namespace DynexCN {
 
 void serialize(transactionOutputDetails2& output, ISerializer& serializer);
 void serialize(TransactionOutputReferenceDetails& outputReference, ISerializer& serializer);
@@ -39,4 +39,4 @@ void serialize(TransactionDetails& transaction, ISerializer& serializer);
 
 void serialize(BlockDetails& block, ISerializer& serializer);
 
-} //namespace CryptoNote
+} //namespace DynexCN

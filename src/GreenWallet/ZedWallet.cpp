@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -41,7 +41,7 @@
 
 #include <Common/SignalHandler.h>
 
-#include <CryptoNoteCore/Currency.h>
+#include <DynexCNCore/Currency.h>
 
 #include <Logging/FileLogger.h>
 #include <Logging/LoggerManager.h>
@@ -87,14 +87,14 @@ int main(int argc, char **argv)
     Logging::LoggerManager logManager;
 
     /* Currency contains our coin parameters, such as decimal places, supply */
-    const CryptoNote::Currency currency 
-        = CryptoNote::CurrencyBuilder(logManager).currency();
+    const DynexCN::Currency currency 
+        = DynexCN::CurrencyBuilder(logManager).currency();
 
 	System::Dispatcher dispatcher;
 
     /* Our connection to daemon */
-	CryptoNote::INode* node = new CryptoNote::NodeRpcProxy(config.host, config.port);
-	std::unique_ptr<CryptoNote::INode> nodeGuard(node);
+	DynexCN::INode* node = new DynexCN::NodeRpcProxy(config.host, config.port);
+	std::unique_ptr<DynexCN::INode> nodeGuard(node);
 
     std::promise<std::error_code> errorPromise;
 
@@ -153,14 +153,14 @@ int main(int argc, char **argv)
 	}
 
     /* Create the wallet instance */
-	CryptoNote::WalletGreen* wallet = new CryptoNote::WalletGreen(dispatcher, currency, *node, logManager);
-	std::unique_ptr<CryptoNote::WalletGreen> walletGuard(wallet);
+	DynexCN::WalletGreen* wallet = new DynexCN::WalletGreen(dispatcher, currency, *node, logManager);
+	std::unique_ptr<DynexCN::WalletGreen> walletGuard(wallet);
 
     /* Run the interactive wallet interface */
     run(*wallet, *node, config);
 }
 
-void run(CryptoNote::WalletGreen &wallet, CryptoNote::INode &node,
+void run(DynexCN::WalletGreen &wallet, DynexCN::INode &node,
 	Config &config)
 {
 	std::cout << InformationMsg(getVersion()) << std::endl;

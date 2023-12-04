@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2017-2019, The CROAT.community developers
 //
 // This file is part of Bytecoin.
@@ -26,7 +26,7 @@
 #include <Common/StreamTools.h>
 
 using namespace Common;
-using namespace CryptoNote;
+using namespace DynexCN;
 
 namespace {
 
@@ -70,7 +70,7 @@ size_t writeArraySize(IOutputStream& s, size_t val) {
 
 }
 
-namespace CryptoNote {
+namespace DynexCN {
 
 KVBinaryOutputStreamSerializer::KVBinaryOutputStreamSerializer() {
   beginObject(std::string());

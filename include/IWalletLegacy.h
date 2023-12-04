@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -44,15 +44,15 @@
 #include <list>
 #include <system_error>
 #include <boost/optional.hpp>
-#include "CryptoNote.h"
+#include "DynexCN.h"
 #include "CryptoTypes.h"
-#include "CryptoNote.h"
+#include "DynexCN.h"
 #include "crypto/crypto.h"
-#include "CryptoNoteCore/CryptoNoteBasic.h"
+#include "DynexCNCore/DynexCNBasic.h"
 #include "ITransfersContainer.h"
 #include "Rpc/CoreRpcServerCommandsDefinitions.h"
 
-namespace CryptoNote {
+namespace DynexCN {
 
 typedef size_t TransactionId;
 typedef size_t TransferId;
@@ -83,7 +83,7 @@ struct WalletLegacyTransaction {
   uint64_t         sentTime;
   uint64_t         unlockTime;
   Crypto::Hash     hash;
-  boost::optional<Crypto::SecretKey> secretKey = CryptoNote::NULL_SECRET_KEY;
+  boost::optional<Crypto::SecretKey> secretKey = DynexCN::NULL_SECRET_KEY;
   bool             isCoinbase;
   uint32_t         blockHeight;
   uint64_t         timestamp;
@@ -149,7 +149,7 @@ public:
   virtual bool getTransaction(TransactionId transactionId, WalletLegacyTransaction& transaction) = 0;
   virtual bool getTransfer(TransferId transferId, WalletLegacyTransfer& transfer) = 0;
   virtual std::vector<Payments> getTransactionsByPaymentIds(const std::vector<PaymentId>& paymentIds) const = 0;
-  virtual bool getTxProof(Crypto::Hash& txid, CryptoNote::AccountPublicAddress& address, Crypto::SecretKey& tx_key, std::string& sig_str) = 0;
+  virtual bool getTxProof(Crypto::Hash& txid, DynexCN::AccountPublicAddress& address, Crypto::SecretKey& tx_key, std::string& sig_str) = 0;
   virtual std::string getReserveProof(const uint64_t &reserve, const std::string &message) = 0;
   virtual Crypto::SecretKey getTxKey(Crypto::Hash& txid) = 0;
   virtual bool get_tx_key(Crypto::Hash& txid, Crypto::SecretKey& txSecretKey) = 0;
@@ -172,7 +172,7 @@ public:
   virtual bool isFusionTransaction(const WalletLegacyTransaction& walletTx) const = 0;
 
   virtual std::string sign_message(const std::string &data) = 0;
-  virtual bool verify_message(const std::string &data, const CryptoNote::AccountPublicAddress &address, const std::string &signature) = 0;
+  virtual bool verify_message(const std::string &data, const DynexCN::AccountPublicAddress &address, const std::string &signature) = 0;
 
   virtual bool isTrackingWallet() = 0;
 };

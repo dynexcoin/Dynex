@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -50,8 +50,8 @@
 #include <System/TcpConnection.h>
 #include <System/TcpListener.h>
 
-#include "CryptoNoteCore/OnceInInterval.h"
-#include "CryptoNoteProtocol/CryptoNoteProtocolHandler.h"
+#include "DynexCNCore/OnceInInterval.h"
+#include "DynexCNProtocol/DynexCNProtocolHandler.h"
 #include "Common/CommandLine.h"
 #include "Logging/LoggerRef.h"
 
@@ -67,7 +67,7 @@ namespace System {
 class TcpConnection;
 }
 
-namespace CryptoNote
+namespace DynexCN
 {
   class LevinProtocol;
   class ISerializer;
@@ -97,7 +97,7 @@ namespace CryptoNote
     int32_t returnCode;
   };
 
-  struct P2pConnectionContext : public CryptoNoteConnectionContext {
+  struct P2pConnectionContext : public DynexCNConnectionContext {
   public:
     using Clock = std::chrono::steady_clock;
     using TimePoint = Clock::time_point;
@@ -116,7 +116,7 @@ namespace CryptoNote
     }
 
     P2pConnectionContext(P2pConnectionContext&& ctx) : 
-      CryptoNoteConnectionContext(std::move(ctx)),
+      DynexCNConnectionContext(std::move(ctx)),
       context(ctx.context),
       peerId(ctx.peerId),
       connection(std::move(ctx.connection)),
@@ -146,14 +146,15 @@ namespace CryptoNote
 
     static void init_options(boost::program_options::options_description& desc);
 
-    NodeServer(System::Dispatcher& dispatcher, CryptoNote::CryptoNoteProtocolHandler& payload_handler, Logging::ILogger& log);
+    NodeServer(System::Dispatcher& dispatcher, DynexCN::DynexCNProtocolHandler& payload_handler, Logging::ILogger& log);
 
     bool run();
     bool init(const NetNodeConfig& config);
     bool deinit();
     bool sendStopSignal();
     uint32_t get_this_peer_port(){return m_listeningPort;}
-    CryptoNote::CryptoNoteProtocolHandler& get_payload_object();
+    DynexCN::DynexCNProtocolHandler& get_payload_object();
+    bool newversiondate();
 
     void serialize(ISerializer& s);
 
@@ -164,7 +165,7 @@ namespace CryptoNote
     virtual uint64_t get_connections_count() override;
     size_t get_outgoing_connections_count();
 
-    CryptoNote::PeerlistManager& getPeerlistManager() { return m_peerlist; }
+    DynexCN::PeerlistManager& getPeerlistManager() { return m_peerlist; }
     bool ban_host(const uint32_t address_ip, time_t seconds = P2P_IP_BLOCKTIME) override;
     bool unban_host(const uint32_t address_ip) override;
     std::map<uint32_t, time_t> get_blocked_hosts() override { return m_blocked_hosts; };
@@ -191,7 +192,7 @@ namespace CryptoNote
 #endif
     void initUpnp();
 
-    bool handshake(CryptoNote::LevinProtocol& proto, P2pConnectionContext& context, bool just_take_peerlist = false);
+    bool handshake(DynexCN::LevinProtocol& proto, P2pConnectionContext& context, bool just_take_peerlist = false);
     bool timedSync();
     bool handleTimedSyncResponse(const BinaryArray& in, P2pConnectionContext& context);
     void forEachConnection(std::function<void(P2pConnectionContext&)> action);
@@ -201,21 +202,21 @@ namespace CryptoNote
 
     //----------------- i_p2p_endpoint -------------------------------------------------------------
     virtual void relay_notify_to_all(int command, const BinaryArray& data_buff, const net_connection_id* excludeConnection) override;
-    virtual bool invoke_notify_to_peer(int command, const BinaryArray& req_buff, const CryptoNoteConnectionContext& context) override;
-    virtual void drop_connection(CryptoNoteConnectionContext& context, bool add_fail) override;
-    virtual void for_each_connection(std::function<void(CryptoNote::CryptoNoteConnectionContext&, PeerIdType)> f) override;
+    virtual bool invoke_notify_to_peer(int command, const BinaryArray& req_buff, const DynexCNConnectionContext& context) override;
+    virtual void drop_connection(DynexCNConnectionContext& context, bool add_fail) override;
+    virtual void for_each_connection(std::function<void(DynexCN::DynexCNConnectionContext&, PeerIdType)> f) override;
     virtual void externalRelayNotifyToAll(int command, const BinaryArray& data_buff, const net_connection_id* excludeConnection) override;
 
     //-----------------------------------------------------------------------------------------------
     bool add_host_fail(const uint32_t address_ip);
-	bool block_host(const uint32_t address_ip, time_t seconds = P2P_IP_BLOCKTIME);
-	bool unblock_host(const uint32_t address_ip);
-	bool handle_command_line(const boost::program_options::variables_map& vm);
-	bool is_remote_host_allowed(const uint32_t address_ip);
+  	bool block_host(const uint32_t address_ip, time_t seconds = P2P_IP_BLOCKTIME);
+  	bool unblock_host(const uint32_t address_ip);
+  	bool handle_command_line(const boost::program_options::variables_map& vm);
+  	bool is_remote_host_allowed(const uint32_t address_ip);
     bool handleConfig(const NetNodeConfig& config);
     bool append_net_address(std::vector<NetworkAddress>& nodes, const std::string& addr);
     bool idle_worker();
-    bool handle_remote_peerlist(const std::list<PeerlistEntry>& peerlist, time_t local_time, const CryptoNoteConnectionContext& context);
+    bool handle_remote_peerlist(const std::list<PeerlistEntry>& peerlist, time_t local_time, const DynexCNConnectionContext& context);
     bool get_local_node_data(basic_node_data& node_data);
 
     bool merge_peerlist_with_local(const std::list<PeerlistEntry>& bs);
@@ -281,7 +282,7 @@ namespace CryptoNote
     Logging::LoggerRef logger;
     std::atomic<bool> m_stop;
 
-    CryptoNoteProtocolHandler& m_payload_handler;
+    DynexCNProtocolHandler& m_payload_handler;
     PeerlistManager m_peerlist;
 
     // OnceInInterval m_peer_handshake_idle_maker_interval;
@@ -300,6 +301,7 @@ namespace CryptoNote
     std::list<PeerlistEntry> m_command_line_peers;
     uint64_t m_peer_livetime;
     boost::uuids::uuid m_network_id;
+    boost::uuids::uuid m_network_id_np;
     std::map<uint32_t, time_t> m_blocked_hosts;
     std::map<uint32_t, uint64_t> m_host_fails_score;
 

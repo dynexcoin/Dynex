@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -55,7 +55,7 @@ public:
 
   const PaymentService::ConfigurationManager& getConfig() const { return config; }
   PaymentService::WalletConfiguration getWalletConfig() const;
-  const CryptoNote::Currency getCurrency();
+  const DynexCN::Currency getCurrency();
 
   void run();
   void stop();
@@ -67,13 +67,13 @@ private:
   void runInProcess(Logging::LoggerRef& log);
   void runRpcProxy(Logging::LoggerRef& log);
 
-  void runWalletService(const CryptoNote::Currency& currency, CryptoNote::INode& node);
+  void runWalletService(const DynexCN::Currency& currency, DynexCN::INode& node);
 
   System::Dispatcher* dispatcher;
   System::Event* stopEvent;
   PaymentService::ConfigurationManager config;
   PaymentService::WalletService* service;
-  CryptoNote::CurrencyBuilder currencyBuilder;
+  DynexCN::CurrencyBuilder currencyBuilder;
   
   Logging::LoggerGroup logger;
   std::ofstream fileStream;

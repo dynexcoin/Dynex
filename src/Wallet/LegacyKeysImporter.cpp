@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -42,9 +42,9 @@
 
 #include "Common/StringTools.h"
 
-#include "CryptoNoteCore/Currency.h"
-#include "CryptoNoteCore/Account.h"
-#include "CryptoNoteCore/CryptoNoteTools.h"
+#include "DynexCNCore/Currency.h"
+#include "DynexCNCore/Account.h"
+#include "DynexCNCore/DynexCNTools.h"
 
 #include "Serialization/SerializationTools.h"
 
@@ -61,22 +61,22 @@ struct keys_file_data {
   chacha8_iv iv;
   std::string account_data;
 
-  void serialize(CryptoNote::ISerializer& s) {
+  void serialize(DynexCN::ISerializer& s) {
     s(iv, "iv");
     s(account_data, "account_data");
   }
 };
 
-void loadKeysFromFile(const std::string& filename, const std::string& password, CryptoNote::AccountBase& account) {
+void loadKeysFromFile(const std::string& filename, const std::string& password, DynexCN::AccountBase& account) {
   keys_file_data keys_file_data;
   std::string buf;
 
   if (!Common::loadFileToString(filename, buf)) {
-    throw std::system_error(make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR), "failed to load \"" + filename + '\"');
+    throw std::system_error(make_error_code(DynexCN::error::INTERNAL_WALLET_ERROR), "failed to load \"" + filename + '\"');
   }
 
-  if (!CryptoNote::fromBinaryArray(keys_file_data, Common::asBinaryArray(buf))) {
-    throw std::system_error(make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR), "failed to deserialize \"" + filename + '\"');
+  if (!DynexCN::fromBinaryArray(keys_file_data, Common::asBinaryArray(buf))) {
+    throw std::system_error(make_error_code(DynexCN::error::INTERNAL_WALLET_ERROR), "failed to deserialize \"" + filename + '\"');
   }
 
   chacha8_key key;
@@ -86,28 +86,28 @@ void loadKeysFromFile(const std::string& filename, const std::string& password, 
   account_data.resize(keys_file_data.account_data.size());
   chacha8(keys_file_data.account_data.data(), keys_file_data.account_data.size(), key, keys_file_data.iv, &account_data[0]);
 
-  if (!CryptoNote::loadFromBinaryKeyValue(account, account_data)) {
-    throw std::system_error(make_error_code(CryptoNote::error::WRONG_PASSWORD));
+  if (!DynexCN::loadFromBinaryKeyValue(account, account_data)) {
+    throw std::system_error(make_error_code(DynexCN::error::WRONG_PASSWORD));
   }
 
-  const CryptoNote::AccountKeys& keys = account.getAccountKeys();
-  CryptoNote::throwIfKeysMissmatch(keys.viewSecretKey, keys.address.viewPublicKey);
-  CryptoNote::throwIfKeysMissmatch(keys.spendSecretKey, keys.address.spendPublicKey);
+  const DynexCN::AccountKeys& keys = account.getAccountKeys();
+  DynexCN::throwIfKeysMissmatch(keys.viewSecretKey, keys.address.viewPublicKey);
+  DynexCN::throwIfKeysMissmatch(keys.spendSecretKey, keys.address.spendPublicKey);
 }
 
 }
 
-namespace CryptoNote {
+namespace DynexCN {
 
 void importLegacyKeys(const std::string& legacyKeysFilename, const std::string& password, std::ostream& destination) {
-  CryptoNote::AccountBase account;
+  DynexCN::AccountBase account;
 
   loadKeysFromFile(legacyKeysFilename, password, account);
 
-  CryptoNote::WalletUserTransactionsCache transactionsCache;
+  DynexCN::WalletUserTransactionsCache transactionsCache;
   std::string cache;
-  CryptoNote::WalletLegacySerializer importer(account, transactionsCache);
+  DynexCN::WalletLegacySerializer importer(account, transactionsCache);
   importer.serialize(destination, password, false, cache);
 }
 
-} //namespace CryptoNote
+} //namespace DynexCN

@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -51,14 +51,14 @@ void doTransfer(std::string address, uint64_t amount, uint64_t fee,
                 uint32_t height, uint64_t mixin = WalletConfig::defaultMixin,
                 std::string nodeAddress = std::string(), uint64_t nodeFee = 0);
 
-void sendMultipleTransactions(CryptoNote::WalletGreen &wallet,
-                              std::vector<CryptoNote::TransactionParameters>
+void sendMultipleTransactions(DynexCN::WalletGreen &wallet,
+                              std::vector<DynexCN::TransactionParameters>
                               transfers);
 
-void splitTx(CryptoNote::WalletGreen &wallet,
-             CryptoNote::TransactionParameters p);
+void splitTx(DynexCN::WalletGreen &wallet,
+             DynexCN::TransactionParameters p);
 
-bool confirmTransaction(CryptoNote::TransactionParameters t,
+bool confirmTransaction(DynexCN::TransactionParameters t,
                         std::shared_ptr<WalletInfo> walletInfo, uint64_t nodeFee);
 
 bool parseAmount(std::string strAmount, uint64_t &amount);

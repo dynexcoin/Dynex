@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -45,9 +45,9 @@
 #include "PaymentGate/PaymentServiceJsonRpcServer.h"
 
 #include "CheckpointsData.h"
-#include "CryptoNoteCore/CoreConfig.h"
-#include "CryptoNoteCore/Core.h"
-#include "CryptoNoteProtocol/CryptoNoteProtocolHandler.h"
+#include "DynexCNCore/CoreConfig.h"
+#include "DynexCNCore/Core.h"
+#include "DynexCNProtocol/DynexCNProtocolHandler.h"
 #include "P2p/NetNode.h"
 #include "Rpc/RpcServer.h"
 #include <System/Context.h>
@@ -132,7 +132,7 @@ WalletConfiguration PaymentGateService::getWalletConfig() const {
   };
 }
 
-const CryptoNote::Currency PaymentGateService::getCurrency() {
+const DynexCN::Currency PaymentGateService::getCurrency() {
   return currencyBuilder.currency();
 }
 
@@ -185,14 +185,14 @@ void PaymentGateService::runInProcess(Logging::LoggerRef& log) {
 
   log(Logging::INFO) << "Starting Payment Gate with local node";
 
-  CryptoNote::Currency currency = currencyBuilder.currency();
-  CryptoNote::core core(currency, NULL, logger, true);
+  DynexCN::Currency currency = currencyBuilder.currency();
+  DynexCN::core core(currency, NULL, logger, true);
 
-  CryptoNote::CryptoNoteProtocolHandler protocol(currency, *dispatcher, core, NULL, logger);
-  CryptoNote::NodeServer p2pNode(*dispatcher, protocol, logger);
-  CryptoNote::RpcServer rpcServer(*dispatcher, logger, core, p2pNode, protocol);
-  CryptoNote::Checkpoints checkpoints(logger);
-  for (const auto& cp : CryptoNote::CHECKPOINTS) {
+  DynexCN::DynexCNProtocolHandler protocol(currency, *dispatcher, core, NULL, logger);
+  DynexCN::NodeServer p2pNode(*dispatcher, protocol, logger);
+  DynexCN::RpcServer rpcServer(*dispatcher, logger, core, p2pNode, protocol);
+  DynexCN::Checkpoints checkpoints(logger);
+  for (const auto& cp : DynexCN::CHECKPOINTS) {
     checkpoints.add_checkpoint(cp.height, cp.blockId);
   }
   checkpoints.load_checkpoints_from_dns();
@@ -209,13 +209,13 @@ void PaymentGateService::runInProcess(Logging::LoggerRef& log) {
   }
 
   log(Logging::INFO) << "initializing core";
-  CryptoNote::MinerConfig emptyMiner;
+  DynexCN::MinerConfig emptyMiner;
   core.init(config.coreConfig, emptyMiner, true);
 
   std::promise<std::error_code> initPromise;
   auto initFuture = initPromise.get_future();
 
-  std::unique_ptr<CryptoNote::INode> node(new CryptoNote::InProcessNode(core, protocol));
+  std::unique_ptr<DynexCN::INode> node(new DynexCN::InProcessNode(core, protocol));
 
   node->init([&initPromise, &log](std::error_code ec) {
     if (ec) {
@@ -262,9 +262,9 @@ void PaymentGateService::runInProcess(Logging::LoggerRef& log) {
 
 void PaymentGateService::runRpcProxy(Logging::LoggerRef& log) {
   log(Logging::INFO) << "Starting Payment Gate with remote node";
-  CryptoNote::Currency currency = currencyBuilder.currency();
+  DynexCN::Currency currency = currencyBuilder.currency();
 
-  std::unique_ptr<CryptoNote::INode> node(
+  std::unique_ptr<DynexCN::INode> node(
     PaymentService::NodeFactory::createNode(
       config.remoteNodeConfig.daemonHost,
       config.remoteNodeConfig.daemonPort));
@@ -272,13 +272,13 @@ void PaymentGateService::runRpcProxy(Logging::LoggerRef& log) {
   runWalletService(currency, *node);
 }
 
-void PaymentGateService::runWalletService(const CryptoNote::Currency& currency, CryptoNote::INode& node) {
+void PaymentGateService::runWalletService(const DynexCN::Currency& currency, DynexCN::INode& node) {
   PaymentService::WalletConfiguration walletConfiguration{
     config.gateConfiguration.containerFile,
     config.gateConfiguration.containerPassword
   };
 
-  std::unique_ptr<CryptoNote::WalletGreen> wallet(new CryptoNote::WalletGreen(*dispatcher, currency, node, logger));
+  std::unique_ptr<DynexCN::WalletGreen> wallet(new DynexCN::WalletGreen(*dispatcher, currency, node, logger));
 
   service = new PaymentService::WalletService(currency, *dispatcher, node, *wallet, *wallet, walletConfiguration, logger);
   std::unique_ptr<PaymentService::WalletService> serviceGuard(service);

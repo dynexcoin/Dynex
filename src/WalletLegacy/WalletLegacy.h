@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -43,15 +43,15 @@
 #include <memory>
 #include <mutex>
 
-#include "CryptoNote.h"
+#include "DynexCN.h"
 #include "IWalletLegacy.h"
 #include "INode.h"
 #include "Wallet/WalletErrors.h"
 #include "Wallet/WalletAsyncContextCounter.h"
 #include "Common/ObserverManager.h"
-#include "CryptoNoteCore/TransactionExtra.h"
-#include "CryptoNoteCore/CryptoNoteFormatUtils.h"
-#include "CryptoNoteCore/Currency.h"
+#include "DynexCNCore/TransactionExtra.h"
+#include "DynexCNCore/DynexCNFormatUtils.h"
+#include "DynexCNCore/Currency.h"
 #include "WalletLegacy/WalletUserTransactionsCache.h"
 #include "WalletLegacy/WalletUnconfirmedTransactions.h"
 
@@ -61,7 +61,7 @@
 #include "Transfers/BlockchainSynchronizer.h"
 #include "Transfers/TransfersSynchronizer.h"
 
-namespace CryptoNote {
+namespace DynexCN {
 
 class SyncStarter;
 
@@ -71,7 +71,7 @@ class WalletLegacy :
   ITransfersObserver {
 
 public:
-  WalletLegacy(const CryptoNote::Currency& currency, INode& node, Logging::ILogger& loggerGroup);
+  WalletLegacy(const DynexCN::Currency& currency, INode& node, Logging::ILogger& loggerGroup);
   virtual ~WalletLegacy();
 
   virtual void addObserver(IWalletLegacyObserver* observer) override;
@@ -107,7 +107,7 @@ public:
   virtual bool getTransaction(TransactionId transactionId, WalletLegacyTransaction& transaction) override;
   virtual bool getTransfer(TransferId transferId, WalletLegacyTransfer& transfer) override;
   virtual std::vector<Payments> getTransactionsByPaymentIds(const std::vector<PaymentId>& paymentIds) const override;
-  virtual bool getTxProof(Crypto::Hash& txid, CryptoNote::AccountPublicAddress& address, Crypto::SecretKey& tx_key, std::string& sig_str) override;
+  virtual bool getTxProof(Crypto::Hash& txid, DynexCN::AccountPublicAddress& address, Crypto::SecretKey& tx_key, std::string& sig_str) override;
   virtual std::string getReserveProof(const uint64_t &reserve, const std::string &message) override;
   virtual Crypto::SecretKey getTxKey(Crypto::Hash& txid) override;
   virtual bool get_tx_key(Crypto::Hash& txid, Crypto::SecretKey& txSecretKey) override;
@@ -130,7 +130,7 @@ public:
   virtual bool isFusionTransaction(const WalletLegacyTransaction& walletTx) const override;
 
   virtual std::string sign_message(const std::string &data) override;
-  virtual bool verify_message(const std::string &data, const CryptoNote::AccountPublicAddress &address, const std::string &signature) override;
+  virtual bool verify_message(const std::string &data, const DynexCN::AccountPublicAddress &address, const std::string &signature) override;
 
   virtual bool isTrackingWallet() override;
 
@@ -158,7 +158,7 @@ private:
   std::vector<TransactionId> deleteOutdatedUnconfirmedTransactions();
 
   uint64_t scanHeightToTimestamp(const uint32_t scanHeight);
-  CryptoNote::BlockDetails getBlock(const uint32_t blockHeight);
+  DynexCN::BlockDetails getBlock(const uint32_t blockHeight);
 
   enum WalletState
   {
@@ -170,9 +170,9 @@ private:
 
   WalletState m_state;
   std::mutex m_cacheMutex;
-  CryptoNote::AccountBase m_account;
+  DynexCN::AccountBase m_account;
   std::string m_password;
-  const CryptoNote::Currency& m_currency;
+  const DynexCN::Currency& m_currency;
   INode& m_node;
   Logging::ILogger& m_loggerGroup;
   bool m_isStopping;
@@ -189,9 +189,9 @@ private:
   std::unique_ptr<WalletTransactionSender> m_sender;
 
   WalletAsyncContextCounter m_asyncContextCounter;
-  Tools::ObserverManager<CryptoNote::IWalletLegacyObserver> m_observerManager;
+  Tools::ObserverManager<DynexCN::IWalletLegacyObserver> m_observerManager;
 
   std::unique_ptr<SyncStarter> m_onInitSyncStarter;
 };
 
-} //namespace CryptoNote
+} //namespace DynexCN

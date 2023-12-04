@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -44,8 +44,8 @@
 
 #include <Common/Base58.h>
 
-#include <CryptoNoteCore/Account.h>
-#include <CryptoNoteCore/CryptoNoteBasicImpl.h>
+#include <DynexCNCore/Account.h>
+#include <DynexCNCore/DynexCNBasicImpl.h>
 
 #include <Mnemonics/electrum-words.h>
 
@@ -59,7 +59,7 @@
 #include <Common/PasswordContainer.h>
 #include <GreenWallet/WalletConfig.h>
 
-std::shared_ptr<WalletInfo> createViewWallet(CryptoNote::WalletGreen &wallet)
+std::shared_ptr<WalletInfo> createViewWallet(DynexCN::WalletGreen &wallet)
 {
     std::cout << WarningMsg("View wallets are only for viewing incoming ")
               << WarningMsg("transactions, and cannot make transfers.")
@@ -112,7 +112,7 @@ std::shared_ptr<WalletInfo> createViewWallet(CryptoNote::WalletGreen &wallet)
                                         address, true, wallet);
 }
 
-std::shared_ptr<WalletInfo> importWallet(CryptoNote::WalletGreen &wallet)
+std::shared_ptr<WalletInfo> importWallet(DynexCN::WalletGreen &wallet)
 {
     const Crypto::SecretKey privateSpendKey
         = getPrivateKey("Enter your private spend key: ");
@@ -123,7 +123,7 @@ std::shared_ptr<WalletInfo> importWallet(CryptoNote::WalletGreen &wallet)
     return importFromKeys(wallet, privateSpendKey, privateViewKey);
 }
 
-std::shared_ptr<WalletInfo> importGUIWallet(CryptoNote::WalletGreen &wallet)
+std::shared_ptr<WalletInfo> importGUIWallet(DynexCN::WalletGreen &wallet)
 {
     const int privateKeyLen = 184;
 
@@ -131,7 +131,7 @@ std::shared_ptr<WalletInfo> importGUIWallet(CryptoNote::WalletGreen &wallet)
 
     uint64_t addressPrefix;
     std::string data;
-    CryptoNote::AccountKeys keys;
+    DynexCN::AccountKeys keys;
 
     while (true)
     {
@@ -160,7 +160,7 @@ std::shared_ptr<WalletInfo> importGUIWallet(CryptoNote::WalletGreen &wallet)
         }
 
         if (addressPrefix != 
-            CryptoNote::parameters::CRYPTONOTE_PUBLIC_ADDRESS_BASE58_PREFIX)
+            DynexCN::parameters::CRYPTONOTE_PUBLIC_ADDRESS_BASE58_PREFIX)
         {
             std::cout << WarningMsg("Invalid GUI Private Key, it should begin ")
                       << WarningMsg("with ")
@@ -180,7 +180,7 @@ std::shared_ptr<WalletInfo> importGUIWallet(CryptoNote::WalletGreen &wallet)
     return importFromKeys(wallet, keys.spendSecretKey, keys.viewSecretKey);
 }
 
-std::shared_ptr<WalletInfo> mnemonicImportWallet(CryptoNote::WalletGreen
+std::shared_ptr<WalletInfo> mnemonicImportWallet(DynexCN::WalletGreen
                                                  &wallet)
 {
     std::string mnemonicPhrase;
@@ -200,13 +200,13 @@ std::shared_ptr<WalletInfo> mnemonicImportWallet(CryptoNote::WalletGreen
                                                      privateSpendKey,
                                                      std::cout));
 
-    CryptoNote::AccountBase::generateViewFromSpend(privateSpendKey, 
+    DynexCN::AccountBase::generateViewFromSpend(privateSpendKey, 
                                                    privateViewKey);
 
     return importFromKeys(wallet, privateSpendKey, privateViewKey);
 }
 
-std::shared_ptr<WalletInfo> importFromKeys(CryptoNote::WalletGreen &wallet,
+std::shared_ptr<WalletInfo> importFromKeys(DynexCN::WalletGreen &wallet,
                                            Crypto::SecretKey privateSpendKey, 
                                            Crypto::SecretKey privateViewKey)
 {
@@ -231,7 +231,7 @@ std::shared_ptr<WalletInfo> importFromKeys(CryptoNote::WalletGreen &wallet,
                                         walletAddress, false, wallet);
 }
 
-std::shared_ptr<WalletInfo> generateWallet(CryptoNote::WalletGreen &wallet)
+std::shared_ptr<WalletInfo> generateWallet(DynexCN::WalletGreen &wallet)
 {
     const std::string walletFileName = getNewWalletFileName();
 
@@ -239,12 +239,12 @@ std::shared_ptr<WalletInfo> generateWallet(CryptoNote::WalletGreen &wallet)
 
     const std::string walletPass = getWalletPassword(true, msg);
 
-    CryptoNote::KeyPair spendKey;
+    DynexCN::KeyPair spendKey;
     Crypto::SecretKey privateViewKey;
 
     Crypto::generate_keys(spendKey.publicKey, spendKey.secretKey);
 
-    CryptoNote::AccountBase::generateViewFromSpend(spendKey.secretKey,
+    DynexCN::AccountBase::generateViewFromSpend(spendKey.secretKey,
                                                    privateViewKey);
 
     wallet.initializeWithViewKey(walletFileName, walletPass, privateViewKey);
@@ -264,7 +264,7 @@ std::shared_ptr<WalletInfo> generateWallet(CryptoNote::WalletGreen &wallet)
                                         walletAddress, false, wallet);
 }
 
-std::shared_ptr<WalletInfo> openWallet(CryptoNote::WalletGreen &wallet,
+std::shared_ptr<WalletInfo> openWallet(DynexCN::WalletGreen &wallet,
                                        Config &config)
 {
     const std::string walletFileName = getExistingWalletFileName(config);
@@ -301,7 +301,7 @@ std::shared_ptr<WalletInfo> openWallet(CryptoNote::WalletGreen &wallet,
 
             bool viewWallet = false;
 
-            if (privateSpendKey == CryptoNote::NULL_SECRET_KEY)
+            if (privateSpendKey == DynexCN::NULL_SECRET_KEY)
             {
                 std::cout << std::endl
                           << InformationMsg("Your view only wallet ")
@@ -334,7 +334,7 @@ std::shared_ptr<WalletInfo> openWallet(CryptoNote::WalletGreen &wallet,
 
             switch (e.code().value())
             {
-                case CryptoNote::error::WRONG_PASSWORD:
+                case DynexCN::error::WRONG_PASSWORD:
                 {
                     std::cout << std::endl 
                               << WarningMsg("Incorrect password! Try again.")
@@ -344,7 +344,7 @@ std::shared_ptr<WalletInfo> openWallet(CryptoNote::WalletGreen &wallet,
 
                     break;
                 }
-                case CryptoNote::error::WRONG_VERSION:
+                case DynexCN::error::WRONG_VERSION:
                 {
                     std::stringstream msg;
 
@@ -581,7 +581,7 @@ void connectingMsg()
               << std::endl << std::endl;
 }
 
-void promptSaveKeys(CryptoNote::WalletGreen &wallet)
+void promptSaveKeys(DynexCN::WalletGreen &wallet)
 {
     std::cout << "Welcome to your new wallet, here is your payment address:"
               << std::endl << InformationMsg(wallet.getAddress(0))

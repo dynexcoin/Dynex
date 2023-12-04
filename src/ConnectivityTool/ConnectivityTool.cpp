@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -59,7 +59,7 @@
 #include "version.h"
 
 namespace po = boost::program_options;
-using namespace CryptoNote;
+using namespace DynexCN;
 
 #ifndef ENDL
 #define ENDL std::endl
@@ -214,8 +214,8 @@ bool handle_get_daemon_info(po::variables_map& vm) {
     System::Dispatcher dispatcher;
     HttpClient httpClient(dispatcher, command_line::get_arg(vm, arg_ip), command_line::get_arg(vm, arg_rpc_port));
 
-    CryptoNote::COMMAND_RPC_GET_INFO::request req;
-    CryptoNote::COMMAND_RPC_GET_INFO::response res;
+    DynexCN::COMMAND_RPC_GET_INFO::request req;
+    DynexCN::COMMAND_RPC_GET_INFO::response res;
 
     invokeJsonCommand(httpClient, "/getinfo", req, res); // TODO: timeout
 

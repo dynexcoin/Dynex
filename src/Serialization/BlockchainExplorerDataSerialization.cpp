@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2017, The CN developers, The Bytecoin developers
 // Copyright (c) 2018, The Karbo developers
 // Copyright (c) 2017-2019, The CROAT.community developers
 //
@@ -24,50 +24,50 @@
 #include <boost/variant/static_visitor.hpp>
 #include <boost/variant/apply_visitor.hpp>
 
-#include "CryptoNoteCore/CryptoNoteSerialization.h"
+#include "DynexCNCore/DynexCNSerialization.h"
 
 #include "Serialization/SerializationOverloads.h"
 
-namespace CryptoNote {
+namespace DynexCN {
 
 enum class SerializationTag : uint8_t { Base = 0xff, Key = 0x2, Multisignature = 0x3, Transaction = 0xcc, Block = 0xbb };
 
 namespace {
 
 struct BinaryVariantTagGetter: boost::static_visitor<uint8_t> {
-  uint8_t operator()(const CryptoNote::BaseInputDetails) { return static_cast<uint8_t>(SerializationTag::Base); }
-  uint8_t operator()(const CryptoNote::KeyInputDetails) { return static_cast<uint8_t>(SerializationTag::Key); }
-  uint8_t operator()(const CryptoNote::MultisignatureInputDetails) { return static_cast<uint8_t>(SerializationTag::Multisignature); }
+  uint8_t operator()(const DynexCN::BaseInputDetails) { return static_cast<uint8_t>(SerializationTag::Base); }
+  uint8_t operator()(const DynexCN::KeyInputDetails) { return static_cast<uint8_t>(SerializationTag::Key); }
+  uint8_t operator()(const DynexCN::MultisignatureInputDetails) { return static_cast<uint8_t>(SerializationTag::Multisignature); }
 };
 
 struct VariantSerializer : boost::static_visitor<> {
-  VariantSerializer(CryptoNote::ISerializer& serializer, const std::string& name) : s(serializer), name(name) {}
+  VariantSerializer(DynexCN::ISerializer& serializer, const std::string& name) : s(serializer), name(name) {}
 
   template <typename T>
   void operator() (T& param) { s(param, name); }
 
-  CryptoNote::ISerializer& s;
+  DynexCN::ISerializer& s;
   const std::string name;
 };
 
-void getVariantValue(CryptoNote::ISerializer& serializer, uint8_t tag, boost::variant<CryptoNote::BaseInputDetails,
-                                                                                      CryptoNote::KeyInputDetails,
-                                                                                      CryptoNote::MultisignatureInputDetails> in) {
+void getVariantValue(DynexCN::ISerializer& serializer, uint8_t tag, boost::variant<DynexCN::BaseInputDetails,
+                                                                                      DynexCN::KeyInputDetails,
+                                                                                      DynexCN::MultisignatureInputDetails> in) {
   switch (static_cast<SerializationTag>(tag)) {
   case SerializationTag::Base: {
-    CryptoNote::BaseInputDetails v;
+    DynexCN::BaseInputDetails v;
     serializer(v, "data");
     in = v;
     break;
   }
   case SerializationTag::Key: {
-    CryptoNote::KeyInputDetails v;
+    DynexCN::KeyInputDetails v;
     serializer(v, "data");
     in = v;
     break;
   }
   case SerializationTag::Multisignature: {
-    CryptoNote::MultisignatureInputDetails v;
+    DynexCN::MultisignatureInputDetails v;
     serializer(v, "data");
     in = v;
     break;
@@ -78,13 +78,13 @@ void getVariantValue(CryptoNote::ISerializer& serializer, uint8_t tag, boost::va
 }
 
 template <typename T>
-bool serializePod(T& v, Common::StringView name, CryptoNote::ISerializer& serializer) {
+bool serializePod(T& v, Common::StringView name, DynexCN::ISerializer& serializer) {
   return serializer.binary(&v, sizeof(v), name);
 }
 
 } //namespace
 
-//namespace CryptoNote {
+//namespace DynexCN {
 
 void serialize(transactionOutputDetails2& output, ISerializer& serializer) {
   serializer(output.output, "output");
@@ -154,6 +154,9 @@ void serialize(TransactionDetails& transaction, ISerializer& serializer) {
   serializer(transaction.inBlockchain, "inBlockchain");
   serializePod(transaction.blockHash, "blockHash", serializer);
   serializer(transaction.blockHeight, "blockIndex");
+  serializer(transaction.from_address,"address_from"); // additional field
+  serializer(transaction.to_address,"address_to"); // additional field
+  serializer(transaction.amount, "amount"); // additional field
   serializer(transaction.extra, "extra");
   serializer(transaction.inputs, "inputs");
   serializer(transaction.outputs, "outputs");
@@ -212,4 +215,4 @@ void serialize(BlockDetails& block, ISerializer& serializer) {
   serializer(block.transactions, "transactions");
 }
 
-} //namespace CryptoNote
+} //namespace DynexCN

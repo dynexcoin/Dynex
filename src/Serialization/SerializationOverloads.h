@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2017, The CN developers, The Bytecoin developers
 // Copyright (c) 2018-2019, The TurtleCoin Developers
 // Copyright (c) 2016-2019, The Karbo developers
 // Copyright (c) 2017-2019, The CROAT.community developers
@@ -35,11 +35,11 @@
 #include <unordered_map>
 #include <unordered_set>
 
-namespace CryptoNote {
+namespace DynexCN {
 
 template<typename T>
 typename std::enable_if<std::is_pod<T>::value>::type
-serializeAsBinary(std::vector<T>& value, Common::StringView name, CryptoNote::ISerializer& serializer) {
+serializeAsBinary(std::vector<T>& value, Common::StringView name, DynexCN::ISerializer& serializer) {
   std::string blob;
   if (serializer.type() == ISerializer::INPUT) {
     serializer.binary(blob, name);
@@ -64,7 +64,7 @@ serializeAsBinary(std::vector<T>& value, Common::StringView name, CryptoNote::IS
 
 template<typename T>
 typename std::enable_if<std::is_pod<T>::value>::type
-serializeAsBinary(std::list<T>& value, Common::StringView name, CryptoNote::ISerializer& serializer) {
+serializeAsBinary(std::list<T>& value, Common::StringView name, DynexCN::ISerializer& serializer) {
   std::string blob;
   if (serializer.type() == ISerializer::INPUT) {
     serializer.binary(blob, name);
@@ -94,7 +94,7 @@ serializeAsBinary(std::list<T>& value, Common::StringView name, CryptoNote::ISer
 }
 
 template <typename Cont>
-bool serializeContainer(Cont& value, Common::StringView name, CryptoNote::ISerializer& serializer) {
+bool serializeContainer(Cont& value, Common::StringView name, DynexCN::ISerializer& serializer) {
   size_t size = value.size();
   if (!serializer.beginArray(size, name)) {
     if (serializer.type() == ISerializer::INPUT) {
@@ -115,12 +115,12 @@ bool serializeContainer(Cont& value, Common::StringView name, CryptoNote::ISeria
 }
 
 template <typename E>
-bool serializeEnumClass(E& value, Common::StringView name, CryptoNote::ISerializer& serializer) {
+bool serializeEnumClass(E& value, Common::StringView name, DynexCN::ISerializer& serializer) {
   static_assert(std::is_enum<E>::value, "E must be an enum class");
 
   typedef typename std::underlying_type<E>::type EType;
 
-  if (serializer.type() == CryptoNote::ISerializer::INPUT) {
+  if (serializer.type() == DynexCN::ISerializer::INPUT) {
     EType numericValue;
     serializer(numericValue, name);
     value = static_cast<E>(numericValue);
@@ -133,17 +133,17 @@ bool serializeEnumClass(E& value, Common::StringView name, CryptoNote::ISerializ
 }
 
 template<typename T>
-bool serialize(std::vector<T>& value, Common::StringView name, CryptoNote::ISerializer& serializer) {
+bool serialize(std::vector<T>& value, Common::StringView name, DynexCN::ISerializer& serializer) {
   return serializeContainer(value, name, serializer);
 }
 
 template<typename T>
-bool serialize(std::list<T>& value, Common::StringView name, CryptoNote::ISerializer& serializer) {
+bool serialize(std::list<T>& value, Common::StringView name, DynexCN::ISerializer& serializer) {
   return serializeContainer(value, name, serializer);
 }
 
 template<typename MapT, typename ReserveOp>
-bool serializeMap(MapT& value, Common::StringView name, CryptoNote::ISerializer& serializer, ReserveOp reserve) {
+bool serializeMap(MapT& value, Common::StringView name, DynexCN::ISerializer& serializer, ReserveOp reserve) {
   size_t size = value.size();
 
   if (!serializer.beginArray(size, name)) {
@@ -154,7 +154,7 @@ bool serializeMap(MapT& value, Common::StringView name, CryptoNote::ISerializer&
     return false;
   }
 
-  if (serializer.type() == CryptoNote::ISerializer::INPUT) {
+  if (serializer.type() == DynexCN::ISerializer::INPUT) {
     reserve(size);
 
     for (size_t i = 0; i < size; ++i) {
@@ -182,7 +182,7 @@ bool serializeMap(MapT& value, Common::StringView name, CryptoNote::ISerializer&
 }
 
 template<typename SetT>
-bool serializeSet(SetT& value, Common::StringView name, CryptoNote::ISerializer& serializer) {
+bool serializeSet(SetT& value, Common::StringView name, DynexCN::ISerializer& serializer) {
   size_t size = value.size();
 
   if (!serializer.beginArray(size, name)) {
@@ -193,7 +193,7 @@ bool serializeSet(SetT& value, Common::StringView name, CryptoNote::ISerializer&
     return false;
   }
 
-  if (serializer.type() == CryptoNote::ISerializer::INPUT) {
+  if (serializer.type() == DynexCN::ISerializer::INPUT) {
     for (size_t i = 0; i < size; ++i) {
       typename SetT::value_type key;
       serializer(key, "");
@@ -210,37 +210,37 @@ bool serializeSet(SetT& value, Common::StringView name, CryptoNote::ISerializer&
 }
 
 template<typename K, typename Hash>
-bool serialize(std::unordered_set<K, Hash>& value, Common::StringView name, CryptoNote::ISerializer& serializer) {
+bool serialize(std::unordered_set<K, Hash>& value, Common::StringView name, DynexCN::ISerializer& serializer) {
   return serializeSet(value, name, serializer);
 }
 
 template<typename K, typename Cmp>
-bool serialize(std::set<K, Cmp>& value, Common::StringView name, CryptoNote::ISerializer& serializer) {
+bool serialize(std::set<K, Cmp>& value, Common::StringView name, DynexCN::ISerializer& serializer) {
   return serializeSet(value, name, serializer);
 }
 
 template<typename K, typename V, typename Hash>
-bool serialize(std::unordered_map<K, V, Hash>& value, Common::StringView name, CryptoNote::ISerializer& serializer) {
+bool serialize(std::unordered_map<K, V, Hash>& value, Common::StringView name, DynexCN::ISerializer& serializer) {
   return serializeMap(value, name, serializer, [&value](size_t size) { value.reserve(size); });
 }
 
 template<typename K, typename V, typename Hash>
-bool serialize(std::unordered_multimap<K, V, Hash>& value, Common::StringView name, CryptoNote::ISerializer& serializer) {
+bool serialize(std::unordered_multimap<K, V, Hash>& value, Common::StringView name, DynexCN::ISerializer& serializer) {
   return serializeMap(value, name, serializer, [&value](size_t size) { value.reserve(size); });
 }
 
 template<typename K, typename V, typename Hash>
-bool serialize(std::map<K, V, Hash>& value, Common::StringView name, CryptoNote::ISerializer& serializer) {
+bool serialize(std::map<K, V, Hash>& value, Common::StringView name, DynexCN::ISerializer& serializer) {
   return serializeMap(value, name, serializer, [](size_t size) {});
 }
 
 template<typename K, typename V, typename Hash>
-bool serialize(std::multimap<K, V, Hash>& value, Common::StringView name, CryptoNote::ISerializer& serializer) {
+bool serialize(std::multimap<K, V, Hash>& value, Common::StringView name, DynexCN::ISerializer& serializer) {
   return serializeMap(value, name, serializer, [](size_t size) {});
 }
 
 template<size_t size>
-bool serialize(std::array<uint8_t, size>& value, Common::StringView name, CryptoNote::ISerializer& s) {
+bool serialize(std::array<uint8_t, size>& value, Common::StringView name, DynexCN::ISerializer& s) {
   return s.binary(value.data(), value.size(), name);
 }
 

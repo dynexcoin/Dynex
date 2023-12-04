@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -40,7 +40,7 @@
 #include <string>
 #include <system_error>
 
-namespace CryptoNote {
+namespace DynexCN {
 namespace error {
 
 enum InProcessNodeErrorCodes {
@@ -82,8 +82,8 @@ private:
 };
 
 } //namespace error
-} //namespace CryptoNote
+} //namespace DynexCN
 
-inline std::error_code make_error_code(CryptoNote::error::InProcessNodeErrorCodes e) {
-  return std::error_code(static_cast<int>(e), CryptoNote::error::InProcessNodeErrorCategory::INSTANCE);
+inline std::error_code make_error_code(DynexCN::error::InProcessNodeErrorCodes e) {
+  return std::error_code(static_cast<int>(e), DynexCN::error::InProcessNodeErrorCategory::INSTANCE);
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -39,21 +39,21 @@
 
 #include <boost/format.hpp>
 #include "Common/ConsoleHandler.h"
-#include "CryptoNoteProtocol/ICryptoNoteProtocolQuery.h"
+#include "DynexCNProtocol/IDynexCNProtocolQuery.h"
 #include <Logging/LoggerRef.h>
 #include <Logging/LoggerManager.h>
 #include "Rpc/RpcServer.h"
 
-namespace CryptoNote {
+namespace DynexCN {
 class core;
 class NodeServer;
-class ICryptoNoteProtocolQuery;
+class IDynexCNProtocolQuery;
 }
 
 class DaemonCommandsHandler
 {
 public:
-  DaemonCommandsHandler(CryptoNote::core& core, CryptoNote::NodeServer& srv, Logging::LoggerManager& log, const CryptoNote::ICryptoNoteProtocolQuery& protocol, CryptoNote::RpcServer* prpc_server);
+  DaemonCommandsHandler(DynexCN::core& core, DynexCN::NodeServer& srv, Logging::LoggerManager& log, const DynexCN::IDynexCNProtocolQuery& protocol, DynexCN::RpcServer* prpc_server);
 
   bool start_handling() {
     m_consoleHandler.start();
@@ -67,12 +67,12 @@ public:
 private:
 
   Common::ConsoleHandler m_consoleHandler;
-  CryptoNote::core& m_core;
-  CryptoNote::NodeServer& m_srv;
+  DynexCN::core& m_core;
+  DynexCN::NodeServer& m_srv;
   Logging::LoggerRef logger;
   Logging::LoggerManager& m_logManager;
-  const CryptoNote::ICryptoNoteProtocolQuery& protocolQuery;
-  CryptoNote::RpcServer* m_prpc_server;
+  const DynexCN::IDynexCNProtocolQuery& protocolQuery;
+  DynexCN::RpcServer* m_prpc_server;
   
   std::string get_commands_str();
   std::string get_mining_speed(uint64_t hr);

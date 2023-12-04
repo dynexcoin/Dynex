@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -43,12 +43,13 @@
 
 #include <Common/StringTools.h>
 
-#include "CryptoNoteConfig.h"
-
-#include <CryptoNoteCore/CryptoNoteBasicImpl.h>
-#include <CryptoNoteCore/TransactionExtra.h>
+#include "DynexCNConfig.h"
+#include "WalletConfig.h"
+#include <DynexCNCore/DynexCNBasicImpl.h>
+#include <DynexCNCore/TransactionExtra.h>
 
 #include <iostream>
+#include <thread>
 
 #include "IWallet.h"
 
@@ -136,7 +137,7 @@ bool parseAmount(std::string strAmount, uint64_t &amount)
     return amount >= WalletConfig::minimumSend;
 }
 
-bool confirmTransaction(CryptoNote::TransactionParameters t,
+bool confirmTransaction(DynexCN::TransactionParameters t,
                         std::shared_ptr<WalletInfo> walletInfo, uint64_t nodeFee)
 {
     std::cout << std::endl
@@ -175,8 +176,8 @@ bool confirmTransaction(CryptoNote::TransactionParameters t,
     return false;
 }
 
-void sendMultipleTransactions(CryptoNote::WalletGreen &wallet,
-                              std::vector<CryptoNote::TransactionParameters>
+void sendMultipleTransactions(DynexCN::WalletGreen &wallet,
+                              std::vector<DynexCN::TransactionParameters>
                               transfers)
 {
     const size_t numTxs = transfers.size();
@@ -209,7 +210,7 @@ void sendMultipleTransactions(CryptoNote::WalletGreen &wallet,
             {
                 const size_t id = wallet.transfer(tx, txSecretKey);
 
-                const CryptoNote::WalletTransaction sentTx 
+                const DynexCN::WalletTransaction sentTx 
                     = wallet.getTransaction(id);
 
                 std::cout << SuccessMsg("Transaction has been sent!")
@@ -236,8 +237,8 @@ void sendMultipleTransactions(CryptoNote::WalletGreen &wallet,
     std::cout << SuccessMsg("All transactions sent!") << std::endl;
 }
 
-void splitTx(CryptoNote::WalletGreen &wallet, 
-             CryptoNote::TransactionParameters p)
+void splitTx(DynexCN::WalletGreen &wallet, 
+             DynexCN::TransactionParameters p)
 {
     std::cout << "Transaction is still too large to send, splitting into "
               << "multiple chunks." 
@@ -256,7 +257,7 @@ void splitTx(CryptoNote::WalletGreen &wallet,
         return;
     }
 
-    CryptoNote::TransactionParameters restoreInitialTx = p;
+    DynexCN::TransactionParameters restoreInitialTx = p;
 
     const uint64_t maxSize = wallet.getMaxTxSize();
     const size_t txSize = wallet.getTxSize(p);
@@ -300,11 +301,11 @@ void splitTx(CryptoNote::WalletGreen &wallet,
         /* Left over amount from integral division */
         const uint64_t change = p.destinations[0].amount % numTransactions;
 
-        std::vector<CryptoNote::TransactionParameters> transfers;
+        std::vector<DynexCN::TransactionParameters> transfers;
 
         for (int i = 0; i < numTransactions; i++)
         {
-            CryptoNote::TransactionParameters tmp = p;
+            DynexCN::TransactionParameters tmp = p;
             tmp.destinations[0].amount = amountPerTx;
             tmp.fee = feePerTx;
             transfers.push_back(tmp);
@@ -573,9 +574,9 @@ void doTransfer(std::string address, uint64_t amount, uint64_t fee,
         return;
     }
 
-    CryptoNote::TransactionParameters p;
+    DynexCN::TransactionParameters p;
 
-    p.destinations = std::vector<CryptoNote::WalletOrder>
+    p.destinations = std::vector<DynexCN::WalletOrder>
     {
         {address, amount}
     };
@@ -617,7 +618,7 @@ void doTransfer(std::string address, uint64_t amount, uint64_t fee,
                     
                     const size_t id = walletInfo->wallet.transfer(p, txSecretKey);
 
-                    const CryptoNote::WalletTransaction tx
+                    const DynexCN::WalletTransaction tx
                         = walletInfo->wallet.getTransaction(id);
 
                     std::cout << SuccessMsg("Transaction has been sent!")
@@ -631,7 +632,7 @@ void doTransfer(std::string address, uint64_t amount, uint64_t fee,
             {
                 const size_t id = walletInfo->wallet.transfer(p, txSecretKey);
                 
-                const CryptoNote::WalletTransaction tx 
+                const DynexCN::WalletTransaction tx 
                     = walletInfo->wallet.getTransaction(id);
 
                 std::cout << SuccessMsg("Transaction has been sent!")
@@ -655,15 +656,15 @@ void doTransfer(std::string address, uint64_t amount, uint64_t fee,
 
             switch (e.code().value())
             {
-                case WalletErrors::CryptoNote::error::WRONG_AMOUNT:
+                case WalletErrors::DynexCN::error::WRONG_AMOUNT:
                 {
                     wrongAmount = true;
 #if __has_cpp_attribute(fallthrough)
 					[[fallthrough]];
 #endif
                 }
-                case WalletErrors::CryptoNote::error::MIXIN_COUNT_TOO_BIG:
-                case NodeErrors::CryptoNote::error::INTERNAL_NODE_ERROR:
+                case WalletErrors::DynexCN::error::MIXIN_COUNT_TOO_BIG:
+                case NodeErrors::DynexCN::error::INTERNAL_NODE_ERROR:
                 {
             
                     if (wrongAmount)
@@ -709,8 +710,8 @@ void doTransfer(std::string address, uint64_t amount, uint64_t fee,
 
                     break;
                 }
-                case NodeErrors::CryptoNote::error::NETWORK_ERROR:
-                case NodeErrors::CryptoNote::error::CONNECT_ERROR:
+                case NodeErrors::DynexCN::error::NETWORK_ERROR:
+                case NodeErrors::DynexCN::error::CONNECT_ERROR:
                 {
                     std::cout << WarningMsg("Couldn't connect to the network "
                                             "to send the transaction!")
@@ -781,7 +782,7 @@ Maybe<std::string> getPaymentID(std::string msg)
         std::vector<uint8_t> extra;
 
         /* Convert the payment ID into an "extra" */
-        if (!CryptoNote::createTxExtraWithPaymentId(paymentID, extra))
+        if (!DynexCN::createTxExtraWithPaymentId(paymentID, extra))
         {
             std::cout << WarningMsg("Failed to parse! Payment ID's are 64 "
                                     "character hexadecimal strings.")
@@ -807,7 +808,7 @@ std::string getExtraFromPaymentID(std::string paymentID)
     std::vector<uint8_t> extra;
 
     /* Convert the payment ID into an "extra" */
-    CryptoNote::createTxExtraWithPaymentId(paymentID, extra);
+    DynexCN::createTxExtraWithPaymentId(paymentID, extra);
 
     /* Then convert the "extra" back into a string so we can pass
        the argument that walletgreen expects. Note this string is not
@@ -985,9 +986,9 @@ bool parseAddress(std::string address)
 {
     uint64_t prefix;
 
-    CryptoNote::AccountPublicAddress addr;
+    DynexCN::AccountPublicAddress addr;
 
-    const bool valid = CryptoNote::parseAccountAddressString(prefix, addr,
+    const bool valid = DynexCN::parseAccountAddressString(prefix, addr,
                                                              address);
 
     if (address.length() != WalletConfig::addressLength)
@@ -1130,10 +1131,10 @@ bool processServerAliasResponse(const std::string& s, std::string& address)
         auto pos2 = s.find(";", pos);
         if (pos2 != std::string::npos)
         {
-            // length of address == 95, we can at least validate that much here
-            if (pos2 - pos == 95)
+            // length of address == 97, we can at least validate that much here
+            if (pos2 - pos == WalletConfig::addressLength)
             {
-                address = s.substr(pos, 95);
+                address = s.substr(pos, WalletConfig::addressLength);
             }
             else {
                 return false;

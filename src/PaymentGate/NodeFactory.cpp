@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -43,11 +43,11 @@
 
 namespace PaymentService {
 
-class NodeRpcStub: public CryptoNote::INode {
+class NodeRpcStub: public DynexCN::INode {
 public:
   virtual ~NodeRpcStub() {}
-  virtual bool addObserver(CryptoNote::INodeObserver* observer) override { return true; }
-  virtual bool removeObserver(CryptoNote::INodeObserver* observer) override { return true; }
+  virtual bool addObserver(DynexCN::INodeObserver* observer) override { return true; }
+  virtual bool removeObserver(DynexCN::INodeObserver* observer) override { return true; }
 
   virtual void init(const Callback& callback) override { }
   virtual bool shutdown() override { return true; }
@@ -63,52 +63,52 @@ public:
 
   virtual void getFeeAddress() override { }
 
-  virtual CryptoNote::BlockHeaderInfo getLastLocalBlockHeaderInfo() const override { return CryptoNote::BlockHeaderInfo(); }
+  virtual DynexCN::BlockHeaderInfo getLastLocalBlockHeaderInfo() const override { return DynexCN::BlockHeaderInfo(); }
 
-  virtual void relayTransaction(const CryptoNote::Transaction& transaction, const Callback& callback) override { callback(std::error_code()); }
+  virtual void relayTransaction(const DynexCN::Transaction& transaction, const Callback& callback) override { callback(std::error_code()); }
   virtual void getRandomOutsByAmounts(std::vector<uint64_t>&& amounts, uint64_t outsCount,
-    std::vector<CryptoNote::COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount>& result, const Callback& callback) override {
+    std::vector<DynexCN::COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount>& result, const Callback& callback) override {
   }
-  virtual void getNewBlocks(std::vector<Crypto::Hash>&& knownBlockIds, std::vector<CryptoNote::block_complete_entry>& newBlocks, uint32_t& startHeight, const Callback& callback) override {
+  virtual void getNewBlocks(std::vector<Crypto::Hash>&& knownBlockIds, std::vector<DynexCN::block_complete_entry>& newBlocks, uint32_t& startHeight, const Callback& callback) override {
     startHeight = 0;
     callback(std::error_code());
   }
   virtual void getTransactionOutsGlobalIndices(const Crypto::Hash& transactionHash, std::vector<uint32_t>& outsGlobalIndices, const Callback& callback) override { }
 
-  virtual void queryBlocks(std::vector<Crypto::Hash>&& knownBlockIds, uint64_t timestamp, std::vector<CryptoNote::BlockShortEntry>& newBlocks,
+  virtual void queryBlocks(std::vector<Crypto::Hash>&& knownBlockIds, uint64_t timestamp, std::vector<DynexCN::BlockShortEntry>& newBlocks,
     uint32_t& startHeight, const Callback& callback) override {
     startHeight = 0;
     callback(std::error_code());
   };
 
   virtual void getPoolSymmetricDifference(std::vector<Crypto::Hash>&& knownPoolTxIds, Crypto::Hash knownBlockId, bool& isBcActual,
-          std::vector<std::unique_ptr<CryptoNote::ITransactionReader>>& newTxs, std::vector<Crypto::Hash>& deletedTxIds, const Callback& callback) override {
+          std::vector<std::unique_ptr<DynexCN::ITransactionReader>>& newTxs, std::vector<Crypto::Hash>& deletedTxIds, const Callback& callback) override {
     isBcActual = true;
     callback(std::error_code());
   }
 
-  virtual void getBlocks(const std::vector<uint32_t>& blockHeights, std::vector<std::vector<CryptoNote::BlockDetails>>& blocks,
+  virtual void getBlocks(const std::vector<uint32_t>& blockHeights, std::vector<std::vector<DynexCN::BlockDetails>>& blocks,
     const Callback& callback) override { }
 
-  virtual void getBlocks(const std::vector<Crypto::Hash>& blockHashes, std::vector<CryptoNote::BlockDetails>& blocks,
+  virtual void getBlocks(const std::vector<Crypto::Hash>& blockHashes, std::vector<DynexCN::BlockDetails>& blocks,
     const Callback& callback) override { }
 
-  virtual void getBlocks(uint64_t timestampBegin, uint64_t timestampEnd, uint32_t blocksNumberLimit, std::vector<CryptoNote::BlockDetails>& blocks, uint32_t& blocksNumberWithinTimestamps,
+  virtual void getBlocks(uint64_t timestampBegin, uint64_t timestampEnd, uint32_t blocksNumberLimit, std::vector<DynexCN::BlockDetails>& blocks, uint32_t& blocksNumberWithinTimestamps,
     const Callback& callback) override { }
 
-  virtual void getBlock(const uint32_t blockHeight, CryptoNote::BlockDetails &block,
+  virtual void getBlock(const uint32_t blockHeight, DynexCN::BlockDetails &block,
     const Callback& callback) override { }
 
-  virtual void getTransactions(const std::vector<Crypto::Hash>& transactionHashes, std::vector<CryptoNote::TransactionDetails>& transactions,
+  virtual void getTransactions(const std::vector<Crypto::Hash>& transactionHashes, std::vector<DynexCN::TransactionDetails>& transactions,
     const Callback& callback) override { }
 
-  virtual void getPoolTransactions(uint64_t timestampBegin, uint64_t timestampEnd, uint32_t transactionsNumberLimit, std::vector<CryptoNote::TransactionDetails>& transactions, uint64_t& transactionsNumberWithinTimestamps,
+  virtual void getPoolTransactions(uint64_t timestampBegin, uint64_t timestampEnd, uint32_t transactionsNumberLimit, std::vector<DynexCN::TransactionDetails>& transactions, uint64_t& transactionsNumberWithinTimestamps,
     const Callback& callback) override { }
 
-  virtual void getTransactionsByPaymentId(const Crypto::Hash& paymentId, std::vector<CryptoNote::TransactionDetails>& transactions, 
+  virtual void getTransactionsByPaymentId(const Crypto::Hash& paymentId, std::vector<DynexCN::TransactionDetails>& transactions, 
     const Callback& callback) override { }
 
-  virtual void getMultisignatureOutputByGlobalIndex(uint64_t amount, uint32_t gindex, CryptoNote::MultisignatureOutput& out,
+  virtual void getMultisignatureOutputByGlobalIndex(uint64_t amount, uint32_t gindex, DynexCN::MultisignatureOutput& out,
     const Callback& callback) override { }
 
   virtual void isSynchronized(bool& syncStatus, const Callback& callback) override { }
@@ -147,8 +147,8 @@ NodeFactory::NodeFactory() {
 NodeFactory::~NodeFactory() {
 }
 
-CryptoNote::INode* NodeFactory::createNode(const std::string& daemonAddress, uint16_t daemonPort) {
-  std::unique_ptr<CryptoNote::INode> node(new CryptoNote::NodeRpcProxy(daemonAddress, daemonPort));
+DynexCN::INode* NodeFactory::createNode(const std::string& daemonAddress, uint16_t daemonPort) {
+  std::unique_ptr<DynexCN::INode> node(new DynexCN::NodeRpcProxy(daemonAddress, daemonPort));
 
   NodeInitObserver initObserver;
   node->init(std::bind(&NodeInitObserver::initCompleted, &initObserver, std::placeholders::_1));
@@ -157,7 +157,7 @@ CryptoNote::INode* NodeFactory::createNode(const std::string& daemonAddress, uin
   return node.release();
 }
 
-CryptoNote::INode* NodeFactory::createNodeStub() {
+DynexCN::INode* NodeFactory::createNodeStub() {
   return new NodeRpcStub();
 }
 

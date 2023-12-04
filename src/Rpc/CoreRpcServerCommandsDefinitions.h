@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -37,15 +37,15 @@
 
 #pragma once
 
-#include "CryptoNoteProtocol/CryptoNoteProtocolDefinitions.h"
-#include "CryptoNoteCore/CryptoNoteBasic.h"
-#include "CryptoNoteCore/Difficulty.h"
+#include "DynexCNProtocol/DynexCNProtocolDefinitions.h"
+#include "DynexCNCore/DynexCNBasic.h"
+#include "DynexCNCore/Difficulty.h"
 #include "crypto/hash.h"
 
 #include "Serialization/SerializationOverloads.h"
 #include "Serialization/BlockchainExplorerDataSerialization.h"
 
-namespace CryptoNote {
+namespace DynexCN {
 //-----------------------------------------------
 #define CORE_RPC_STATUS_OK "OK"
 #define CORE_RPC_STATUS_BUSY "BUSY"
@@ -472,12 +472,24 @@ struct f_transaction_short_response {
   uint64_t fee;
   uint64_t amount_out;
   uint64_t size;
+  // non-privacy fields:
+  std::string from_address;
+  std::vector<std::string> to_address;
+  std::vector<std::string> amount;
+  uint64_t timestamp;
+  uint32_t height;
 
   void serialize(ISerializer &s) {
     KV_MEMBER(hash)
     KV_MEMBER(fee)
     KV_MEMBER(amount_out)
     KV_MEMBER(size)
+    // non-privacy fields:
+    KV_MEMBER(from_address)
+    KV_MEMBER(to_address)
+    KV_MEMBER(amount)
+    KV_MEMBER(timestamp)
+    KV_MEMBER(height);
   }
 };
 
@@ -522,12 +534,20 @@ struct f_transaction_details_extra_response {
   Crypto::PublicKey publicKey; 
   std::vector<std::string> nonce;
   std::vector<uint8_t> raw;
+  // non-privacy fields:
+  std::vector<uint8_t> from_address;
+  std::vector<std::vector<uint8_t>> to_address;
+  std::vector<uint8_t> amount;
 
   void serialize(ISerializer &s) {
     KV_MEMBER(padding)
     KV_MEMBER(publicKey)
     KV_MEMBER(nonce)
     KV_MEMBER(raw)
+    // non-privacy fields:
+    KV_MEMBER(from_address)
+    KV_MEMBER(to_address)
+    KV_MEMBER(amount)
   }
 };
 
@@ -700,7 +720,6 @@ struct F_COMMAND_RPC_GET_BLOCK_DETAILS {
   };
 };
 
-//-----------------------------------------------
 struct COMMAND_RPC_GET_TRANSACTIONS_BY_PAYMENT_ID {
 	struct request {
 		std::string payment_id;
@@ -716,10 +735,106 @@ struct COMMAND_RPC_GET_TRANSACTIONS_BY_PAYMENT_ID {
 
 		void serialize(ISerializer &s) {
 			KV_MEMBER(transactions)
-				KV_MEMBER(status)
+			KV_MEMBER(status)
 		}
 	};
 };
+
+// non-privacy functions -----------------------------------------------
+struct validation_response {
+  std::string wallet;
+  uint64_t amount;
+
+  void serialize(ISerializer &s) {
+    KV_MEMBER(wallet)
+    KV_MEMBER(amount)
+  }
+};
+
+struct COMMAND_RPC_VALIDATE_TRANSACTION {
+	struct request {
+		std::string hash;
+		
+    		void serialize(ISerializer &s) {
+		      KV_MEMBER(hash)
+		}
+  	};
+  	
+  	struct response {
+		std::vector<validation_response> recipients;  		
+		std::string status;
+
+		void serialize(ISerializer &s) {
+			KV_MEMBER(recipients)
+			KV_MEMBER(status)
+		}
+	};
+
+};
+
+struct COMMAND_RPC_GET_TRANSACTIONS_BY_ADDRESS {
+	struct request {
+		std::string address;
+		uint32_t height;
+		
+
+		void serialize(ISerializer &s) {
+			KV_MEMBER(height)
+			KV_MEMBER(address)
+		}
+	};
+
+	struct response {
+		std::vector<f_transaction_short_response> transactions;
+		std::string status;
+
+		void serialize(ISerializer &s) {
+			KV_MEMBER(transactions)
+			KV_MEMBER(status)
+		}
+	};
+};
+
+struct balance_response {
+  std::string wallet;
+  uint64_t amount_in;
+  uint64_t amount_out;
+  uint64_t fees;
+  int64_t balance;
+  bool legacy_wallet;
+
+  void serialize(ISerializer &s) {
+    KV_MEMBER(wallet)
+    KV_MEMBER(amount_in)
+    KV_MEMBER(amount_out)
+    KV_MEMBER(fees)
+    KV_MEMBER(balance)
+    KV_MEMBER(legacy_wallet)
+  }
+};
+
+
+struct COMMAND_RPC_GET_BALANCE_OF_ADDRESS {
+	struct request {
+		std::string address;
+
+		void serialize(ISerializer &s) {
+			KV_MEMBER(address)
+		}
+	};
+	
+	struct response {
+		balance_response balance;
+		std::string status;
+
+		void serialize(ISerializer &s) {
+			KV_MEMBER(balance)
+			KV_MEMBER(status)
+		}
+	};
+};
+
+// --------------------------------------------------------------------
 
 struct F_COMMAND_RPC_GET_TRANSACTION_DETAILS {
   struct request {

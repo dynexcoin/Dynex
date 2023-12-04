@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -38,9 +38,9 @@
 #include "P2pNodeConfig.h"
 #include "P2pNetworks.h"
 
-#include <CryptoNoteConfig.h>
+#include <DynexCNConfig.h>
 
-namespace CryptoNote {
+namespace DynexCN {
 
 namespace {
 
@@ -56,6 +56,7 @@ P2pNodeConfig::P2pNodeConfig() :
   connectInterval(P2P_DEFAULT_CONNECT_INTERVAL),
   connectTimeout(std::chrono::milliseconds(P2P_DEFAULT_CONNECTION_TIMEOUT)),
   networkId(BYTECOIN_NETWORK),
+  networkId_np(DYNEX_NETWORK),
   expectedOutgoingConnectionsCount(P2P_DEFAULT_CONNECTIONS_COUNT),
   whiteListConnectionsPercent(P2P_DEFAULT_WHITELIST_CONNECTIONS_PERCENT),
   peerListConnectRange(P2P_DEFAULT_CONNECT_RANGE),

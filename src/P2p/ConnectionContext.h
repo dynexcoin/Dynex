@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -45,9 +45,9 @@
 #include "Common/StringTools.h"
 #include "crypto/hash.h"
 
-namespace CryptoNote {
+namespace DynexCN {
 
-struct CryptoNoteConnectionContext {
+struct DynexCNConnectionContext {
   uint8_t version;
   boost::uuids::uuid m_connection_id;
   uint32_t m_remote_ip = 0;
@@ -75,21 +75,21 @@ struct CryptoNoteConnectionContext {
   uint32_t msg2007 = 0;
 };
 
-inline std::string get_protocol_state_string(CryptoNoteConnectionContext::state s) {
+inline std::string get_protocol_state_string(DynexCNConnectionContext::state s) {
   switch (s)  {
-  case CryptoNoteConnectionContext::state_befor_handshake:
+  case DynexCNConnectionContext::state_befor_handshake:
     return "state_befor_handshake";
-  case CryptoNoteConnectionContext::state_synchronizing:
+  case DynexCNConnectionContext::state_synchronizing:
     return "state_synchronizing";
-  case CryptoNoteConnectionContext::state_idle:
+  case DynexCNConnectionContext::state_idle:
     return "state_idle";
-  case CryptoNoteConnectionContext::state_normal:
+  case DynexCNConnectionContext::state_normal:
     return "state_normal";
-  case CryptoNoteConnectionContext::state_sync_required:
+  case DynexCNConnectionContext::state_sync_required:
     return "state_sync_required";
-  case CryptoNoteConnectionContext::state_pool_sync_required:
+  case DynexCNConnectionContext::state_pool_sync_required:
     return "state_pool_sync_required";
-  case CryptoNoteConnectionContext::state_shutdown:
+  case DynexCNConnectionContext::state_shutdown:
     return "state_shutdown";
   default:
     return "unknown";
@@ -99,7 +99,7 @@ inline std::string get_protocol_state_string(CryptoNoteConnectionContext::state 
 }
 
 namespace std {
-inline std::ostream& operator << (std::ostream& s, const CryptoNote::CryptoNoteConnectionContext& context) {
+inline std::ostream& operator << (std::ostream& s, const DynexCN::DynexCNConnectionContext& context) {
   return s << "[" << Common::ipAddressToString(context.m_remote_ip) << ":" << 
     context.m_remote_port << (context.m_is_income ? " INC" : " OUT") << "] ";
 }

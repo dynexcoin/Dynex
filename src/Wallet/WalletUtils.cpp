@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -37,40 +37,40 @@
 
 #include "WalletUtils.h"
 
-#include "CryptoNote.h"
+#include "DynexCN.h"
 #include "crypto/crypto.h"
 #include "Wallet/WalletErrors.h"
 
-namespace CryptoNote {
+namespace DynexCN {
 
 void throwIfKeysMissmatch(const Crypto::SecretKey& secretKey, const Crypto::PublicKey& expectedPublicKey, const std::string& message) {
   Crypto::PublicKey pub;
   bool r = Crypto::secret_key_to_public_key(secretKey, pub);
   if (!r || expectedPublicKey != pub) {
-    throw std::system_error(make_error_code(CryptoNote::error::WRONG_PASSWORD), message);
+    throw std::system_error(make_error_code(DynexCN::error::WRONG_PASSWORD), message);
   }
 }
 
-bool validateAddress(const std::string& address, const CryptoNote::Currency& currency) {
-  CryptoNote::AccountPublicAddress ignore;
+bool validateAddress(const std::string& address, const DynexCN::Currency& currency) {
+  DynexCN::AccountPublicAddress ignore;
   return currency.parseAccountAddressString(address, ignore);
 }
 
-std::ostream& operator<<(std::ostream& os, CryptoNote::WalletTransactionState state) {
+std::ostream& operator<<(std::ostream& os, DynexCN::WalletTransactionState state) {
   switch (state) {
-  case CryptoNote::WalletTransactionState::SUCCEEDED:
+  case DynexCN::WalletTransactionState::SUCCEEDED:
     os << "SUCCEEDED";
     break;
-  case CryptoNote::WalletTransactionState::FAILED:
+  case DynexCN::WalletTransactionState::FAILED:
     os << "FAILED";
     break;
-  case CryptoNote::WalletTransactionState::CANCELLED:
+  case DynexCN::WalletTransactionState::CANCELLED:
     os << "CANCELLED";
     break;
-  case CryptoNote::WalletTransactionState::CREATED:
+  case DynexCN::WalletTransactionState::CREATED:
     os << "CREATED";
     break;
-  case CryptoNote::WalletTransactionState::DELETED:
+  case DynexCN::WalletTransactionState::DELETED:
     os << "DELETED";
     break;
   default:
@@ -80,15 +80,15 @@ std::ostream& operator<<(std::ostream& os, CryptoNote::WalletTransactionState st
   return os << " (" << static_cast<int>(state) << ')';
 }
 
-std::ostream& operator<<(std::ostream& os, CryptoNote::WalletTransferType type) {
+std::ostream& operator<<(std::ostream& os, DynexCN::WalletTransferType type) {
   switch (type) {
-  case CryptoNote::WalletTransferType::USUAL:
+  case DynexCN::WalletTransferType::USUAL:
     os << "USUAL";
     break;
-  case CryptoNote::WalletTransferType::DONATION:
+  case DynexCN::WalletTransferType::DONATION:
     os << "DONATION";
     break;
-  case CryptoNote::WalletTransferType::CHANGE:
+  case DynexCN::WalletTransferType::CHANGE:
     os << "CHANGE";
     break;
   default:
@@ -98,12 +98,12 @@ std::ostream& operator<<(std::ostream& os, CryptoNote::WalletTransferType type) 
   return os << " (" << static_cast<int>(type) << ')';
 }
 
-std::ostream& operator<<(std::ostream& os, CryptoNote::WalletGreen::WalletState state) {
+std::ostream& operator<<(std::ostream& os, DynexCN::WalletGreen::WalletState state) {
   switch (state) {
-  case CryptoNote::WalletGreen::WalletState::INITIALIZED:
+  case DynexCN::WalletGreen::WalletState::INITIALIZED:
     os << "INITIALIZED";
     break;
-  case CryptoNote::WalletGreen::WalletState::NOT_INITIALIZED:
+  case DynexCN::WalletGreen::WalletState::NOT_INITIALIZED:
     os << "NOT_INITIALIZED";
     break;
   default:
@@ -113,15 +113,15 @@ std::ostream& operator<<(std::ostream& os, CryptoNote::WalletGreen::WalletState 
   return os << " (" << static_cast<int>(state) << ')';
 }
 
-std::ostream& operator<<(std::ostream& os, CryptoNote::WalletGreen::WalletTrackingMode mode) {
+std::ostream& operator<<(std::ostream& os, DynexCN::WalletGreen::WalletTrackingMode mode) {
   switch (mode) {
-  case CryptoNote::WalletGreen::WalletTrackingMode::TRACKING:
+  case DynexCN::WalletGreen::WalletTrackingMode::TRACKING:
     os << "TRACKING";
     break;
-  case CryptoNote::WalletGreen::WalletTrackingMode::NOT_TRACKING:
+  case DynexCN::WalletGreen::WalletTrackingMode::NOT_TRACKING:
     os << "NOT_TRACKING";
     break;
-  case CryptoNote::WalletGreen::WalletTrackingMode::NO_ADDRESSES:
+  case DynexCN::WalletGreen::WalletTrackingMode::NO_ADDRESSES:
     os << "NO_ADDRESSES";
     break;
   default:
@@ -131,7 +131,7 @@ std::ostream& operator<<(std::ostream& os, CryptoNote::WalletGreen::WalletTracki
   return os << " (" << static_cast<int>(mode) << ')';
 }
 
-TransferListFormatter::TransferListFormatter(const CryptoNote::Currency& currency, const WalletGreen::TransfersRange& range) :
+TransferListFormatter::TransferListFormatter(const DynexCN::Currency& currency, const WalletGreen::TransfersRange& range) :
   m_currency(currency),
   m_range(range) {
 }
@@ -149,7 +149,7 @@ std::ostream& operator<<(std::ostream& os, const TransferListFormatter& formatte
   return os;
 }
 
-WalletOrderListFormatter::WalletOrderListFormatter(const CryptoNote::Currency& currency, const std::vector<CryptoNote::WalletOrder>& walletOrderList) :
+WalletOrderListFormatter::WalletOrderListFormatter(const DynexCN::Currency& currency, const std::vector<DynexCN::WalletOrder>& walletOrderList) :
   m_currency(currency),
   m_walletOrderList(walletOrderList) {
 }

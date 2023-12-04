@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -40,8 +40,8 @@
 #include <boost/optional.hpp>
 #include "crypto/crypto.h"
 #include "Common/MemoryInputStream.h"
-#include "CryptoNoteCore/CryptoNoteTools.h"
-#include "CryptoNoteCore/CryptoNoteBasic.h"
+#include "DynexCNCore/DynexCNTools.h"
+#include "DynexCNCore/DynexCNBasic.h"
 #include "Wallet/WalletErrors.h"
 #include "Wallet/WalletUtils.h"
 #include "WalletLegacy/KeysStorage.h"
@@ -50,7 +50,7 @@
 
 using namespace Common;
 using namespace Crypto;
-using namespace CryptoNote;
+using namespace DynexCN;
 
 namespace {
 
@@ -89,7 +89,7 @@ struct UnlockTransactionJobDto {
 struct WalletTransactionDto {
   WalletTransactionDto() {}
 
-  WalletTransactionDto(const CryptoNote::WalletTransaction& wallet) {
+  WalletTransactionDto(const DynexCN::WalletTransaction& wallet) {
     state = wallet.state;
     timestamp = wallet.timestamp;
     blockHeight = wallet.blockHeight;
@@ -103,7 +103,7 @@ struct WalletTransactionDto {
       secretKey = reinterpret_cast<const Crypto::SecretKey&>(wallet.secretKey.get());
   }
 
-  CryptoNote::WalletTransactionState state;
+  DynexCN::WalletTransactionState state;
   uint64_t timestamp;
   uint32_t blockHeight;
   Hash hash;
@@ -112,13 +112,13 @@ struct WalletTransactionDto {
   uint64_t creationTime;
   uint64_t unlockTime;
   std::string extra;
-  boost::optional<Crypto::SecretKey> secretKey = CryptoNote::NULL_SECRET_KEY;
+  boost::optional<Crypto::SecretKey> secretKey = DynexCN::NULL_SECRET_KEY;
 };
 
 //DO NOT CHANGE IT
 struct WalletTransferDto {
   WalletTransferDto(uint32_t version) : version(version) {}
-  WalletTransferDto(const CryptoNote::WalletTransfer& tr, uint32_t version) : WalletTransferDto(version) {
+  WalletTransferDto(const DynexCN::WalletTransfer& tr, uint32_t version) : WalletTransferDto(version) {
     address = tr.address;
     amount = tr.amount;
     type = static_cast<uint8_t>(tr.type);
@@ -131,7 +131,7 @@ struct WalletTransferDto {
   uint32_t version;
 };
 
-void serialize(WalletRecordDto& value, CryptoNote::ISerializer& serializer) {
+void serialize(WalletRecordDto& value, DynexCN::ISerializer& serializer) {
   serializer(value.spendPublicKey, "spend_public_key");
   serializer(value.spendSecretKey, "spend_secret_key");
   serializer(value.pendingBalance, "pending_balance");
@@ -139,7 +139,7 @@ void serialize(WalletRecordDto& value, CryptoNote::ISerializer& serializer) {
   serializer(value.creationTimestamp, "creation_timestamp");
 }
 
-void serialize(ObsoleteSpentOutputDto& value, CryptoNote::ISerializer& serializer) {
+void serialize(ObsoleteSpentOutputDto& value, DynexCN::ISerializer& serializer) {
   serializer(value.amount, "amount");
   serializer(value.transactionHash, "transaction_hash");
   serializer(value.outputInTransaction, "output_in_transaction");
@@ -147,26 +147,26 @@ void serialize(ObsoleteSpentOutputDto& value, CryptoNote::ISerializer& serialize
   serializer(value.spendingTransactionHash, "spending_transaction_hash");
 }
 
-void serialize(ObsoleteChangeDto& value, CryptoNote::ISerializer& serializer) {
+void serialize(ObsoleteChangeDto& value, DynexCN::ISerializer& serializer) {
   serializer(value.txHash, "transaction_hash");
   serializer(value.amount, "amount");
 }
 
-void serialize(UnlockTransactionJobDto& value, CryptoNote::ISerializer& serializer) {
+void serialize(UnlockTransactionJobDto& value, DynexCN::ISerializer& serializer) {
   serializer(value.blockHeight, "block_height");
   serializer(value.transactionHash, "transaction_hash");
   serializer(value.walletIndex, "wallet_index");
 }
 
-void serialize(WalletTransactionDto& value, CryptoNote::ISerializer& serializer) {
-  typedef std::underlying_type<CryptoNote::WalletTransactionState>::type StateType;
+void serialize(WalletTransactionDto& value, DynexCN::ISerializer& serializer) {
+  typedef std::underlying_type<DynexCN::WalletTransactionState>::type StateType;
 
   StateType state = static_cast<StateType>(value.state);
   serializer(state, "state");
-  value.state = static_cast<CryptoNote::WalletTransactionState>(state);
+  value.state = static_cast<DynexCN::WalletTransactionState>(state);
 
   serializer(value.timestamp, "timestamp");
-  CryptoNote::serializeBlockHeight(serializer, value.blockHeight, "block_height");
+  DynexCN::serializeBlockHeight(serializer, value.blockHeight, "block_height");
   serializer(value.hash, "hash");
   serializer(value.totalAmount, "total_amount");
   serializer(value.fee, "fee");
@@ -179,7 +179,7 @@ void serialize(WalletTransactionDto& value, CryptoNote::ISerializer& serializer)
   value.secretKey = secretKey;
 }
 
-void serialize(WalletTransferDto& value, CryptoNote::ISerializer& serializer) {
+void serialize(WalletTransferDto& value, DynexCN::ISerializer& serializer) {
   serializer(value.address, "address");
   serializer(value.amount, "amount");
 
@@ -190,13 +190,13 @@ void serialize(WalletTransferDto& value, CryptoNote::ISerializer& serializer) {
 
 std::string readCipher(Common::IInputStream& source, const std::string& name) {
   std::string cipher;
-  CryptoNote::BinaryInputStreamSerializer s(source);
+  DynexCN::BinaryInputStreamSerializer s(source);
   s(cipher, name);
 
   return cipher;
 }
 
-std::string decrypt(const std::string& cipher, CryptoNote::WalletSerializerV1::CryptoContext& cryptoContext) {
+std::string decrypt(const std::string& cipher, DynexCN::WalletSerializerV1::CryptoContext& cryptoContext) {
   std::string plain;
   plain.resize(cipher.size());
 
@@ -207,22 +207,22 @@ std::string decrypt(const std::string& cipher, CryptoNote::WalletSerializerV1::C
 template<typename Object>
 void deserialize(Object& obj, const std::string& name, const std::string& plain) {
   MemoryInputStream stream(plain.data(), plain.size());
-  CryptoNote::BinaryInputStreamSerializer s(stream);
+  DynexCN::BinaryInputStreamSerializer s(stream);
   s(obj, Common::StringView(name));
 }
 
 template<typename Object>
-void deserializeEncrypted(Object& obj, const std::string& name, CryptoNote::WalletSerializerV1::CryptoContext& cryptoContext, Common::IInputStream& source) {
+void deserializeEncrypted(Object& obj, const std::string& name, DynexCN::WalletSerializerV1::CryptoContext& cryptoContext, Common::IInputStream& source) {
   std::string cipher = readCipher(source, name);
   std::string plain = decrypt(cipher, cryptoContext);
 
   deserialize(obj, name, plain);
 }
 
-CryptoNote::WalletTransaction convert(const CryptoNote::WalletLegacyTransaction& tx) {
-  CryptoNote::WalletTransaction mtx;
+DynexCN::WalletTransaction convert(const DynexCN::WalletLegacyTransaction& tx) {
+  DynexCN::WalletTransaction mtx;
 
-  mtx.state = CryptoNote::WalletTransactionState::SUCCEEDED;
+  mtx.state = DynexCN::WalletTransactionState::SUCCEEDED;
   mtx.timestamp = tx.timestamp;
   mtx.blockHeight = tx.blockHeight;
   mtx.hash = tx.hash;
@@ -237,8 +237,8 @@ CryptoNote::WalletTransaction convert(const CryptoNote::WalletLegacyTransaction&
   return mtx;
 }
 
-CryptoNote::WalletTransfer convert(const CryptoNote::WalletLegacyTransfer& tr) {
-  CryptoNote::WalletTransfer mtr;
+DynexCN::WalletTransfer convert(const DynexCN::WalletLegacyTransfer& tr) {
+  DynexCN::WalletTransfer mtr;
 
   mtr.address = tr.address;
   mtr.amount = tr.amount;
@@ -248,7 +248,7 @@ CryptoNote::WalletTransfer convert(const CryptoNote::WalletLegacyTransfer& tr) {
 
 }
 
-namespace CryptoNote {
+namespace DynexCN {
 
 const uint32_t WalletSerializerV1::SERIALIZATION_VERSION = 5;
 
@@ -286,12 +286,12 @@ WalletSerializerV1::WalletSerializerV1(
 { }
 
 void WalletSerializerV1::load(const Crypto::chacha8_key& key, Common::IInputStream& source) {
-  CryptoNote::BinaryInputStreamSerializer s(source);
+  DynexCN::BinaryInputStreamSerializer s(source);
   s.beginObject("wallet");
 
   uint32_t version = loadVersion(source);
 
-  CryptoNote::WALLET_LEGACY_SERIALIZATION_VERSION = version;
+  DynexCN::WALLET_LEGACY_SERIALIZATION_VERSION = version;
 
   if (version > SERIALIZATION_VERSION) {
     throw std::system_error(make_error_code(error::WRONG_VERSION));
@@ -359,7 +359,7 @@ void WalletSerializerV1::loadWallet(Common::IInputStream& source, const Crypto::
 void WalletSerializerV1::loadWalletV1(Common::IInputStream& source, const Crypto::chacha8_key& key) {
   CryptoContext cryptoContext;
 
-  CryptoNote::BinaryInputStreamSerializer encrypted(source);
+  DynexCN::BinaryInputStreamSerializer encrypted(source);
 
   encrypted(cryptoContext.iv, "iv");
   cryptoContext.key = key;
@@ -370,7 +370,7 @@ void WalletSerializerV1::loadWalletV1(Common::IInputStream& source, const Crypto
   std::string plain = decrypt(cipher, cryptoContext);
 
   MemoryInputStream decryptedStream(plain.data(), plain.size());
-  CryptoNote::BinaryInputStreamSerializer serializer(decryptedStream);
+  DynexCN::BinaryInputStreamSerializer serializer(decryptedStream);
 
   loadWalletV1Keys(serializer);
   checkKeys();
@@ -385,13 +385,13 @@ void WalletSerializerV1::loadWalletV1(Common::IInputStream& source, const Crypto
   }
 }
 
-void WalletSerializerV1::loadWalletV1Keys(CryptoNote::BinaryInputStreamSerializer& serializer) {
-  CryptoNote::KeysStorage keys;
+void WalletSerializerV1::loadWalletV1Keys(DynexCN::BinaryInputStreamSerializer& serializer) {
+  DynexCN::KeysStorage keys;
 
   try {
     keys.serialize(serializer, "keys");
   } catch (const std::runtime_error&) {
-    throw std::system_error(make_error_code(CryptoNote::error::WRONG_PASSWORD));
+    throw std::system_error(make_error_code(DynexCN::error::WRONG_PASSWORD));
   }
 
   m_viewPublicKey = keys.viewPublicKey;
@@ -407,7 +407,7 @@ void WalletSerializerV1::loadWalletV1Keys(CryptoNote::BinaryInputStreamSerialize
   m_walletsContainer.get<RandomAccessIndex>().push_back(wallet);
 }
 
-void WalletSerializerV1::loadWalletV1Details(CryptoNote::BinaryInputStreamSerializer& serializer) {
+void WalletSerializerV1::loadWalletV1Details(DynexCN::BinaryInputStreamSerializer& serializer) {
   std::vector<WalletLegacyTransaction> txs;
   std::vector<WalletLegacyTransfer> trs;
 
@@ -418,7 +418,7 @@ void WalletSerializerV1::loadWalletV1Details(CryptoNote::BinaryInputStreamSerial
 }
 
 uint32_t WalletSerializerV1::loadVersion(Common::IInputStream& source) {
-  CryptoNote::BinaryInputStreamSerializer s(source);
+  DynexCN::BinaryInputStreamSerializer s(source);
 
   uint32_t version = std::numeric_limits<uint32_t>::max();
   s(version, "version");
@@ -426,7 +426,7 @@ uint32_t WalletSerializerV1::loadVersion(Common::IInputStream& source) {
 }
 
 void WalletSerializerV1::loadIv(Common::IInputStream& source, Crypto::chacha8_iv& iv) {
-  CryptoNote::BinaryInputStreamSerializer s(source);
+  DynexCN::BinaryInputStreamSerializer s(source);
 
   s.binary(static_cast<void *>(&iv.data), sizeof(iv.data), "chacha_iv");
 }
@@ -436,7 +436,7 @@ void WalletSerializerV1::loadKeys(Common::IInputStream& source, CryptoContext& c
     loadPublicKey(source, cryptoContext);
     loadSecretKey(source, cryptoContext);
   } catch (const std::runtime_error&) {
-    throw std::system_error(make_error_code(CryptoNote::error::WRONG_PASSWORD));
+    throw std::system_error(make_error_code(DynexCN::error::WRONG_PASSWORD));
   }
 }
 
@@ -496,7 +496,7 @@ void WalletSerializerV1::loadWallets(Common::IInputStream& source, CryptoContext
     wallet.actualBalance = dto.actualBalance;
     wallet.pendingBalance = dto.pendingBalance;
     wallet.creationTimestamp = static_cast<time_t>(dto.creationTimestamp);
-    wallet.container = reinterpret_cast<CryptoNote::ITransfersContainer*>(i); //dirty hack. container field must be unique
+    wallet.container = reinterpret_cast<DynexCN::ITransfersContainer*>(i); //dirty hack. container field must be unique
 
     index.push_back(wallet);
   }
@@ -723,4 +723,4 @@ void WalletSerializerV1::addWalletV1Details(const std::vector<WalletLegacyTransa
   }
 }
 
-} //namespace CryptoNote
+} //namespace DynexCN

@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -50,11 +50,11 @@
 #include "Common/Util.h"
 
 #include "crypto/crypto.h"
-#include "CryptoNote.h"
-#include "CryptoNoteCore/CryptoNoteFormatUtils.h"
-#include "CryptoNoteCore/CryptoNoteBasicImpl.h"
-#include "CryptoNoteCore/TransactionExtra.h"
-#include "CryptoNoteCore/Account.h"
+#include "DynexCN.h"
+#include "DynexCNCore/DynexCNFormatUtils.h"
+#include "DynexCNCore/DynexCNBasicImpl.h"
+#include "DynexCNCore/TransactionExtra.h"
+#include "DynexCNCore/Account.h"
 
 #include <System/EventLock.h>
 
@@ -70,7 +70,7 @@
 
 #include "Mnemonics/electrum-words.cpp"
 
-using namespace CryptoNote;
+using namespace DynexCN;
 
 namespace PaymentService {
 
@@ -100,7 +100,7 @@ bool checkPaymentId(const std::string& paymentId) {
 
 Crypto::Hash parsePaymentId(const std::string& paymentIdStr) {
   if (!checkPaymentId(paymentIdStr)) {
-    throw std::system_error(make_error_code(CryptoNote::error::WalletServiceErrorCode::WRONG_PAYMENT_ID_FORMAT));
+    throw std::system_error(make_error_code(DynexCN::error::WalletServiceErrorCode::WRONG_PAYMENT_ID_FORMAT));
   }
 
   Crypto::Hash paymentId;
@@ -111,7 +111,7 @@ Crypto::Hash parsePaymentId(const std::string& paymentIdStr) {
 }
 
 bool getPaymentIdFromExtra(const std::string& binaryString, Crypto::Hash& paymentId) {
-  return CryptoNote::getPaymentIdFromTxExtra(Common::asBinaryArray(binaryString), paymentId);
+  return DynexCN::getPaymentIdFromTxExtra(Common::asBinaryArray(binaryString), paymentId);
 }
 
 std::string getPaymentIdStringFromExtra(const std::string& binaryString) {
@@ -138,7 +138,7 @@ struct TransactionsInBlockInfoFilter {
     }
   }
 
-  bool checkTransaction(const CryptoNote::WalletTransactionWithTransfers& transaction) const {
+  bool checkTransaction(const DynexCN::WalletTransactionWithTransfers& transaction) const {
     if (havePaymentId) {
       Crypto::Hash transactionPaymentId;
       if (!getPaymentIdFromExtra(transaction.transaction.extra, transactionPaymentId)) {
@@ -155,7 +155,7 @@ struct TransactionsInBlockInfoFilter {
     }
 
     bool haveAddress = false;
-    for (const CryptoNote::WalletTransfer& transfer: transaction.transfers) {
+    for (const DynexCN::WalletTransfer& transfer: transaction.transfers) {
       if (addresses.find(transfer.address) != addresses.end()) {
         haveAddress = true;
         break;
@@ -174,8 +174,8 @@ namespace {
 
 void addPaymentIdToExtra(const std::string& paymentId, std::string& extra) {
   std::vector<uint8_t> extraVector;
-  if (!CryptoNote::createTxExtraWithPaymentId(paymentId, extraVector)) {
-    throw std::system_error(make_error_code(CryptoNote::error::BAD_PAYMENT_ID));
+  if (!DynexCN::createTxExtraWithPaymentId(paymentId, extraVector)) {
+    throw std::system_error(make_error_code(DynexCN::error::BAD_PAYMENT_ID));
   }
 
   std::copy(extraVector.begin(), extraVector.end(), std::back_inserter(extra));
@@ -184,7 +184,7 @@ void addPaymentIdToExtra(const std::string& paymentId, std::string& extra) {
 void validatePaymentId(const std::string& paymentId, Logging::LoggerRef logger) {
   if (!checkPaymentId(paymentId)) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Can't validate payment id: " << paymentId;
-    throw std::system_error(make_error_code(CryptoNote::error::WalletServiceErrorCode::WRONG_PAYMENT_ID_FORMAT));
+    throw std::system_error(make_error_code(DynexCN::error::WalletServiceErrorCode::WRONG_PAYMENT_ID_FORMAT));
   }
 }
 
@@ -193,24 +193,24 @@ Crypto::Hash parseHash(const std::string& hashString, Logging::LoggerRef logger)
 
   if (!Common::podFromHex(hashString, hash)) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Can't parse hash string " << hashString;
-    throw std::system_error(make_error_code(CryptoNote::error::WalletServiceErrorCode::WRONG_HASH_FORMAT));
+    throw std::system_error(make_error_code(DynexCN::error::WalletServiceErrorCode::WRONG_HASH_FORMAT));
   }
 
   return hash;
 }
 
-std::vector<CryptoNote::TransactionsInBlockInfo> filterTransactions(
-  const std::vector<CryptoNote::TransactionsInBlockInfo>& blocks,
+std::vector<DynexCN::TransactionsInBlockInfo> filterTransactions(
+  const std::vector<DynexCN::TransactionsInBlockInfo>& blocks,
   const TransactionsInBlockInfoFilter& filter) {
 
-  std::vector<CryptoNote::TransactionsInBlockInfo> result;
+  std::vector<DynexCN::TransactionsInBlockInfo> result;
 
   for (const auto& block: blocks) {
-    CryptoNote::TransactionsInBlockInfo item;
+    DynexCN::TransactionsInBlockInfo item;
     item.blockHash = block.blockHash;
 
     for (const auto& transaction: block.transactions) {
-      if (transaction.transaction.state != CryptoNote::WalletTransactionState::DELETED && filter.checkTransaction(transaction)) {
+      if (transaction.transaction.state != DynexCN::WalletTransactionState::DELETED && filter.checkTransaction(transaction)) {
         item.transactions.push_back(transaction);
       }
     }
@@ -224,7 +224,7 @@ std::vector<CryptoNote::TransactionsInBlockInfo> filterTransactions(
 }
 
 PaymentService::TransactionRpcInfo convertTransactionWithTransfersToTransactionRpcInfo(
-  const CryptoNote::WalletTransactionWithTransfers& transactionWithTransfers) {
+  const DynexCN::WalletTransactionWithTransfers& transactionWithTransfers) {
 
   PaymentService::TransactionRpcInfo transactionInfo;
 
@@ -239,7 +239,7 @@ PaymentService::TransactionRpcInfo convertTransactionWithTransfersToTransactionR
   transactionInfo.extra = Common::toHex(transactionWithTransfers.transaction.extra.data(), transactionWithTransfers.transaction.extra.size());
   transactionInfo.paymentId = getPaymentIdStringFromExtra(transactionWithTransfers.transaction.extra);
 
-  for (const CryptoNote::WalletTransfer& transfer: transactionWithTransfers.transfers) {
+  for (const DynexCN::WalletTransfer& transfer: transactionWithTransfers.transfers) {
     PaymentService::TransferRpcInfo rpcTransfer;
     rpcTransfer.address = transfer.address;
     rpcTransfer.amount = transfer.amount;
@@ -252,7 +252,7 @@ PaymentService::TransactionRpcInfo convertTransactionWithTransfersToTransactionR
 }
 
 std::vector<PaymentService::TransactionsInBlockRpcInfo> convertTransactionsInBlockInfoToTransactionsInBlockRpcInfo(
-  const std::vector<CryptoNote::TransactionsInBlockInfo>& blocks) {
+  const std::vector<DynexCN::TransactionsInBlockInfo>& blocks) {
 
   std::vector<PaymentService::TransactionsInBlockRpcInfo> rpcBlocks;
   rpcBlocks.reserve(blocks.size());
@@ -260,7 +260,7 @@ std::vector<PaymentService::TransactionsInBlockRpcInfo> convertTransactionsInBlo
     PaymentService::TransactionsInBlockRpcInfo rpcBlock;
     rpcBlock.blockHash = Common::podToHex(block.blockHash);
 
-    for (const CryptoNote::WalletTransactionWithTransfers& transactionWithTransfers: block.transactions) {
+    for (const DynexCN::WalletTransactionWithTransfers& transactionWithTransfers: block.transactions) {
       PaymentService::TransactionRpcInfo transactionInfo = convertTransactionWithTransfersToTransactionRpcInfo(transactionWithTransfers);
       rpcBlock.transactions.push_back(std::move(transactionInfo));
     }
@@ -272,15 +272,15 @@ std::vector<PaymentService::TransactionsInBlockRpcInfo> convertTransactionsInBlo
 }
 
 std::vector<PaymentService::TransactionHashesInBlockRpcInfo> convertTransactionsInBlockInfoToTransactionHashesInBlockRpcInfo(
-    const std::vector<CryptoNote::TransactionsInBlockInfo>& blocks) {
+    const std::vector<DynexCN::TransactionsInBlockInfo>& blocks) {
 
   std::vector<PaymentService::TransactionHashesInBlockRpcInfo> transactionHashes;
   transactionHashes.reserve(blocks.size());
-  for (const CryptoNote::TransactionsInBlockInfo& block: blocks) {
+  for (const DynexCN::TransactionsInBlockInfo& block: blocks) {
     PaymentService::TransactionHashesInBlockRpcInfo item;
     item.blockHash = Common::podToHex(block.blockHash);
 
-    for (const CryptoNote::WalletTransactionWithTransfers& transaction: block.transactions) {
+    for (const DynexCN::WalletTransactionWithTransfers& transaction: block.transactions) {
       item.transactionHashes.emplace_back(Common::podToHex(transaction.transaction.hash));
     }
 
@@ -290,22 +290,22 @@ std::vector<PaymentService::TransactionHashesInBlockRpcInfo> convertTransactions
   return transactionHashes;
 }
 
-void validateMixin(const uint16_t& mixin, const CryptoNote::Currency& currency, Logging::LoggerRef logger) {
+void validateMixin(const uint16_t& mixin, const DynexCN::Currency& currency, Logging::LoggerRef logger) {
     if (mixin < currency.minMixin() && mixin != 0) {
         logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Mixin must be equal to or bigger than" << currency.minMixin();
-        throw std::system_error(make_error_code(CryptoNote::error::MIXIN_COUNT_TOO_SMALL));
+        throw std::system_error(make_error_code(DynexCN::error::MIXIN_COUNT_TOO_SMALL));
     }
     if (mixin > currency.maxMixin()) {
         logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Mixin must be equal to or smaller than" << currency.maxMixin();
-        throw std::system_error(make_error_code(CryptoNote::error::MIXIN_COUNT_TOO_LARGE));
+        throw std::system_error(make_error_code(DynexCN::error::MIXIN_COUNT_TOO_LARGE));
     }
 }
 
-void validateAddresses(const std::vector<std::string>& addresses, const CryptoNote::Currency& currency, Logging::LoggerRef logger) {
+void validateAddresses(const std::vector<std::string>& addresses, const DynexCN::Currency& currency, Logging::LoggerRef logger) {
   for (const auto& address: addresses) {
-    if (!CryptoNote::validateAddress(address, currency)) {
+    if (!DynexCN::validateAddress(address, currency)) {
       logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Can't validate address " << address;
-      throw std::system_error(make_error_code(CryptoNote::error::BAD_ADDRESS));
+      throw std::system_error(make_error_code(DynexCN::error::BAD_ADDRESS));
     }
   }
 }
@@ -313,7 +313,7 @@ void validateAddresses(const std::vector<std::string>& addresses, const CryptoNo
 std::string getValidatedTransactionExtraString(const std::string& extraString) {
   std::vector<uint8_t> binary;
   if (!Common::fromHex(extraString, binary)) {
-    throw std::system_error(make_error_code(CryptoNote::error::BAD_TRANSACTION_EXTRA));
+    throw std::system_error(make_error_code(DynexCN::error::BAD_TRANSACTION_EXTRA));
   }
 
   return Common::asString(binary);
@@ -330,12 +330,12 @@ std::vector<std::string> collectDestinationAddresses(const std::vector<PaymentSe
   return result;
 }
 
-std::vector<CryptoNote::WalletOrder> convertWalletRpcOrdersToWalletOrders(const std::vector<PaymentService::WalletRpcOrder>& orders) {
-  std::vector<CryptoNote::WalletOrder> result;
+std::vector<DynexCN::WalletOrder> convertWalletRpcOrdersToWalletOrders(const std::vector<PaymentService::WalletRpcOrder>& orders) {
+  std::vector<DynexCN::WalletOrder> result;
   result.reserve(orders.size());
 
   for (const auto& order: orders) {
-    result.emplace_back(CryptoNote::WalletOrder {order.address, order.amount});
+    result.emplace_back(DynexCN::WalletOrder {order.address, order.amount});
   }
 
   return result;
@@ -343,14 +343,14 @@ std::vector<CryptoNote::WalletOrder> convertWalletRpcOrdersToWalletOrders(const 
 
 }
 
-void generateNewWallet(const CryptoNote::Currency& currency, const WalletConfiguration& conf, Logging::ILogger& logger, System::Dispatcher& dispatcher) {
+void generateNewWallet(const DynexCN::Currency& currency, const WalletConfiguration& conf, Logging::ILogger& logger, System::Dispatcher& dispatcher) {
   Logging::LoggerRef log(logger, "generateNewWallet");
 
-  CryptoNote::INode* nodeStub = NodeFactory::createNodeStub();
-  std::unique_ptr<CryptoNote::INode> nodeGuard(nodeStub);
+  DynexCN::INode* nodeStub = NodeFactory::createNodeStub();
+  std::unique_ptr<DynexCN::INode> nodeGuard(nodeStub);
 
-  CryptoNote::IWallet* wallet = new CryptoNote::WalletGreen(dispatcher, currency, *nodeStub, logger);
-  std::unique_ptr<CryptoNote::IWallet> walletGuard(wallet);
+  DynexCN::IWallet* wallet = new DynexCN::WalletGreen(dispatcher, currency, *nodeStub, logger);
+  std::unique_ptr<DynexCN::IWallet> walletGuard(wallet);
 
   std::string address;
 
@@ -360,10 +360,10 @@ void generateNewWallet(const CryptoNote::Currency& currency, const WalletConfigu
       log(Logging::INFO, Logging::BRIGHT_WHITE) << "Generating new deterministic wallet";
 
       Crypto::SecretKey private_view_key;
-      CryptoNote::KeyPair spendKey;
+      DynexCN::KeyPair spendKey;
 
       Crypto::generate_keys(spendKey.publicKey, spendKey.secretKey);
-      CryptoNote::AccountBase::generateViewFromSpend(spendKey.secretKey, private_view_key);
+      DynexCN::AccountBase::generateViewFromSpend(spendKey.secretKey, private_view_key);
 
       wallet->initializeWithViewKey(conf.walletFile, conf.walletPassword, private_view_key);
       address = wallet->createAddress(spendKey.secretKey);
@@ -390,7 +390,7 @@ void generateNewWallet(const CryptoNote::Currency& currency, const WalletConfigu
         return;
       }
 
-      CryptoNote::AccountBase::generateViewFromSpend(private_spend_key, private_view_key);
+      DynexCN::AccountBase::generateViewFromSpend(private_spend_key, private_view_key);
       wallet->initializeWithViewKey(conf.walletFile, conf.walletPassword, private_view_key);
       address = wallet->createAddress(private_spend_key);
       log(Logging::INFO, Logging::BRIGHT_WHITE) << "Imported wallet successfully.";
@@ -422,12 +422,12 @@ void generateNewWallet(const CryptoNote::Currency& currency, const WalletConfigu
     }
   }
 
-  wallet->save(CryptoNote::WalletSaveLevel::SAVE_KEYS_ONLY);
+  wallet->save(DynexCN::WalletSaveLevel::SAVE_KEYS_ONLY);
   log(Logging::INFO, Logging::BRIGHT_WHITE) << "Wallet is saved";
 }
 
-WalletService::WalletService(const CryptoNote::Currency& currency, System::Dispatcher& sys, CryptoNote::INode& node,
-  CryptoNote::IWallet& wallet, CryptoNote::IFusionManager& fusionManager, const WalletConfiguration& conf, Logging::ILogger& logger) :
+WalletService::WalletService(const DynexCN::Currency& currency, System::Dispatcher& sys, DynexCN::INode& node,
+  DynexCN::IWallet& wallet, DynexCN::IFusionManager& fusionManager, const WalletConfiguration& conf, Logging::ILogger& logger) :
     currency(currency),
     wallet(wallet),
     fusionManager(fusionManager),
@@ -486,7 +486,7 @@ std::error_code WalletService::saveWalletNoThrow() {
 
     if (!inited) {
       logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Save impossible: Wallet Service is not initialized";
-      return make_error_code(CryptoNote::error::NOT_INITIALIZED);
+      return make_error_code(DynexCN::error::NOT_INITIALIZED);
     }
 
     saveWallet();
@@ -495,7 +495,7 @@ std::error_code WalletService::saveWalletNoThrow() {
     return x.code();
   } catch (std::exception& x) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while saving wallet: " << x.what();
-    return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+    return make_error_code(DynexCN::error::INTERNAL_WALLET_ERROR);
   }
 
   return std::error_code();
@@ -509,7 +509,7 @@ std::error_code WalletService::resetWallet() {
 
     if (!inited) {
       logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Reset impossible: Wallet Service is not initialized";
-      return make_error_code(CryptoNote::error::NOT_INITIALIZED);
+      return make_error_code(DynexCN::error::NOT_INITIALIZED);
     }
 
     reset();
@@ -519,7 +519,7 @@ std::error_code WalletService::resetWallet() {
     return x.code();
   } catch (std::exception& x) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while reseting wallet: " << x.what();
-    return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+    return make_error_code(DynexCN::error::INTERNAL_WALLET_ERROR);
   }
 
   return std::error_code();
@@ -533,7 +533,7 @@ std::error_code WalletService::resetWallet(const uint32_t scanHeight) {
 
     if (!inited) {
       logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Reset impossible: Wallet Service is not initialized";
-      return make_error_code(CryptoNote::error::NOT_INITIALIZED);
+      return make_error_code(DynexCN::error::NOT_INITIALIZED);
     }
 
     wallet.reset(scanHeight);
@@ -545,7 +545,7 @@ std::error_code WalletService::resetWallet(const uint32_t scanHeight) {
   }
   catch (std::exception& x) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while resetting wallet: " << x.what();
-    return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+    return make_error_code(DynexCN::error::INTERNAL_WALLET_ERROR);
   }
 
   return std::error_code();
@@ -557,7 +557,7 @@ std::error_code WalletService::exportWallet(const std::string& fileName) {
 
     if (!inited) {
       logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Export impossible: Wallet Service is not initialized";
-      return make_error_code(CryptoNote::error::NOT_INITIALIZED);
+      return make_error_code(DynexCN::error::NOT_INITIALIZED);
     }
 
     boost::filesystem::path walletPath(config.walletFile);
@@ -570,7 +570,7 @@ std::error_code WalletService::exportWallet(const std::string& fileName) {
     return x.code();
   } catch (std::exception& x) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while exporting wallet: " << x.what();
-    return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+    return make_error_code(DynexCN::error::INTERNAL_WALLET_ERROR);
   }
 
   return std::error_code();
@@ -583,13 +583,13 @@ std::error_code WalletService::replaceWithNewWallet(const std::string& viewSecre
     Crypto::SecretKey viewSecretKey;
     if (!Common::podFromHex(viewSecretKeyText, viewSecretKey)) {
       logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Cannot restore view secret key: " << viewSecretKeyText;
-      return make_error_code(CryptoNote::error::WalletServiceErrorCode::WRONG_KEY_FORMAT);
+      return make_error_code(DynexCN::error::WalletServiceErrorCode::WRONG_KEY_FORMAT);
     }
 
     Crypto::PublicKey viewPublicKey;
     if (!Crypto::secret_key_to_public_key(viewSecretKey, viewPublicKey)) {
       logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Cannot derive view public key, wrong secret key: " << viewSecretKeyText;
-      return make_error_code(CryptoNote::error::WalletServiceErrorCode::WRONG_KEY_FORMAT);
+      return make_error_code(DynexCN::error::WalletServiceErrorCode::WRONG_KEY_FORMAT);
     }
 
     replaceWithNewWallet(viewSecretKey);
@@ -599,7 +599,7 @@ std::error_code WalletService::replaceWithNewWallet(const std::string& viewSecre
     return x.code();
   } catch (std::exception& x) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while replacing container: " << x.what();
-    return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+    return make_error_code(DynexCN::error::INTERNAL_WALLET_ERROR);
   }
 
   return std::error_code();
@@ -612,13 +612,13 @@ std::error_code WalletService::replaceWithNewWallet(const std::string& viewSecre
     Crypto::SecretKey viewSecretKey;
     if (!Common::podFromHex(viewSecretKeyText, viewSecretKey)) {
       logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Cannot restore view secret key: " << viewSecretKeyText;
-      return make_error_code(CryptoNote::error::WalletServiceErrorCode::WRONG_KEY_FORMAT);
+      return make_error_code(DynexCN::error::WalletServiceErrorCode::WRONG_KEY_FORMAT);
     }
 
     Crypto::PublicKey viewPublicKey;
     if (!Crypto::secret_key_to_public_key(viewSecretKey, viewPublicKey)) {
       logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Cannot derive view public key, wrong secret key: " << viewSecretKeyText;
-      return make_error_code(CryptoNote::error::WalletServiceErrorCode::WRONG_KEY_FORMAT);
+      return make_error_code(DynexCN::error::WalletServiceErrorCode::WRONG_KEY_FORMAT);
     }
 
     replaceWithNewWallet(viewSecretKey, scanHeight);
@@ -630,7 +630,7 @@ std::error_code WalletService::replaceWithNewWallet(const std::string& viewSecre
   }
   catch (std::exception& x) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while replacing container: " << x.what();
-    return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+    return make_error_code(DynexCN::error::INTERNAL_WALLET_ERROR);
   }
 
   return std::error_code();
@@ -645,7 +645,7 @@ std::error_code WalletService::createAddress(const std::string& spendSecretKeyTe
     Crypto::SecretKey secretKey;
     if (!Common::podFromHex(spendSecretKeyText, secretKey)) {
       logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Wrong key format: " << spendSecretKeyText;
-      return make_error_code(CryptoNote::error::WalletServiceErrorCode::WRONG_KEY_FORMAT);
+      return make_error_code(DynexCN::error::WalletServiceErrorCode::WRONG_KEY_FORMAT);
     }
 
     address = wallet.createAddress(secretKey, reset);
@@ -668,7 +668,7 @@ std::error_code WalletService::createAddress(const std::string& spendSecretKeyTe
     Crypto::SecretKey secretKey;
     if (!Common::podFromHex(spendSecretKeyText, secretKey)) {
       logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Wrong key format: " << spendSecretKeyText;
-      return make_error_code(CryptoNote::error::WalletServiceErrorCode::WRONG_KEY_FORMAT);
+      return make_error_code(DynexCN::error::WalletServiceErrorCode::WRONG_KEY_FORMAT);
     }
 
     address = wallet.createAddress(secretKey, scanHeight);
@@ -697,13 +697,13 @@ std::error_code WalletService::createAddressList(const std::vector<std::string>&
       auto insertResult = unique.insert(keyText);
       if (!insertResult.second) {
         logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Not unique key";
-        return make_error_code(CryptoNote::error::WalletServiceErrorCode::DUPLICATE_KEY);
+        return make_error_code(DynexCN::error::WalletServiceErrorCode::DUPLICATE_KEY);
       }
 
       Crypto::SecretKey key;
       if (!Common::podFromHex(keyText, key)) {
         logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Wrong key format: " << keyText;
-        return make_error_code(CryptoNote::error::WalletServiceErrorCode::WRONG_KEY_FORMAT);
+        return make_error_code(DynexCN::error::WalletServiceErrorCode::WRONG_KEY_FORMAT);
       }
 
       secretKeys.push_back(std::move(key));
@@ -734,13 +734,13 @@ std::error_code WalletService::createAddressList(const std::vector<std::string>&
       auto insertResult = unique.insert(keyText);
       if (!insertResult.second) {
         logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Not unique key";
-        return make_error_code(CryptoNote::error::WalletServiceErrorCode::DUPLICATE_KEY);
+        return make_error_code(DynexCN::error::WalletServiceErrorCode::DUPLICATE_KEY);
       }
 
       Crypto::SecretKey key;
       if (!Common::podFromHex(keyText, key)) {
         logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Wrong key format: " << keyText;
-        return make_error_code(CryptoNote::error::WalletServiceErrorCode::WRONG_KEY_FORMAT);
+        return make_error_code(DynexCN::error::WalletServiceErrorCode::WRONG_KEY_FORMAT);
       }
 
       secretKeys.push_back(std::move(key));
@@ -784,7 +784,7 @@ std::error_code WalletService::createTrackingAddress(const std::string& spendPub
     Crypto::PublicKey publicKey;
     if (!Common::podFromHex(spendPublicKeyText, publicKey)) {
       logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Wrong key format: " << spendPublicKeyText;
-      return make_error_code(CryptoNote::error::WalletServiceErrorCode::WRONG_KEY_FORMAT);
+      return make_error_code(DynexCN::error::WalletServiceErrorCode::WRONG_KEY_FORMAT);
     }
 
     address = wallet.createAddress(publicKey);
@@ -806,7 +806,7 @@ std::error_code WalletService::createTrackingAddress(const std::string& spendPub
     Crypto::PublicKey publicKey;
     if (!Common::podFromHex(spendPublicKeyText, publicKey)) {
       logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Wrong key format: " << spendPublicKeyText;
-      return make_error_code(CryptoNote::error::WalletServiceErrorCode::WRONG_KEY_FORMAT);
+      return make_error_code(DynexCN::error::WalletServiceErrorCode::WRONG_KEY_FORMAT);
     }
 
     address = wallet.createAddress(publicKey, scanHeight);
@@ -839,7 +839,7 @@ std::error_code WalletService::getSpendkeys(const std::string& address, std::str
   try {
     System::EventLock lk(readyEvent);
 
-    CryptoNote::KeyPair key = wallet.getAddressSpendKey(address);
+    DynexCN::KeyPair key = wallet.getAddressSpendKey(address);
 
     publicSpendKeyText = Common::podToHex(key.publicKey);
     secretSpendKeyText = Common::podToHex(key.secretKey);
@@ -904,7 +904,7 @@ std::error_code WalletService::getBlockHashes(uint32_t firstBlockIndex, uint32_t
 std::error_code WalletService::getViewKey(std::string& viewSecretKey) {
   try {
     System::EventLock lk(readyEvent);
-    CryptoNote::KeyPair viewKey = wallet.getViewKey();
+    DynexCN::KeyPair viewKey = wallet.getViewKey();
     viewSecretKey = Common::podToHex(viewKey.secretKey);
   } catch (std::system_error& x) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while getting view key: " << x.what();
@@ -917,12 +917,12 @@ std::error_code WalletService::getViewKey(std::string& viewSecretKey) {
 std::error_code WalletService::getMnemonicSeed(const std::string& address, std::string& mnemonicSeed) {
   try {
     System::EventLock lk(readyEvent);
-    CryptoNote::KeyPair key = wallet.getAddressSpendKey(address);
-    CryptoNote::KeyPair viewKey = wallet.getViewKey();
+    DynexCN::KeyPair key = wallet.getAddressSpendKey(address);
+    DynexCN::KeyPair viewKey = wallet.getViewKey();
 
     Crypto::SecretKey deterministic_private_view_key;
 
-    CryptoNote::AccountBase::generateViewFromSpend(key.secretKey, deterministic_private_view_key);
+    DynexCN::AccountBase::generateViewFromSpend(key.secretKey, deterministic_private_view_key);
 
     bool deterministic_private_keys = deterministic_private_view_key == viewKey.secretKey;
 
@@ -933,7 +933,7 @@ std::error_code WalletService::getMnemonicSeed(const std::string& address, std::
          seed, due to being able to generate multiple addresses we can't do
          this in walletd as the default */
       logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Your private keys are not deterministic and so a mnemonic seed cannot be generated!";
-      return make_error_code(CryptoNote::error::WalletServiceErrorCode::KEYS_NOT_DETERMINISTIC);
+      return make_error_code(DynexCN::error::WalletServiceErrorCode::KEYS_NOT_DETERMINISTIC);
     }
   } catch (std::system_error& x) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while getting mnemonic seed: " << x.what();
@@ -962,7 +962,7 @@ std::error_code WalletService::getTransactionHashes(const std::vector<std::strin
     return x.code();
   } catch (std::exception& x) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while getting transactions: " << x.what();
-    return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+    return make_error_code(DynexCN::error::INTERNAL_WALLET_ERROR);
   }
 
   return std::error_code();
@@ -986,7 +986,7 @@ std::error_code WalletService::getTransactionHashes(const std::vector<std::strin
     return x.code();
   } catch (std::exception& x) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while getting transactions: " << x.what();
-    return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+    return make_error_code(DynexCN::error::INTERNAL_WALLET_ERROR);
   }
 
   return std::error_code();
@@ -1018,7 +1018,7 @@ std::error_code WalletService::getTransactions(const std::vector<std::string>& a
     return x.code();
   } catch (std::exception& x) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while getting transactions: " << x.what();
-    return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+    return make_error_code(DynexCN::error::INTERNAL_WALLET_ERROR);
   }
 
   return std::error_code();
@@ -1048,22 +1048,23 @@ std::error_code WalletService::getTransactions(const std::vector<std::string>& a
     return x.code();
   } catch (std::exception& x) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while getting transactions: " << x.what();
-    return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+    return make_error_code(DynexCN::error::INTERNAL_WALLET_ERROR);
   }
 
   return std::error_code();
 }
 
 std::error_code WalletService::getTransaction(const std::string& transactionHash, TransactionRpcInfo& transaction) {
+
   try {
     System::EventLock lk(readyEvent);
     Crypto::Hash hash = parseHash(transactionHash, logger);
 
-    CryptoNote::WalletTransactionWithTransfers transactionWithTransfers = wallet.getTransaction(hash);
+    DynexCN::WalletTransactionWithTransfers transactionWithTransfers = wallet.getTransaction(hash);
 
-    if (transactionWithTransfers.transaction.state == CryptoNote::WalletTransactionState::DELETED) {
+    if (transactionWithTransfers.transaction.state == DynexCN::WalletTransactionState::DELETED) {
       logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Transaction " << transactionHash << " is deleted";
-      return make_error_code(CryptoNote::error::OBJECT_NOT_FOUND);
+      return make_error_code(DynexCN::error::OBJECT_NOT_FOUND);
     }
 
 	TransactionRpcInfo tempTrans = convertTransactionWithTransfersToTransactionRpcInfo(transactionWithTransfers);
@@ -1075,7 +1076,7 @@ std::error_code WalletService::getTransaction(const std::string& transactionHash
     return x.code();
   } catch (std::exception& x) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while getting transaction: " << x.what();
-    return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+    return make_error_code(DynexCN::error::INTERNAL_WALLET_ERROR);
   }
 
   return std::error_code();
@@ -1088,9 +1089,9 @@ std::error_code WalletService::getTransactionSecretKey(const std::string& transa
 
     Crypto::SecretKey txSecretKey = wallet.getTransactionSecretKey(hash);
 
-	if (txSecretKey == CryptoNote::NULL_SECRET_KEY) {
+	if (txSecretKey == DynexCN::NULL_SECRET_KEY) {
       logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Transaction " << transactionHash << " secret key is not available";
-      return make_error_code(CryptoNote::error::OBJECT_NOT_FOUND);
+      return make_error_code(DynexCN::error::OBJECT_NOT_FOUND);
     }
 
     transactionSecretKey = Common::podToHex(txSecretKey);
@@ -1100,7 +1101,7 @@ std::error_code WalletService::getTransactionSecretKey(const std::string& transa
     return x.code();
   } catch (std::exception& x) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while getting transaction secret key: " << x.what();
-    return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+    return make_error_code(DynexCN::error::INTERNAL_WALLET_ERROR);
   }
 
   return std::error_code();
@@ -1119,25 +1120,25 @@ std::error_code WalletService::getTransactionProof(const std::string& transactio
       size_t size;
       if (!Common::fromHex(transactionSecretKey, &tx_key_hash, sizeof(tx_key_hash), size) || size != sizeof(tx_key_hash)) {
         logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Failed to parse tx secret key: " << transactionSecretKey;
-        return make_error_code(CryptoNote::error::WRONG_TX_SECRET_KEY);
+        return make_error_code(DynexCN::error::WRONG_TX_SECRET_KEY);
       }
 	  txSecretKeyFromReq = *(struct Crypto::SecretKey *) &tx_key_hash;
 
-	  if (txSecretKey != CryptoNote::NULL_SECRET_KEY && txSecretKey != txSecretKeyFromReq) {
+	  if (txSecretKey != DynexCN::NULL_SECRET_KEY && txSecretKey != txSecretKeyFromReq) {
         logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Transaction secret keys do not match";
-        return make_error_code(CryptoNote::error::WRONG_TX_SECRET_KEY);
+        return make_error_code(DynexCN::error::WRONG_TX_SECRET_KEY);
       }
       txSecretKey = txSecretKeyFromReq;
     }
-    else if (txSecretKey == CryptoNote::NULL_SECRET_KEY) {
+    else if (txSecretKey == DynexCN::NULL_SECRET_KEY) {
       logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Transaction secret key not found";
-      return make_error_code(CryptoNote::error::WRONG_PARAMETERS);
+      return make_error_code(DynexCN::error::WRONG_PARAMETERS);
     }
 
-    CryptoNote::AccountPublicAddress destAddress;
+    DynexCN::AccountPublicAddress destAddress;
     if (!currency.parseAccountAddressString(destinationAddress, destAddress)) {
       logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Failed to parse address: " << destinationAddress;
-      return make_error_code(CryptoNote::error::BAD_ADDRESS);
+      return make_error_code(DynexCN::error::BAD_ADDRESS);
     }
 
     std::string sig_str;
@@ -1146,7 +1147,7 @@ std::error_code WalletService::getTransactionProof(const std::string& transactio
     }
     else {
       logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Failed to get transaction proof";
-      return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+      return make_error_code(DynexCN::error::INTERNAL_WALLET_ERROR);
     }
 
   } catch (std::system_error& x) {
@@ -1154,7 +1155,7 @@ std::error_code WalletService::getTransactionProof(const std::string& transactio
     return x.code();
   } catch (std::exception& x) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while getting transaction proof: " << x.what();
-    return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+    return make_error_code(DynexCN::error::INTERNAL_WALLET_ERROR);
   }
 
   return std::error_code();
@@ -1166,7 +1167,7 @@ std::error_code WalletService::getReserveProof(std::string& reserveProof, const 
 
     uint64_t balance = wallet.getActualBalance(address);
     if (amount != 0 && balance < amount) {
-      return make_error_code(CryptoNote::error::WRONG_AMOUNT);
+      return make_error_code(DynexCN::error::WRONG_AMOUNT);
     }
 
     reserveProof = wallet.getReserveProof(amount != 0 ? amount : balance, address, !message.empty() ? message : "");
@@ -1176,7 +1177,7 @@ std::error_code WalletService::getReserveProof(std::string& reserveProof, const 
     return x.code();
   } catch (std::exception& x) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while getting transaction secret key: " << x.what();
-    return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+    return make_error_code(DynexCN::error::INTERNAL_WALLET_ERROR);
   }
 
   return std::error_code();
@@ -1194,13 +1195,14 @@ std::error_code WalletService::getAddresses(std::vector<std::string>& addresses)
     }
   } catch (std::exception& e) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Can't get addresses: " << e.what();
-    return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+    return make_error_code(DynexCN::error::INTERNAL_WALLET_ERROR);
   }
 
   return std::error_code();
 }
 
 std::error_code WalletService::sendTransaction(const SendTransaction::Request& request, std::string& transactionHash, std::string& transactionSecretKey) {
+
   try {
     System::EventLock lk(readyEvent);
 
@@ -1209,9 +1211,19 @@ std::error_code WalletService::sendTransaction(const SendTransaction::Request& r
     if (!request.changeAddress.empty()) {
       validateAddresses({ request.changeAddress }, currency, logger);
     }
-	validateMixin(request.anonymity, currency, logger);
 
-    CryptoNote::TransactionParameters sendParams;
+    // MixIn allowed?
+	  validateMixin(request.anonymity, currency, logger);
+
+    //mixin must be 0:
+    if (request.anonymity>0) {
+      logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while sending transaction: mixin must be 0";
+      return make_error_code(DynexCN::error::INTERNAL_WALLET_ERROR);
+    }
+
+    DynexCN::TransactionParameters sendParams;
+
+    // paymentID:
     if (!request.paymentId.empty()) {
       addPaymentIdToExtra(request.paymentId, sendParams.extra);
     } else {
@@ -1225,18 +1237,19 @@ std::error_code WalletService::sendTransaction(const SendTransaction::Request& r
     sendParams.unlockTimestamp = request.unlockTime;
     sendParams.changeDestination = request.changeAddress;
 
-	Crypto::SecretKey tx_key;
-    size_t transactionId = wallet.transfer(sendParams, tx_key);
+	  Crypto::SecretKey tx_key;
+    size_t transactionId = wallet.transfer(sendParams, tx_key); //WalletGreen.cpp -> transfer() 
     transactionHash = Common::podToHex(wallet.getTransaction(transactionId).hash);
-	transactionSecretKey = Common::podToHex(tx_key);
+	  transactionSecretKey = Common::podToHex(tx_key);
 
     logger(Logging::DEBUGGING) << "Transaction " << transactionHash << " has been sent";
+
   } catch (std::system_error& x) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while sending transaction: " << x.what();
     return x.code();
   } catch (std::exception& x) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while sending transaction: " << x.what();
-    return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+    return make_error_code(DynexCN::error::INTERNAL_WALLET_ERROR);
   }
 
   return std::error_code();
@@ -1252,7 +1265,7 @@ std::error_code WalletService::createDelayedTransaction(const CreateDelayedTrans
       validateAddresses({ request.changeAddress }, currency, logger);
     }
 
-    CryptoNote::TransactionParameters sendParams;
+    DynexCN::TransactionParameters sendParams;
     if (!request.paymentId.empty()) {
       addPaymentIdToExtra(request.paymentId, sendParams.extra);
     } else {
@@ -1275,7 +1288,7 @@ std::error_code WalletService::createDelayedTransaction(const CreateDelayedTrans
     return x.code();
   } catch (std::exception& x) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while creating delayed transaction: " << x.what();
-    return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+    return make_error_code(DynexCN::error::INTERNAL_WALLET_ERROR);
   }
 
   return std::error_code();
@@ -1297,7 +1310,7 @@ std::error_code WalletService::getDelayedTransactionHashes(std::vector<std::stri
     return x.code();
   } catch (std::exception& x) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while getting delayed transaction hashes: " << x.what();
-    return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+    return make_error_code(DynexCN::error::INTERNAL_WALLET_ERROR);
   }
 
   return std::error_code();
@@ -1311,7 +1324,7 @@ std::error_code WalletService::deleteDelayedTransaction(const std::string& trans
 
     auto idIt = transactionIdIndex.find(transactionHash);
     if (idIt == transactionIdIndex.end()) {
-      return make_error_code(CryptoNote::error::WalletServiceErrorCode::OBJECT_NOT_FOUND);
+      return make_error_code(DynexCN::error::WalletServiceErrorCode::OBJECT_NOT_FOUND);
     }
 
     size_t transactionId = idIt->second;
@@ -1323,7 +1336,7 @@ std::error_code WalletService::deleteDelayedTransaction(const std::string& trans
     return x.code();
   } catch (std::exception& x) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while deleting delayed transaction hashes: " << x.what();
-    return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+    return make_error_code(DynexCN::error::INTERNAL_WALLET_ERROR);
   }
 
   return std::error_code();
@@ -1337,7 +1350,7 @@ std::error_code WalletService::sendDelayedTransaction(const std::string& transac
 
     auto idIt = transactionIdIndex.find(transactionHash);
     if (idIt == transactionIdIndex.end()) {
-      return make_error_code(CryptoNote::error::WalletServiceErrorCode::OBJECT_NOT_FOUND);
+      return make_error_code(DynexCN::error::WalletServiceErrorCode::OBJECT_NOT_FOUND);
     }
 
     size_t transactionId = idIt->second;
@@ -1349,7 +1362,7 @@ std::error_code WalletService::sendDelayedTransaction(const std::string& transac
     return x.code();
   } catch (std::exception& x) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while sending delayed transaction hashes: " << x.what();
-    return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+    return make_error_code(DynexCN::error::INTERNAL_WALLET_ERROR);
   }
 
   return std::error_code();
@@ -1361,7 +1374,7 @@ std::error_code WalletService::getUnconfirmedTransactionHashes(const std::vector
 
     validateAddresses(addresses, currency, logger);
 
-    std::vector<CryptoNote::WalletTransactionWithTransfers> transactions = wallet.getUnconfirmedTransactions();
+    std::vector<DynexCN::WalletTransactionWithTransfers> transactions = wallet.getUnconfirmedTransactions();
 
     TransactionsInBlockInfoFilter transactionFilter(addresses, "");
 
@@ -1375,7 +1388,7 @@ std::error_code WalletService::getUnconfirmedTransactionHashes(const std::vector
     return x.code();
   } catch (std::exception& x) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while getting unconfirmed transaction hashes: " << x.what();
-    return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+    return make_error_code(DynexCN::error::INTERNAL_WALLET_ERROR);
   }
 
   return std::error_code();
@@ -1398,7 +1411,7 @@ std::error_code WalletService::getStatus(uint32_t& blockCount, uint32_t& knownBl
     return x.code();
   } catch (std::exception& x) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while getting status: " << x.what();
-    return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+    return make_error_code(DynexCN::error::INTERNAL_WALLET_ERROR);
   }
 
   return std::error_code();
@@ -1408,7 +1421,7 @@ std::error_code WalletService::validateAddress(const std::string& address, bool&
   try {
     System::EventLock lk(readyEvent);
 
-    CryptoNote::AccountPublicAddress acc = boost::value_initialized<AccountPublicAddress>();
+    DynexCN::AccountPublicAddress acc = boost::value_initialized<AccountPublicAddress>();
     if (currency.parseAccountAddressString(address, acc)) {
       isvalid = true;
       _address = currency.accountAddressAsString(acc);
@@ -1425,7 +1438,7 @@ std::error_code WalletService::validateAddress(const std::string& address, bool&
   }
   catch (std::exception& x) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while validating address: " << x.what();
-    return make_error_code(CryptoNote::error::BAD_ADDRESS);
+    return make_error_code(DynexCN::error::BAD_ADDRESS);
   }
 
   return std::error_code();
@@ -1451,7 +1464,7 @@ std::error_code WalletService::sendFusionTransaction(uint64_t threshold, uint32_
     return x.code();
   } catch (std::exception& x) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while sending fusion transaction: " << x.what();
-    return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+    return make_error_code(DynexCN::error::INTERNAL_WALLET_ERROR);
   }
 
   return std::error_code();
@@ -1473,7 +1486,7 @@ std::error_code WalletService::estimateFusion(uint64_t threshold, const std::vec
     return x.code();
   } catch (std::exception& x) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Failed to estimate number of fusion outputs: " << x.what();
-    return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+    return make_error_code(DynexCN::error::INTERNAL_WALLET_ERROR);
   }
 
   return std::error_code();
@@ -1484,7 +1497,7 @@ void WalletService::refresh() {
     logger(Logging::DEBUGGING) << "Refresh is started";
     for (;;) {
       auto event = wallet.getEvent();
-      if (event.type == CryptoNote::TRANSACTION_CREATED) {
+      if (event.type == DynexCN::TRANSACTION_CREATED) {
         size_t transactionId = event.transactionCreated.transactionIndex;
         transactionIdIndex.emplace(Common::podToHex(wallet.getTransaction(transactionId).hash), transactionId);
       }
@@ -1497,7 +1510,7 @@ void WalletService::refresh() {
 }
 
 void WalletService::reset() {
-  wallet.save(CryptoNote::WalletSaveLevel::SAVE_KEYS_ONLY);
+  wallet.save(DynexCN::WalletSaveLevel::SAVE_KEYS_ONLY);
   wallet.stop();
   wallet.shutdown();
   inited = false;
@@ -1563,45 +1576,45 @@ void WalletService::replaceWithNewWallet(const Crypto::SecretKey& viewSecretKey)
   inited = true;
 }
 
-std::vector<CryptoNote::TransactionsInBlockInfo> WalletService::getTransactions(const Crypto::Hash& blockHash, size_t blockCount) const {
-  std::vector<CryptoNote::TransactionsInBlockInfo> result = wallet.getTransactions(blockHash, blockCount);
+std::vector<DynexCN::TransactionsInBlockInfo> WalletService::getTransactions(const Crypto::Hash& blockHash, size_t blockCount) const {
+  std::vector<DynexCN::TransactionsInBlockInfo> result = wallet.getTransactions(blockHash, blockCount);
   if (result.empty()) {
-    throw std::system_error(make_error_code(CryptoNote::error::WalletServiceErrorCode::OBJECT_NOT_FOUND));
+    throw std::system_error(make_error_code(DynexCN::error::WalletServiceErrorCode::OBJECT_NOT_FOUND));
   }
 
   return result;
 }
 
-std::vector<CryptoNote::TransactionsInBlockInfo> WalletService::getTransactions(uint32_t firstBlockIndex, size_t blockCount) const {
-  std::vector<CryptoNote::TransactionsInBlockInfo> result = wallet.getTransactions(firstBlockIndex, blockCount);
+std::vector<DynexCN::TransactionsInBlockInfo> WalletService::getTransactions(uint32_t firstBlockIndex, size_t blockCount) const {
+  std::vector<DynexCN::TransactionsInBlockInfo> result = wallet.getTransactions(firstBlockIndex, blockCount);
   if (result.empty()) {
-    throw std::system_error(make_error_code(CryptoNote::error::WalletServiceErrorCode::OBJECT_NOT_FOUND));
+    throw std::system_error(make_error_code(DynexCN::error::WalletServiceErrorCode::OBJECT_NOT_FOUND));
   }
 
   return result;
 }
 
 std::vector<TransactionHashesInBlockRpcInfo> WalletService::getRpcTransactionHashes(const Crypto::Hash& blockHash, size_t blockCount, const TransactionsInBlockInfoFilter& filter) const {
-  std::vector<CryptoNote::TransactionsInBlockInfo> allTransactions = getTransactions(blockHash, blockCount);
-  std::vector<CryptoNote::TransactionsInBlockInfo> filteredTransactions = filterTransactions(allTransactions, filter);
+  std::vector<DynexCN::TransactionsInBlockInfo> allTransactions = getTransactions(blockHash, blockCount);
+  std::vector<DynexCN::TransactionsInBlockInfo> filteredTransactions = filterTransactions(allTransactions, filter);
   return convertTransactionsInBlockInfoToTransactionHashesInBlockRpcInfo(filteredTransactions);
 }
 
 std::vector<TransactionHashesInBlockRpcInfo> WalletService::getRpcTransactionHashes(uint32_t firstBlockIndex, size_t blockCount, const TransactionsInBlockInfoFilter& filter) const {
-  std::vector<CryptoNote::TransactionsInBlockInfo> allTransactions = getTransactions(firstBlockIndex, blockCount);
-  std::vector<CryptoNote::TransactionsInBlockInfo> filteredTransactions = filterTransactions(allTransactions, filter);
+  std::vector<DynexCN::TransactionsInBlockInfo> allTransactions = getTransactions(firstBlockIndex, blockCount);
+  std::vector<DynexCN::TransactionsInBlockInfo> filteredTransactions = filterTransactions(allTransactions, filter);
   return convertTransactionsInBlockInfoToTransactionHashesInBlockRpcInfo(filteredTransactions);
 }
 
 std::vector<TransactionsInBlockRpcInfo> WalletService::getRpcTransactions(const Crypto::Hash& blockHash, size_t blockCount, const TransactionsInBlockInfoFilter& filter) const {
-  std::vector<CryptoNote::TransactionsInBlockInfo> allTransactions = getTransactions(blockHash, blockCount);
-  std::vector<CryptoNote::TransactionsInBlockInfo> filteredTransactions = filterTransactions(allTransactions, filter);
+  std::vector<DynexCN::TransactionsInBlockInfo> allTransactions = getTransactions(blockHash, blockCount);
+  std::vector<DynexCN::TransactionsInBlockInfo> filteredTransactions = filterTransactions(allTransactions, filter);
   return convertTransactionsInBlockInfoToTransactionsInBlockRpcInfo(filteredTransactions);
 }
 
 std::vector<TransactionsInBlockRpcInfo> WalletService::getRpcTransactions(uint32_t firstBlockIndex, size_t blockCount, const TransactionsInBlockInfoFilter& filter) const {
-  std::vector<CryptoNote::TransactionsInBlockInfo> allTransactions = getTransactions(firstBlockIndex, blockCount);
-  std::vector<CryptoNote::TransactionsInBlockInfo> filteredTransactions = filterTransactions(allTransactions, filter);
+  std::vector<DynexCN::TransactionsInBlockInfo> allTransactions = getTransactions(firstBlockIndex, blockCount);
+  std::vector<DynexCN::TransactionsInBlockInfo> filteredTransactions = filterTransactions(allTransactions, filter);
   return convertTransactionsInBlockInfoToTransactionsInBlockRpcInfo(filteredTransactions);
 }
 

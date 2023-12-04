@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -51,18 +51,15 @@
 #include "Common/PathTools.h"
 #include "Common/DnsTools.h"
 
-//#include <curl/curl.h>
-//#include <curl/easy.h>
-
 #include "crypto/hash.h"
 #include "CheckpointsData.h"
-#include "CryptoNoteCore/CryptoNoteTools.h"
-#include "CryptoNoteCore/Core.h"
-#include "CryptoNoteCore/CoreConfig.h"
-#include "CryptoNoteCore/Currency.h"
-#include "CryptoNoteCore/MinerConfig.h"
-#include "CryptoNoteProtocol/CryptoNoteProtocolHandler.h"
-#include "CryptoNoteProtocol/ICryptoNoteProtocolQuery.h"
+#include "DynexCNCore/DynexCNTools.h"
+#include "DynexCNCore/Core.h"
+#include "DynexCNCore/CoreConfig.h"
+#include "DynexCNCore/Currency.h"
+#include "DynexCNCore/MinerConfig.h"
+#include "DynexCNProtocol/DynexCNProtocolHandler.h"
+#include "DynexCNProtocol/IDynexCNProtocolQuery.h"
 #include "P2p/NetNode.h"
 #include "P2p/NetNodeConfig.h"
 #include "Rpc/RpcServer.h"
@@ -76,14 +73,14 @@
 #endif
 
 using Common::JsonValue;
-using namespace CryptoNote;
+using namespace DynexCN;
 using namespace Logging;
 
 namespace po = boost::program_options;
 
 namespace
 {
-  const command_line::arg_descriptor<std::string> arg_config_file = {"config-file", "Specify configuration file", std::string(CryptoNote::CRYPTONOTE_NAME) + ".conf"};
+  const command_line::arg_descriptor<std::string> arg_config_file = {"config-file", "Specify configuration file", std::string(DynexCN::CRYPTONOTE_NAME) + ".conf"};
   const command_line::arg_descriptor<bool>        arg_os_version  = {"os-version", ""};
   const command_line::arg_descriptor<std::string> arg_log_file    = {"log-file", "", ""};
   const command_line::arg_descriptor<int>         arg_log_level   = {"log-level", "", 2}; // info level
@@ -104,22 +101,15 @@ namespace
   const command_line::arg_descriptor<std::string> arg_rollback = { "rollback", "Rollback blockchain to <height>" };
   const command_line::arg_descriptor<bool>        arg_sync_from_zero = { "sync-from-zero", "Force sync from block 0" };  
 
-/*
-  static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
-  {
-      ((std::string*)userp)->append((char*)contents, size * nmemb);
-      return size * nmemb;
-  }
-*/
 }
 
 bool command_line_preprocessor(const boost::program_options::variables_map& vm, LoggerRef& logger);
 void print_genesis_tx_hex(const po::variables_map& vm, LoggerManager& logManager) {
-  CryptoNote::Transaction tx = CryptoNote::CurrencyBuilder(logManager).generateGenesisTransaction();
-  std::string tx_hex = Common::toHex(CryptoNote::toBinaryArray(tx));
+  DynexCN::Transaction tx = DynexCN::CurrencyBuilder(logManager).generateGenesisTransaction();
+  std::string tx_hex = Common::toHex(DynexCN::toBinaryArray(tx));
   std::cout << "Add this line into your coin configuration file as is: " << std::endl;
   std::cout << "\"GENESIS_COINBASE_TX_HEX\":\"" << tx_hex << "\"," << std::endl;
-  CryptoNote::CurrencyBuilder  currencyBuilder(logManager);
+  DynexCN::CurrencyBuilder  currencyBuilder(logManager);
   //currencyBuilder.genesisBlockReward(command_line::get_arg(vm, arg_GENESIS_BLOCK_REWARD));
   currencyBuilder.genesisBlockReward(parameters::GENESIS_BLOCK_REWARD);
   return;
@@ -200,7 +190,7 @@ int main(int argc, char* argv[])
 
       if (command_line::get_arg(vm, command_line::arg_help))
       {
-        std::cout << CryptoNote::CRYPTONOTE_NAME << " Daemon v" << CN_PROJECT_VERSION_LONG << ENDL << ENDL;
+        std::cout << DynexCN::CRYPTONOTE_NAME << " Daemon v" << CN_PROJECT_VERSION_LONG << ENDL << ENDL;
         std::cout << desc_options << std::endl;
         return false;
       }
@@ -247,7 +237,7 @@ int main(int argc, char* argv[])
     // configure logging
     logManager.configure(buildLoggerConfiguration(cfgLogLevel, cfgLogFile));
 
-    logger(INFO) << CryptoNote::CRYPTONOTE_NAME << " Daemon v" << CN_PROJECT_VERSION_LONG;
+    logger(INFO) << DynexCN::CRYPTONOTE_NAME << " Daemon v" << CN_PROJECT_VERSION_LONG;
 /*
     // --------------------------------------
     // Version Check 
@@ -451,24 +441,27 @@ int main(int argc, char* argv[])
     }
 
     //create objects and link them
-    CryptoNote::CurrencyBuilder currencyBuilder(logManager);
-    //currencyBuilder.genesisBlockReward(command_line::get_arg(vm, arg_GENESIS_BLOCK_REWARD));
+    DynexCN::CurrencyBuilder currencyBuilder(logManager);
     currencyBuilder.genesisBlockReward(parameters::GENESIS_BLOCK_REWARD);
+
+    currencyBuilder.enforceNonPrivacyBlock(parameters::ENFORCE_NON_PRIVACY_BLOCK_NUMBER);
+    logger(INFO, BRIGHT_GREEN) << "Non-Privacy is mandatory from 15/12/2023 onwards"; 
+
     currencyBuilder.testnet(testnet_mode);
     try {
       currencyBuilder.currency();
     } catch (std::exception&) {
-      std::cout << "GENESIS_COINBASE_TX_HEX constant has an incorrect value. Please launch: " << CryptoNote::CRYPTONOTE_NAME << "d --" << arg_print_genesis_tx.name;
+      std::cout << "GENESIS_COINBASE_TX_HEX constant has an incorrect value. Please launch: " << DynexCN::CRYPTONOTE_NAME << "d --" << arg_print_genesis_tx.name;
       return 1;
     }
-    CryptoNote::Currency currency = currencyBuilder.currency();
-    CryptoNote::core ccore(currency, nullptr, logManager, command_line::get_arg(vm, arg_enable_blockchain_indexes));
+    DynexCN::Currency currency = currencyBuilder.currency();
+    DynexCN::core ccore(currency, nullptr, logManager, command_line::get_arg(vm, arg_enable_blockchain_indexes));
 
 	bool disable_checkpoints = command_line::get_arg(vm, arg_disable_checkpoints);
 	if (!disable_checkpoints) {
 
-		CryptoNote::Checkpoints checkpoints(logManager);
-		for (const auto& cp : CryptoNote::CHECKPOINTS) {
+		DynexCN::Checkpoints checkpoints(logManager);
+		for (const auto& cp : DynexCN::CHECKPOINTS) {
 			checkpoints.add_checkpoint(cp.height, cp.blockId);
 		}
 
@@ -545,9 +538,9 @@ int main(int argc, char* argv[])
  
     System::Dispatcher dispatcher;
 
-    CryptoNote::CryptoNoteProtocolHandler cprotocol(currency, dispatcher, ccore, nullptr, logManager);
-    CryptoNote::NodeServer p2psrv(dispatcher, cprotocol, logManager);
-    CryptoNote::RpcServer rpcServer(dispatcher, logManager, ccore, p2psrv, cprotocol);
+    DynexCN::DynexCNProtocolHandler cprotocol(currency, dispatcher, ccore, nullptr, logManager);
+    DynexCN::NodeServer p2psrv(dispatcher, cprotocol, logManager);
+    DynexCN::RpcServer rpcServer(dispatcher, logManager, ccore, p2psrv, cprotocol);
 	
     cprotocol.set_p2p_endpoint(&p2psrv);
     ccore.set_cryptonote_protocol(&cprotocol);
@@ -659,7 +652,7 @@ bool command_line_preprocessor(const boost::program_options::variables_map &vm, 
   bool exit = false;
 
   if (command_line::get_arg(vm, command_line::arg_version)) {
-    std::cout << CryptoNote::CRYPTONOTE_NAME << " Daemon v" << CN_PROJECT_VERSION_LONG << ENDL << ENDL;
+    std::cout << DynexCN::CRYPTONOTE_NAME << " Daemon v" << CN_PROJECT_VERSION_LONG << ENDL << ENDL;
     exit = true;
   }
   if (command_line::get_arg(vm, arg_os_version)) {

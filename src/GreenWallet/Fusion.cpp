@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -39,9 +39,10 @@
 #include <GreenWallet/Fusion.h>
 /////////////////////////////
 
-#include "CryptoNoteConfig.h"
+#include "DynexCNConfig.h"
 
 #include <iostream>
+#include <thread>
 
 #include <Wallet/WalletGreen.h>
 
@@ -49,7 +50,7 @@
 #include <GreenWallet/Tools.h>
 #include <GreenWallet/WalletConfig.h>
 
-size_t makeFusionTransaction(CryptoNote::WalletGreen &wallet, 
+size_t makeFusionTransaction(DynexCN::WalletGreen &wallet, 
                              uint64_t threshold)
 {
     uint64_t bestThreshold = threshold;
@@ -75,7 +76,7 @@ size_t makeFusionTransaction(CryptoNote::WalletGreen &wallet,
     /* Can't optimize */
     if (optimizable == 0)
     {
-        return CryptoNote::WALLET_INVALID_TRANSACTION_ID;
+        return DynexCN::WALLET_INVALID_TRANSACTION_ID;
     }
 
     try
@@ -88,11 +89,11 @@ size_t makeFusionTransaction(CryptoNote::WalletGreen &wallet,
         std::cout << WarningMsg("Failed to send fusion transaction: ")
                   << WarningMsg(e.what()) << std::endl;
 
-        return CryptoNote::WALLET_INVALID_TRANSACTION_ID;
+        return DynexCN::WALLET_INVALID_TRANSACTION_ID;
     }
 }
 
-void fullOptimize(CryptoNote::WalletGreen &wallet)
+void fullOptimize(DynexCN::WalletGreen &wallet)
 {
     std::cout << "Attempting to optimize your wallet to allow you to "
               << "send large amounts at once. " << std::endl
@@ -121,7 +122,7 @@ void fullOptimize(CryptoNote::WalletGreen &wallet)
     std::cout << SuccessMsg("Full optimization completed!") << std::endl;
 }
 
-bool optimize(CryptoNote::WalletGreen &wallet, uint64_t threshold)
+bool optimize(DynexCN::WalletGreen &wallet, uint64_t threshold)
 {
     std::vector<Crypto::Hash> fusionTransactionHashes;
 
@@ -132,13 +133,13 @@ bool optimize(CryptoNote::WalletGreen &wallet, uint64_t threshold)
            optimize anymore transactions */
         const size_t tmpFusionTxID = makeFusionTransaction(wallet, threshold);
 
-        if (tmpFusionTxID == CryptoNote::WALLET_INVALID_TRANSACTION_ID)
+        if (tmpFusionTxID == DynexCN::WALLET_INVALID_TRANSACTION_ID)
         {
             break;
         }
         else
         {
-            const CryptoNote::WalletTransaction w
+            const DynexCN::WalletTransaction w
                 = wallet.getTransaction(tmpFusionTxID);
 
             fusionTransactionHashes.push_back(w.hash);
@@ -184,7 +185,7 @@ bool optimize(CryptoNote::WalletGreen &wallet, uint64_t threshold)
 
     while (true)
     {
-        const std::vector<CryptoNote::WalletTransactionWithTransfers> 
+        const std::vector<DynexCN::WalletTransactionWithTransfers> 
             unconfirmedTransactions = wallet.getUnconfirmedTransactions();
 
         std::vector<Crypto::Hash> unconfirmedTxHashes;
@@ -259,8 +260,8 @@ bool optimize(CryptoNote::WalletGreen &wallet, uint64_t threshold)
     return true;
 }
 
-bool fusionTX(CryptoNote::WalletGreen &wallet, 
-              CryptoNote::TransactionParameters p)
+bool fusionTX(DynexCN::WalletGreen &wallet, 
+              DynexCN::TransactionParameters p)
 {
     std::cout << WarningMsg("Your transaction is too large to be accepted by "
                             "the network!")

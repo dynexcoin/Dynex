@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -44,34 +44,34 @@
 #include "crypto/hash.h"
 #include "crypto/chacha8.h"
 
-namespace CryptoNote {
+namespace DynexCN {
 class AccountBase;
 class ISerializer;
 }
 
-namespace CryptoNote {
+namespace DynexCN {
 
 class WalletUserTransactionsCache;
 
 class WalletLegacySerializer {
 public:
-  WalletLegacySerializer(CryptoNote::AccountBase& account, WalletUserTransactionsCache& transactionsCache);
+  WalletLegacySerializer(DynexCN::AccountBase& account, WalletUserTransactionsCache& transactionsCache);
 
   void serialize(std::ostream& stream, const std::string& password, bool saveDetailed, const std::string& cache);
   void deserialize(std::istream& stream, const std::string& password, std::string& cache);
 
 private:
-  void saveKeys(CryptoNote::ISerializer& serializer);
-  void loadKeys(CryptoNote::ISerializer& serializer);
+  void saveKeys(DynexCN::ISerializer& serializer);
+  void loadKeys(DynexCN::ISerializer& serializer);
 
   Crypto::chacha8_iv encrypt(const std::string& plain, const std::string& password, std::string& cipher);
   void decrypt(const std::string& cipher, std::string& plain, Crypto::chacha8_iv iv, const std::string& password);
 
-  CryptoNote::AccountBase& account;
+  DynexCN::AccountBase& account;
   WalletUserTransactionsCache& transactionsCache;
   const uint32_t walletSerializationVersion;
 };
 
 extern uint32_t WALLET_LEGACY_SERIALIZATION_VERSION;
 
-} //namespace CryptoNote
+} //namespace DynexCN

@@ -10,7 +10,7 @@ set(CMAKE_SUPPRESS_REGENERATION ON)
 enable_testing()
 configure_file(${CMAKE_SOURCE_DIR}/CTestCustom.cmake ${CMAKE_BINARY_DIR})
 
-project(CryptoNote)
+project(DynexCN)
 
 include_directories(include src external "${CMAKE_BINARY_DIR}/version")
 if(APPLE)

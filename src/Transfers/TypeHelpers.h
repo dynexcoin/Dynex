@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -41,7 +41,7 @@
 #include <functional>
 #include <cstring>
 
-namespace CryptoNote {
+namespace DynexCN {
 
 inline bool operator==(const AccountPublicAddress &_v1, const AccountPublicAddress &_v2) {
   return memcmp(&_v1, &_v2, sizeof(AccountPublicAddress)) == 0;
@@ -52,8 +52,8 @@ inline bool operator==(const AccountPublicAddress &_v1, const AccountPublicAddre
 namespace std {
 
 template<>
-struct hash < CryptoNote::AccountPublicAddress > {
-  size_t operator()(const CryptoNote::AccountPublicAddress& val) const {
+struct hash < DynexCN::AccountPublicAddress > {
+  size_t operator()(const DynexCN::AccountPublicAddress& val) const {
     size_t spend = *(reinterpret_cast<const size_t*>(&val.spendPublicKey));
     size_t view = *(reinterpret_cast<const size_t*>(&val.viewPublicKey));
     return spend ^ view;

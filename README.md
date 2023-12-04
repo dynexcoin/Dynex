@@ -13,11 +13,11 @@ For more information, read our [Dynex Whitepapers](https://dynexcoin.org/learn/d
 
 ## Receive, Send and Manage your DNX coins
 
-There are multiple ways to receive, send and manage your Dynex coins. Since the coins are stored on the blockchain and not the wallet software, by saving your seed words you can use different options at any time. Each wallet has their own benefits and each user must evaluate what is best for their intended use and specific needs. Advanced users are encouraged to build from source using the documentation included in this repository. 
+There are multiple ways to receive, send and manage your Dynex coins. Since the coins are stored on the blockchain and not the wallet software, by saving your seed words you can use different options at any time. Each wallet has their own benefits and each user must evaluate what is best for their intended use and specific needs. Advanced users are encouraged to build from source using the documentation included in this repository. Here are the available wallets:
 
-Users on a mobile phone may consider the Dynex Mobile Web Wallet: [https://dynexcoin.org/get-dnx/#wallets](https://dynexcoin.org/get-dnx#wallets)
-
-Users with a Personal Computer can use the convenient GUI based Dynex Wallet App. You can find it in the dedicated repository: https://github.com/dynexcoin/Dynex-Wallet-App"
+1) [Dynex Mobile Web Wallet (beta)](https://wallet.dynexcoin.org)
+2) CLI Wallet (command line wallet): src/simplewallet
+3) GUI Wallet (graphical user interface): /src/WalletGui/dynexwallet
 
 Building and running a full node is advised for any individual user seeking to contribute the most to the health and growth of the Dynex network. 
 
@@ -28,10 +28,10 @@ Remember to save your seed phrase offline in a secure location. It is good pract
 
 To maximize the efficiency of your computer's hardware, miners may consider using closed-source software for commerical grade preformance. Though these products are not open source (and therefor pripriotory) they are still valued for being actively developed and having increased hashrate compared to open-source.
 
-NVIDIA: https://github.com/OneZeroMiner/onezerominer/releases
-AMD: https://github.com/doktor83/SRBMiner-Multi/releases
+https://dynexcoin.org/get-dnx#mining
 
-## Open source mining DNX from a command line terminal (precompiled binaries)
+
+## Running a Dynex node (precompiled binaries)
 
 The open source Dynex miner can be built from source, but the easiest way to start mining DNX or to manage DNX wallet(s) from the command line in the command line terminal is by using our precompiled binaries. Download the version matching your operating system from our releases page:
 https://github.com/dynexcoin/Dynex/releases
@@ -57,7 +57,8 @@ After downloading the precompiled binary, unzip the executable on your machine. 
 
 Please note that your node requires ports 17336 and SSL to be open.
 
-![TuringX-Daemon](https://github.com/dynexcoin/Dynex/raw/main/turingxd.jpg)
+
+## Running the Dynex CLI (command line interface) wallet
 
 From the command line, you can also create and manage your personal wallet to mine and transact your DNX tokens (make sure you have the main service daemon running):
 
@@ -65,65 +66,17 @@ From the command line, you can also create and manage your personal wallet to mi
 ./simplewallet
 ```
 
-![TuringX-Daemon](https://github.com/dynexcoin/Dynex/raw/main/simplewallet.jpg)
+## Running the Dynex GUI (graphical user interface) wallet
 
-Then just follow the commands (use "O" to open an existing wallet or "G" to generate a new wallet for your DNX).
-
-## DynexSolve Mining Software
-
-To run the Dynex Solve mining software, use the following command (check with your pool operator for the stratum details):
+With the Dynex Wallet App users can use the Dynex wallet functionality to create wallets, send and receive DNX and manage transactions and recipients. It is not necessary to run a separate Dynex node, everything is built into the GUI wallet.
 
 ```
-Linux based systems:
-./dynexsolve -mining-address <WALLET ADDRESS> -no-cpu -stratum-url <POOL> -stratum-port <POOL> -stratum-password <POOL> (-multi-gpu)
-
-Windows based systems:
-dynexsolvevs -mining-address <WALLET ADDRESS> -no-cpu -stratum-url <POOL> -stratum-port <POOL> -stratum-password <POOL> (-multi-gpu)
+WalletGui/dynexwallet
 ```
 
-Notes:
-* DynexSolve binaries are currently available for Windows and Linux
-* You can also build DynexSolve from source: https://github.com/dynexcoin/DynexSolve
+Then just follow the instructions on screen.
 
-Note that the miner output shows computation speed, number of chips which are simulated, etc. Information about mining rewards can be observed in your wallet. When you start the DynexSolve miner, it will by default the GPU with device ID zero (the first installed one). You can specify another GPU if you like by using the command line parameter “-deviceid <ID”. To query the installed and available devices, you can use the command line option “-devices” which will output all available GPUs of your system and the associated IDs. A list of all available commands can be retrieved with the option “-h”. If you are running on Linux, DynexSolve will also generate a json file with the most recent statistics. These can be used with any mining farm management tool. Here is an overview of all DynexSolve command line options:
 
-```
-usage: dynexsolve -mining-address <WALLET ADDR> [options]
-
--mining-address <WALLET ADDR>    wallet address to receive the rewards
--daemon-host <HOST>              RPC host address of dynexd (default: localhost)
--daemon-port <PORT>              RPC port of dynexd (default: 18333)
--stratum-url <HOST>              host of the stratum pool
--stratum-port <PORT>             port of the stratum pool
--stratum-paymentid <PAYMENT ID>  payment ID to add to wallet address
--stratum-password <PASSWORD>     stratum password (f.e. child@worker1)
--stratum-diff <DIFFICULTY>       stratum difficulty
--no-cpu                          run no Dynex chips on CPU
--no-gpu                          run no Dynex chips on GPU (WARNING: MINING NOT POSSIBLE)
--mallob-endpoint <IP>            set the endpoint for the Dynex Malleable Load Balancer
--devices                         show GPU devices on this system
--deviceid <GPU ID>               which GPU to use (default: 0 = first one) when using 1 GPU
--multi-gpu                       uses all GPUs in the system (default: off)
--disable-gpu <ID,ID,ID>          disable certain GPUs (check -devices for IDs) when using multi-gpu
--maximum-chips <JOBS>            set maximum number of parallel Dynex Chips to be run on GPU (default: INT_MAX)
--steps-per-batch <STEPS>         set number of steps per batch (default: 10000, min 10000)
--start-from-job <JOB_NUM>        set the starting job number (default: 0)
--cpu-chips <INT>                 set number of CPU Dynex-Chips to run (default: 4)
--alpha <DOUBLE>                  set alpha value of ODE
--beta <DOUBLE>                   set beta value of ODE
--gamma <DOUBLE>                  set gamma value of ODE
--delta <DOUBLE>                  set detla value of ODE
--epsilon <DOUBLE>                set epsilon value of ODE
--zeta <DOUBLE>                   set zeta value of ODE
--init_dt <DOUBLE>                set initial dt value of ODE
--debug                           enable debugging output
--test <INPUTFILE>                test Dynex Chips locally
--mallob-debug                    enables debugging of MPI
--adj <DOUBLE>                    adjust used mem amount (default: 1.5)
--sync                            use cuda streams sync (reduce cpu usage)
--skip                            skip GPU state (.BIN) save/restore
--h                               show help
-```
 
 ## Build Daemon, Simplewallet & WalletD from source
 
@@ -140,13 +93,42 @@ sudo apt-get install libboost-all-dev (Ubuntu)
 sudo apt-get -y install libcurl4-openssl-dev (libcurl Ubuntu)
 ```
 
-To compile and build:
+To compile and build the Dynex node:
 ```
 mkdir build 
 cd build
 cmake ..
-make
+make Daemon -j 8
 ```
+
+To compile and build the Dynex CLI wallet:
+```
+mkdir build 
+cd build
+cmake ..
+make SimpleWallet -j 8
+```
+
+To compile and build the Dynex GUI wallet:
+```
+sudo apt-get install libboost-all-dev 
+sudo apt-get install libcurl-dev
+sudo apt install qtcreator qtbase5-dev qt5-qmake cmake
+
+mkdir build 
+cd build
+cmake .. -DGUI=True
+make WalletGui -j 8
+```
+
+To compile and build the Dynex wallet service:
+```
+mkdir build 
+cd build
+cmake ..
+make PaymentGateService -j 8
+```
+
 
 ### MacOS
 
@@ -157,12 +139,40 @@ It is required to have the [Boost library](https://www.boost.org) (Version 1.74.
 brew install boost
 ```
 
-To compile and build:
+To compile and build the Dynex node:
 ```
 mkdir build 
 cd build
 cmake ..
-make
+make Daemon -j 8
+```
+
+To compile and build the Dynex CLI wallet:
+```
+mkdir build 
+cd build
+cmake ..
+make SimpleWallet -j 8
+```
+
+To compile and build the Dynex GUI wallet:
+```
+sudo apt-get install libboost-all-dev 
+sudo apt-get install libcurl-dev
+sudo apt install qtcreator qtbase5-dev qt5-qmake cmake
+
+mkdir build 
+cd build
+cmake .. -DGUI=True
+make WalletGui -j 8
+```
+
+To compile and build the Dynex wallet service:
+```
+mkdir build 
+cd build
+cmake ..
+make PaymentGateService -j 8
 ```
 
 ### Windows
@@ -190,6 +200,51 @@ and
 VC++ Directories -> Library Directories -> YOUR_ZLIB_PATH\zlib\lib
 
 Once these settings are done, proceed a full build to generate your binaries.
+
+
+
+
+
+# Release Notes
+
+## Release Notes Core Update v2.2.2-20231121 (#non-privacy) - MANDATORY DEADLINE 15/12/2023
+
+- turned DNX from privacy to non-privacy token
+- transparent input/output wallet addresses
+- transparent input/output amounts
+- added wallet input/output data & amounts to node RPC request "gettransaction" (and derivates)
+- added node RPC request "gettransactionsbyaddress" (returns json with all transactions belonging to an address)
+- added node RPC request "getbalanceofaddress" (returns balances as well as wallet type legacy/non-private)
+- added node RPC request "validatetransaction" (returns json with all addresses and amounts = transaction proof)
+- updated CLI wallet to support non-privacy transactions
+- updated GUI wallet to support non-privacy transactions
+- updated wallet service to support non-privacy transactions
+- updated Dynex blockchain explorer to support search for wallets
+- updated Dynex blockchain explorer to include input/output wallets in transactions and wallet lookup
+- [Node RPC functions](https://dynexcoin.org/learn/guide-dynex-node-rpc)
+- [walletd RPC functions](https://dynexcoin.org/learn/guide-dynex-walletd-rpc)
+
+## Release Notes Version 2.2.2(rev.B)
+
+- added mnemonic phrase import, export, new wallet creation;
+- added private keys export and import;
+- added connection to remote node;
+- added connection configuration menu with ip binding and ports selection;
+- added wallet rescan option;
+- added transaction fee option;
+- added payment id support to address book;
+- added address book edit options;
+- added address book labels to wallets in transactions;
+- added hash column to transactions;
+- added payment id to transactions info;
+- added right-click menus to address book and transactions;
+- added autobackup;
+- added open recent wallets option;
+- added open log option;
+- added node info msgs on splash screen (builtin node mode)
+- improved startup time;
+- improved help and about windows;
+- updated copyright info;
 
 
 

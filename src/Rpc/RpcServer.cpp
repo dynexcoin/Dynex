@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -41,18 +41,18 @@
 #include <future>
 #include <unordered_map>
 
-// CryptoNote
+// DynexCN
 #include "BlockchainExplorerData.h"
 #include "Common/StringTools.h"
 #include "Common/Base58.h"
-#include "CryptoNoteCore/TransactionUtils.h"
-#include "CryptoNoteCore/CryptoNoteTools.h"
-#include "CryptoNoteCore/CryptoNoteFormatUtils.h"
-#include "CryptoNoteCore/Core.h"
-#include "CryptoNoteCore/IBlock.h"
-#include "CryptoNoteCore/Miner.h"
-#include "CryptoNoteCore/TransactionExtra.h"
-#include "CryptoNoteProtocol/ICryptoNoteProtocolQuery.h"
+#include "DynexCNCore/TransactionUtils.h"
+#include "DynexCNCore/DynexCNTools.h"
+#include "DynexCNCore/DynexCNFormatUtils.h"
+#include "DynexCNCore/Core.h"
+#include "DynexCNCore/IBlock.h"
+#include "DynexCNCore/Miner.h"
+#include "DynexCNCore/TransactionExtra.h"
+#include "DynexCNProtocol/IDynexCNProtocolQuery.h"
 
 #include "P2p/NetNode.h"
 
@@ -65,9 +65,7 @@ using namespace Logging;
 using namespace Crypto;
 using namespace Common;
 
-static const Crypto::SecretKey I = { { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 } };
-
-namespace CryptoNote {
+namespace DynexCN {
 
 namespace {
 
@@ -154,7 +152,7 @@ std::unordered_map<std::string, RpcServer::RpcHandler<RpcServer::HandlerFunction
   { "/json_rpc", { std::bind(&RpcServer::processJsonRpcRequest, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), true } }
 };
 
-RpcServer::RpcServer(System::Dispatcher& dispatcher, Logging::ILogger& log, core& c, NodeServer& p2p, ICryptoNoteProtocolQuery& protocolQuery) :
+RpcServer::RpcServer(System::Dispatcher& dispatcher, Logging::ILogger& log, core& c, NodeServer& p2p, IDynexCNProtocolQuery& protocolQuery) :
   HttpServer(dispatcher, log), logger(log, "RpcServer"), m_core(c), m_p2p(p2p), m_protocolQuery(protocolQuery), blockchainExplorerDataBuilder(c, protocolQuery) {
 }
 
@@ -224,6 +222,11 @@ bool RpcServer::processJsonRpcRequest(const HttpRequest& request, HttpResponse& 
       { "validateaddress", { makeMemberMethod(&RpcServer::on_validate_address), false } },
       { "verifymessage", { makeMemberMethod(&RpcServer::on_verify_message), false } },
       { "submitblock", { makeMemberMethod(&RpcServer::on_submitblock), false } },
+      // non-privacy functions:
+      { "gettransactionsbyaddress", { makeMemberMethod(&RpcServer::on_get_transactions_by_address), false } },
+      { "getbalanceofaddress", { makeMemberMethod(&RpcServer::on_get_balance_of_address), false } },
+      { "validatetransaction", { makeMemberMethod(&RpcServer::on_get_validate_transaction), false } },
+      
 
       /* Deprecated (rename, see above new names, remove only methods) */
       { "on_getblockhash", { makeMemberMethod(&RpcServer::on_getblockhash), false } },
@@ -333,13 +336,12 @@ bool RpcServer::masternode_check_incoming_tx(const BinaryArray& tx_blob) {
 		return true;
 	}
 
-	CryptoNote::TransactionPrefix transaction = *static_cast<const TransactionPrefix*>(&tx);
-
-	std::vector<uint32_t> out;
-	uint64_t amount;
+	DynexCN::TransactionPrefix transaction = *static_cast<const TransactionPrefix*>(&tx);
 
 	/*
-	if (!CryptoNote::findOutputsToAccount(transaction, m_fee_acc, m_view_key, out, amount)) {
+	std::vector<uint32_t> out;
+	uint64_t amount;
+	if (!DynexCN::findOutputsToAccount(transaction, m_fee_acc, m_view_key, out, amount)) {
 		logger(INFO) << "Could not find outputs to masternode fee address";
 		return false;
 	}
@@ -470,7 +472,7 @@ bool RpcServer::on_get_random_outs(const COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOU
 
 bool RpcServer::onGetPoolChanges(const COMMAND_RPC_GET_POOL_CHANGES::request& req, COMMAND_RPC_GET_POOL_CHANGES::response& rsp) {
   rsp.status = CORE_RPC_STATUS_OK;
-  std::vector<CryptoNote::Transaction> addedTransactions;
+  std::vector<DynexCN::Transaction> addedTransactions;
   rsp.isTailBlockActual = m_core.getPoolChanges(req.tailBlockId, req.knownTxsIds, addedTransactions, rsp.deletedTxsIds);
   for (auto& tx : addedTransactions) {
     BinaryArray txBlob;
@@ -594,8 +596,11 @@ bool RpcServer::onGetBlocksHashesByTimestamps(const COMMAND_RPC_GET_BLOCKS_HASHE
 }
 
 bool RpcServer::onGetTransactionsDetailsByHashes(const COMMAND_RPC_GET_TRANSACTIONS_DETAILS_BY_HASHES::request& req, COMMAND_RPC_GET_TRANSACTIONS_DETAILS_BY_HASHES::response& rsp) {
+  
   std::vector<TransactionDetails> transactionsDetails;
   transactionsDetails.reserve(req.transactionHashes.size());
+
+  logger(DEBUGGING) << "(RpcServer.cpp #602) invoked";
 
   std::list<Crypto::Hash> missed_txs;
   std::list<Transaction> txs;
@@ -628,11 +633,16 @@ bool RpcServer::onGetTransactionsDetailsByHashes(const COMMAND_RPC_GET_TRANSACTI
 }
 
 bool RpcServer::onGetTransactionDetailsByHash(const COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASH::request& req, COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASH::response& rsp) {
+
+  logger(DEBUGGING) << "(RpcServer.cpp #636) invoked...";
+
   std::list<Crypto::Hash> missed_txs;
   std::list<Transaction> txs;
   std::vector<Crypto::Hash> hashes;
   hashes.push_back(req.hash);
   m_core.getTransactions(hashes, txs, missed_txs, true);
+
+  
 
   if (txs.empty() || !missed_txs.empty()) {
     std::string hash_str = Common::podToHex(missed_txs.back());
@@ -979,7 +989,7 @@ bool RpcServer::f_on_block_json(const F_COMMAND_RPC_GET_BLOCK_DETAILS::request& 
   uint64_t maxReward = 0;
   uint64_t currentReward = 0;
   int64_t emissionChange = 0;
-  size_t blockGrantedFullRewardZone =  CryptoNote::parameters::CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE;
+  size_t blockGrantedFullRewardZone =  DynexCN::parameters::CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE;
   res.block.effectiveSizeMedian = std::max(res.block.sizeMedian, blockGrantedFullRewardZone);
 
   if (!m_core.getBlockReward(res.block.height, res.block.major_version, res.block.sizeMedian, 0, prevBlockGeneratedCoins, 0, maxReward, emissionChange)) {
@@ -1042,6 +1052,8 @@ bool RpcServer::f_on_transaction_json(const F_COMMAND_RPC_GET_TRANSACTION_DETAIL
       "Failed to parse hex representation of transaction hash. Hex = " + req.hash + '.' };
   }
 
+  logger(DEBUGGING) << "RpcServer.cpp f_on_transaction_json() invoked...";
+
   std::vector<Crypto::Hash> tx_ids;
   tx_ids.push_back(hash);
 
@@ -1096,7 +1108,7 @@ bool RpcServer::f_on_transaction_json(const F_COMMAND_RPC_GET_TRANSACTION_DETAIL
   res.txDetails.mixin = mixin;
 
   Crypto::Hash paymentId;
-  if (CryptoNote::getPaymentIdFromTxExtra(res.tx.extra, paymentId)) {
+  if (DynexCN::getPaymentIdFromTxExtra(res.tx.extra, paymentId)) {
     res.txDetails.paymentId = Common::podToHex(paymentId);
   } else {
     res.txDetails.paymentId = "";
@@ -1104,18 +1116,18 @@ bool RpcServer::f_on_transaction_json(const F_COMMAND_RPC_GET_TRANSACTION_DETAIL
 
   res.txDetails.extra.raw = res.tx.extra;
 
-  std::vector<CryptoNote::TransactionExtraField> txExtraFields;
+  std::vector<DynexCN::TransactionExtraField> txExtraFields;
   parseTransactionExtra(res.tx.extra, txExtraFields);
-  for (const CryptoNote::TransactionExtraField& field : txExtraFields) {
-    if (typeid(CryptoNote::TransactionExtraPadding) == field.type()) {
-      res.txDetails.extra.padding.push_back(std::move(boost::get<CryptoNote::TransactionExtraPadding>(field).size));
+  for (const DynexCN::TransactionExtraField& field : txExtraFields) {
+    if (typeid(DynexCN::TransactionExtraPadding) == field.type()) {
+      res.txDetails.extra.padding.push_back(std::move(boost::get<DynexCN::TransactionExtraPadding>(field).size));
     }
-    else if (typeid(CryptoNote::TransactionExtraPublicKey) == field.type()) {
-      res.txDetails.extra.publicKey = CryptoNote::getTransactionPublicKeyFromExtra(res.tx.extra);
+    else if (typeid(DynexCN::TransactionExtraPublicKey) == field.type()) {
+      res.txDetails.extra.publicKey = DynexCN::getTransactionPublicKeyFromExtra(res.tx.extra);
     }
-    else if (typeid(CryptoNote::TransactionExtraNonce) == field.type()) {
-      res.txDetails.extra.nonce.push_back(Common::toHex(boost::get<CryptoNote::TransactionExtraNonce>(field).nonce.data(), boost::get<CryptoNote::TransactionExtraNonce>(field).nonce.size()));
-    }
+    else if (typeid(DynexCN::TransactionExtraNonce) == field.type()) {
+      res.txDetails.extra.nonce.push_back(Common::toHex(boost::get<DynexCN::TransactionExtraNonce>(field).nonce.data(), boost::get<DynexCN::TransactionExtraNonce>(field).nonce.size()));
+    } 
   }
 
   res.status = CORE_RPC_STATUS_OK;
@@ -1144,7 +1156,7 @@ bool RpcServer::f_on_pool_json(const F_COMMAND_RPC_GET_POOL::request& req, F_COM
 /* Deprecated */
 bool RpcServer::f_on_mempool_json(const COMMAND_RPC_GET_MEMPOOL::request& req, COMMAND_RPC_GET_MEMPOOL::response& res) {
   auto pool = m_core.getMemoryPool();
-  for (const CryptoNote::tx_memory_pool::TransactionDetails &txd : pool) {
+  for (const DynexCN::tx_memory_pool::TransactionDetails &txd : pool) {
     f_mempool_transaction_response mempool_transaction;
     uint64_t amount_out = getOutputAmount(txd.tx);
 
@@ -1166,7 +1178,7 @@ bool RpcServer::f_on_mempool_json(const COMMAND_RPC_GET_MEMPOOL::request& req, C
 
 bool RpcServer::on_get_transactions_pool(const COMMAND_RPC_GET_TRANSACTIONS_POOL::request& req, COMMAND_RPC_GET_TRANSACTIONS_POOL::response& res) {
   auto pool = m_core.getMemoryPool();
-  for (const CryptoNote::tx_memory_pool::TransactionDetails &txd : pool) {
+  for (const DynexCN::tx_memory_pool::TransactionDetails &txd : pool) {
     transaction_pool_response mempool_transaction;
     mempool_transaction.hash = Common::podToHex(txd.id);
     mempool_transaction.fee = txd.fee;
@@ -1216,6 +1228,257 @@ bool RpcServer::on_get_transactions_by_payment_id(const COMMAND_RPC_GET_TRANSACT
 	res.status = CORE_RPC_STATUS_OK;
 	return true;
 }
+
+// non-privacy functions
+
+bool RpcServer::on_get_validate_transaction(const COMMAND_RPC_VALIDATE_TRANSACTION::request& req, COMMAND_RPC_VALIDATE_TRANSACTION::response& res) {
+
+  //parse tx hash
+  Hash hash;
+  if (!parse_hash256(req.hash, hash)) {
+    throw JsonRpc::JsonRpcError{
+      CORE_RPC_ERROR_CODE_WRONG_PARAM,
+      "Failed to parse hex representation of transaction hash. Hex = " + req.hash + '.' };
+  }
+
+  // fetch tx
+  Transaction tx;
+  std::vector<Crypto::Hash> tx_ids;
+  tx_ids.push_back(hash);
+  std::list<Crypto::Hash> missed_txs;
+  std::list<Transaction> txs;
+  m_core.getTransactions(tx_ids, txs, missed_txs, true);
+
+  if (1 == txs.size()) {
+    tx = txs.front();
+  }
+  else {
+    throw JsonRpc::JsonRpcError{
+      CORE_RPC_ERROR_CODE_WRONG_PARAM,
+      "Couldn't find transaction with hash: " + req.hash + '.' };
+  }
+  DynexCN::TransactionPrefix transaction = *static_cast<const TransactionPrefix*>(&tx);
+  
+  TransactionDetails transactionDetails;
+  if (!blockchainExplorerDataBuilder.fillTransactionDetails(tx, transactionDetails)) {
+        throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
+          "Internal error: can't fill transaction details." };
+  }
+
+  logger(DEBUGGING) << "validating transaction " << podToHex(transactionDetails.hash) << std::endl;
+
+  Crypto::SecretKey tx_key = transactionDetails.tx_key;
+  logger(DEBUGGING) << "tx_key = " << podToHex(tx_key) << std::endl;
+
+  // check for all destination address(es):
+  for (uint32_t i=0; i<transactionDetails.to_address.size(); i++) {
+      AccountPublicAddress address = getAccountAddressAsKeys(transactionDetails.to_address[i]);
+      
+      // obtain key derivation
+      Crypto::KeyDerivation derivation;
+      if (!Crypto::generate_key_derivation(address.viewPublicKey, tx_key, derivation))
+      {
+        throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM, "Failed to generate key derivation from supplied parameters" };
+      }
+      
+      // look for outputs
+      uint64_t received(0);
+      size_t keyIndex(0);
+      std::vector<TransactionOutput> outputs;
+      try {
+        for (const TransactionOutput& o : transaction.outputs) {
+          if (o.target.type() == typeid(KeyOutput)) {
+            const KeyOutput out_key = boost::get<KeyOutput>(o.target);
+            Crypto::PublicKey pubkey;
+            derive_public_key(derivation, keyIndex, address.spendPublicKey, pubkey);
+            if (pubkey == out_key.key) {
+              received += o.amount;
+              outputs.push_back(o);
+            }
+          }
+          ++keyIndex;
+        }
+      }
+      catch (...)
+      {
+        throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Unknown error" };
+      }
+
+      // validate
+      logger(DEBUGGING) << transactionDetails.to_address[i]
+      << ": amount=" << getStringAmountInt64(transactionDetails.amount[i])
+      << " outputs=" << received;
+
+      if ((uint64_t)getStringAmountInt64(transactionDetails.amount[i]) != received) {
+        throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
+          "Error: transaction addresses & output amount mismatch" };
+      }
+
+      validation_response recipient;
+      recipient.wallet = transactionDetails.to_address[i];
+      recipient.amount = received;
+      res.recipients.push_back(recipient);
+
+  }
+    
+  res.status = CORE_RPC_STATUS_OK;
+  return true;
+
+}
+
+bool RpcServer::on_get_balance_of_address(const COMMAND_RPC_GET_BALANCE_OF_ADDRESS::request& req, COMMAND_RPC_GET_BALANCE_OF_ADDRESS::response& res) {
+  
+  if (!req.address.size()) {
+    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM, "Wrong parameters, expected address" };
+  }
+  logger(Logging::DEBUGGING, Logging::WHITE) << "RPC request came: balance of address: " << req.address;
+  
+  std::vector<Transaction> transactions;
+
+  // valid address?
+  AccountPublicAddress acc = boost::value_initialized<AccountPublicAddress>();
+  bool r = m_core.currency().parseAccountAddressString(req.address, acc);
+  if (!r) {
+    throw JsonRpc::JsonRpcError{
+      CORE_RPC_ERROR_CODE_WRONG_PARAM,
+      "Error: Incorrect address: " + req.address + '.' };
+  }
+
+  if (!m_core.getTransactionsByAddress(req.address, transactions)) { //func defined in Core.cpp
+    throw JsonRpc::JsonRpcError{
+      CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
+      "Error: no transactions found related to address: " + req.address + '.' };
+  }
+
+  // init amounts:
+  uint64_t amount_in = 0;
+  uint64_t amount_out = 0;
+  uint64_t fees = 0;
+  int64_t balance = 0;
+  bool legacy_wallet = false;
+
+  for (const Transaction& tx : transactions) {
+    TransactionDetails transactionDetails;
+    if (!blockchainExplorerDataBuilder.fillTransactionDetails(tx, transactionDetails)) {
+        throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
+          "Internal error: can't fill transaction details." };
+    }
+    logger(Logging::DEBUGGING, Logging::WHITE) << podToHex(transactionDetails.hash) << std::endl;
+
+    uint64_t _amount_in = 0;
+    get_inputs_money_amount(tx, _amount_in);
+    uint64_t _amount_out = get_outs_money_amount(tx);
+    uint64_t fee = _amount_in - _amount_out;
+      
+    // sender?
+    if (transactionDetails.from_address == req.address) {
+      for (uint32_t i=0; i<transactionDetails.to_address.size(); i++) {
+          amount_out += getStringAmountInt64(transactionDetails.amount[i]);
+          balance -= getStringAmountInt64(transactionDetails.amount[i]);
+          logger(Logging::DEBUGGING, Logging::WHITE)  << "     amount_out + " << getStringAmountInt64(transactionDetails.amount[i]) << std::endl;
+          logger(Logging::DEBUGGING, Logging::WHITE)  << "     balance    - " << getStringAmountInt64(transactionDetails.amount[i]) << std::endl;
+      }
+ 
+      fees += fee ; 
+      balance -= fee; 
+
+      logger(Logging::DEBUGGING, Logging::WHITE)  << "     fees       + " << fee << std::endl;
+      logger(Logging::DEBUGGING, Logging::WHITE)  << "     balance    - " << fee << std::endl;
+    }
+
+    // recipient?
+    for (uint32_t i=0; i<transactionDetails.to_address.size(); i++) {
+       if (transactionDetails.to_address[i] == req.address) {
+          amount_in += getStringAmountInt64(transactionDetails.amount[i]);
+          balance += getStringAmountInt64(transactionDetails.amount[i]);
+          logger(Logging::DEBUGGING, Logging::WHITE)  << "     amount_in  + " << getStringAmountInt64(transactionDetails.amount[i]) << std::endl;
+          logger(Logging::DEBUGGING, Logging::WHITE)  << "     balance    + " << getStringAmountInt64(transactionDetails.amount[i]) << std::endl;
+       }
+    }
+
+    if (balance<0) legacy_wallet = true;
+
+    logger(Logging::DEBUGGING, Logging::WHITE)  << "status: balance = " << balance << " total_in = " << amount_in << " total_out = " << amount_out << " total fees = " << fees << std::endl;
+
+  }
+
+  balance_response balancedata;
+  balancedata.amount_in = amount_in;
+  balancedata.amount_out = amount_out;
+  balancedata.fees = fees;
+  balancedata.balance = balance;
+  balancedata.wallet = req.address;
+  balancedata.legacy_wallet = legacy_wallet;
+  if (legacy_wallet) {
+    balancedata.balance = 0;
+  } 
+
+  res.balance = balancedata;
+  res.status = CORE_RPC_STATUS_OK;
+  return true;
+
+}
+
+bool RpcServer::on_get_transactions_by_address(const COMMAND_RPC_GET_TRANSACTIONS_BY_ADDRESS::request& req, COMMAND_RPC_GET_TRANSACTIONS_BY_ADDRESS::response& res) {
+
+  if (!req.address.size()) {
+    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM, "Wrong parameters, expected address" };
+  }
+  logger(Logging::DEBUGGING, Logging::WHITE) << "RPC request came: Search by address: " << req.address;
+
+  std::vector<Transaction> transactions;
+
+  // valid address?
+  AccountPublicAddress acc = boost::value_initialized<AccountPublicAddress>();
+  bool r = m_core.currency().parseAccountAddressString(req.address, acc);
+  if (!r) {
+    throw JsonRpc::JsonRpcError{
+      CORE_RPC_ERROR_CODE_WRONG_PARAM,
+      "Error: Incorrect address: " + req.address + '.' };
+  }
+
+  if (!m_core.getTransactionsByAddress(req.address, transactions)) { //func defined in Core.cpp
+    throw JsonRpc::JsonRpcError{
+      CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
+      "Error: no transactions found related to address: " + req.address + '.' };
+  }
+
+  // optional parameter "height", returning only transactions from block x onwards:
+  uint32_t fromblock = req.height;
+  if (fromblock > m_core.get_current_blockchain_height() ) fromblock = 0;
+
+  for (const Transaction& tx : transactions) {
+    f_transaction_short_response transaction_short;
+    uint64_t amount_in = 0;
+    get_inputs_money_amount(tx, amount_in);
+    uint64_t amount_out = get_outs_money_amount(tx);
+
+    transaction_short.hash = Common::podToHex(getObjectHash(tx));
+    transaction_short.fee = amount_in - amount_out;
+    transaction_short.amount_out = amount_out;
+    transaction_short.size = getObjectBinarySize(tx);
+
+    // non-privacy fields:
+    TransactionDetails transactionDetails;
+    if (!blockchainExplorerDataBuilder.fillTransactionDetails(tx, transactionDetails)) {
+        throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
+          "Internal error: can't fill transaction details." };
+    }
+    transaction_short.from_address = transactionDetails.from_address;
+    transaction_short.to_address = transactionDetails.to_address;
+    transaction_short.amount = transactionDetails.amount;
+    transaction_short.height = transactionDetails.blockHeight;
+    transaction_short.timestamp = transactionDetails.timestamp;
+
+    if (transactionDetails.blockHeight >= fromblock && transaction_short.from_address!="" && transaction_short.to_address.size()>0 && transaction_short.amount.size()>0)
+      res.transactions.push_back(transaction_short);
+  }
+
+  res.status = CORE_RPC_STATUS_OK;
+  return true;
+}
+
+// ------------------------------
 
 /* Deprecated */
 bool RpcServer::f_on_transactions_pool_json(const F_COMMAND_RPC_GET_POOL::request& req, F_COMMAND_RPC_GET_POOL::response& res) {
@@ -1289,7 +1552,7 @@ bool RpcServer::on_getblocktemplate(const COMMAND_RPC_GETBLOCKTEMPLATE::request&
   }
 
   Block b = boost::value_initialized<Block>();
-  CryptoNote::BinaryArray blob_reserve;
+  DynexCN::BinaryArray blob_reserve;
   blob_reserve.resize(req.reserve_size, 0);
   if (!m_core.get_block_template(b, acc, res.difficulty, res.height, blob_reserve)) {
     logger(ERROR) << "Failed to create block template";
@@ -1297,7 +1560,7 @@ bool RpcServer::on_getblocktemplate(const COMMAND_RPC_GETBLOCKTEMPLATE::request&
   }
 
   BinaryArray block_blob = toBinaryArray(b);
-  PublicKey tx_pub_key = CryptoNote::getTransactionPublicKeyFromExtra(b.baseTransaction.extra);
+  PublicKey tx_pub_key = DynexCN::getTransactionPublicKeyFromExtra(b.baseTransaction.extra);
   if (tx_pub_key == NULL_PUBLIC_KEY) {
     logger(ERROR) << "Failed to find tx pub key in coinbase extra";
     throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: failed to find tx pub key in coinbase extra" };
@@ -1309,7 +1572,7 @@ bool RpcServer::on_getblocktemplate(const COMMAND_RPC_GETBLOCKTEMPLATE::request&
       logger(ERROR) << "Failed to find tx pub key in blockblob";
       throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: failed to create block template" };
     }
-    res.reserved_offset += sizeof(tx_pub_key) + 3; //3 bytes: tag for TX_EXTRA_TAG_PUBKEY(1 byte), tag for TX_EXTRA_NONCE(1 byte), counter in TX_EXTRA_NONCE(1 byte)
+    res.reserved_offset += sizeof(tx_pub_key) + 64 + 64 + 8 + 32 + 7; //extra tags TX_EXTRA_TAG_PUBKEY, etc.
     if (res.reserved_offset + req.reserve_size > block_blob.size()) {
       logger(ERROR) << "Failed to calculate offset for reserved bytes";
       throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: failed to create block template" };
@@ -1459,7 +1722,7 @@ bool RpcServer::on_check_tx_key(const K_COMMAND_RPC_CHECK_TX_KEY::request& req, 
 		throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM, "Failed to parse txid" };
 	}
 	// parse address
-	CryptoNote::AccountPublicAddress address;
+	DynexCN::AccountPublicAddress address;
 	if (!m_core.currency().parseAccountAddressString(req.address, address)) {
 		throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM, "Failed to parse address " + req.address + '.' };
 	}
@@ -1487,7 +1750,7 @@ bool RpcServer::on_check_tx_key(const K_COMMAND_RPC_CHECK_TX_KEY::request& req, 
 			CORE_RPC_ERROR_CODE_WRONG_PARAM,
 			"Couldn't find transaction with hash: " + req.txid + '.' };
 	}
-	CryptoNote::TransactionPrefix transaction = *static_cast<const TransactionPrefix*>(&tx);
+	DynexCN::TransactionPrefix transaction = *static_cast<const TransactionPrefix*>(&tx);
 
 	// obtain key derivation
 	Crypto::KeyDerivation derivation;
@@ -1531,7 +1794,7 @@ bool RpcServer::on_check_tx_with_view_key(const K_COMMAND_RPC_CHECK_TX_WITH_PRIV
 		throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM, "Failed to parse txid" };
 	}
 	// parse address
-	CryptoNote::AccountPublicAddress address;
+	DynexCN::AccountPublicAddress address;
 	if (!m_core.currency().parseAccountAddressString(req.address, address)) {
 		throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM, "Failed to parse address " + req.address + '.' };
 	}
@@ -1559,7 +1822,7 @@ bool RpcServer::on_check_tx_with_view_key(const K_COMMAND_RPC_CHECK_TX_WITH_PRIV
 			CORE_RPC_ERROR_CODE_WRONG_PARAM,
 			"Couldn't find transaction with hash: " + req.txid + '.' };
 	}
-	CryptoNote::TransactionPrefix transaction = *static_cast<const TransactionPrefix*>(&tx);
+	DynexCN::TransactionPrefix transaction = *static_cast<const TransactionPrefix*>(&tx);
 	
 	// get tx pub key
 	Crypto::PublicKey txPubKey = getTransactionPublicKeyFromExtra(transaction.extra);
@@ -1613,7 +1876,7 @@ bool RpcServer::on_check_tx_proof(const K_COMMAND_RPC_CHECK_TX_PROOF::request& r
 		throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM, "Failed to parse txid" };
 	}
 	// parse address
-	CryptoNote::AccountPublicAddress address;
+	DynexCN::AccountPublicAddress address;
 	if (!m_core.currency().parseAccountAddressString(req.dest_address, address)) {
 		throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM, "Failed to parse address " + req.dest_address + '.' };
 	}
@@ -1658,7 +1921,7 @@ bool RpcServer::on_check_tx_proof(const K_COMMAND_RPC_CHECK_TX_PROOF::request& r
 			CORE_RPC_ERROR_CODE_WRONG_PARAM,
 			"transaction wasn't found. Hash = " + req.tx_id + '.' };
 	}
-	CryptoNote::TransactionPrefix transaction = *static_cast<const TransactionPrefix*>(&tx);
+	DynexCN::TransactionPrefix transaction = *static_cast<const TransactionPrefix*>(&tx);
 
 	Crypto::PublicKey R = getTransactionPublicKeyFromExtra(transaction.extra);
 	if (R == NULL_PUBLIC_KEY)
@@ -1674,7 +1937,7 @@ bool RpcServer::on_check_tx_proof(const K_COMMAND_RPC_CHECK_TX_PROOF::request& r
 
 		// obtain key derivation by multiplying scalar 1 to the pubkey r*A included in the signature
 		Crypto::KeyDerivation derivation;
-		if (!Crypto::generate_key_derivation(rA, I, derivation)) {
+		if (!Crypto::generate_key_derivation(rA, _I, derivation)) {
 			throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Failed to generate key derivation" };
 		}
 
@@ -1719,7 +1982,7 @@ bool RpcServer::on_check_tx_proof(const K_COMMAND_RPC_CHECK_TX_PROOF::request& r
 
 bool RpcServer::on_check_reserve_proof(const K_COMMAND_RPC_CHECK_RESERVE_PROOF::request& req, K_COMMAND_RPC_CHECK_RESERVE_PROOF::response& res) {
 	// parse address
-	CryptoNote::AccountPublicAddress address;
+	DynexCN::AccountPublicAddress address;
 	if (!m_core.currency().parseAccountAddressString(req.address, address)) {
 		throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM, "Failed to parse address " + req.address + '.' };
 	}
@@ -1749,7 +2012,7 @@ bool RpcServer::on_check_reserve_proof(const K_COMMAND_RPC_CHECK_RESERVE_PROOF::
 	
 	// compute signature prefix hash
 	std::string prefix_data = req.message;
-	prefix_data.append((const char*)&address, sizeof(CryptoNote::AccountPublicAddress));
+	prefix_data.append((const char*)&address, sizeof(DynexCN::AccountPublicAddress));
 	for (size_t i = 0; i < proofs.size(); ++i) {
 		prefix_data.append((const char*)&proofs[i].key_image, sizeof(Crypto::PublicKey));
 	}
@@ -1774,7 +2037,7 @@ bool RpcServer::on_check_reserve_proof(const K_COMMAND_RPC_CHECK_RESERVE_PROOF::
 	for (size_t i = 0; i < proofs.size(); ++i) {
 		const reserve_proof_entry& proof = proofs[i];
 
-		CryptoNote::TransactionPrefix tx = *static_cast<const TransactionPrefix*>(&transactions[i]);
+		DynexCN::TransactionPrefix tx = *static_cast<const TransactionPrefix*>(&transactions[i]);
     
 		bool unlocked = m_core.is_tx_spendtime_unlocked(tx.unlockTime, req.height);
 
@@ -1804,7 +2067,7 @@ bool RpcServer::on_check_reserve_proof(const K_COMMAND_RPC_CHECK_RESERVE_PROOF::
 
 		// check if the address really received the fund
 		Crypto::KeyDerivation derivation;
-		if (!Crypto::generate_key_derivation(proof.shared_secret, I, derivation)) {
+		if (!Crypto::generate_key_derivation(proof.shared_secret, _I, derivation)) {
 			throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Failed to generate key derivation" };
 		}
 		try {

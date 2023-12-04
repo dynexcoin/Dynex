@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -40,16 +40,16 @@
 #include <vector>
 #include <array>
 
-#include "CryptoNoteProtocol/ICryptoNoteProtocolQuery.h"
-#include "CryptoNoteCore/ICore.h"
+#include "DynexCNProtocol/IDynexCNProtocolQuery.h"
+#include "DynexCNCore/ICore.h"
 #include "BlockchainExplorerData.h"
 
-namespace CryptoNote {
+namespace DynexCN {
 
 class BlockchainExplorerDataBuilder
 {
 public:
-  BlockchainExplorerDataBuilder(CryptoNote::ICore& core, CryptoNote::ICryptoNoteProtocolQuery& protocol);
+  BlockchainExplorerDataBuilder(DynexCN::ICore& core, DynexCN::IDynexCNProtocolQuery& protocol);
 
   BlockchainExplorerDataBuilder(const BlockchainExplorerDataBuilder&) = delete;
   BlockchainExplorerDataBuilder(BlockchainExplorerDataBuilder&&) = delete;
@@ -61,13 +61,15 @@ public:
   bool fillTransactionDetails(const Transaction &tx, TransactionDetails& txRpcInfo, uint64_t timestamp = 0);
 
   static bool getPaymentId(const Transaction& transaction, Crypto::Hash& paymentId);
+  //non-privacy functions:
+  static bool getAddresses(const Transaction& transaction, std::vector<std::string>& addresses);
 
 private:
   bool getMixin(const Transaction& transaction, uint64_t& mixin);
   bool fillTxExtra(const std::vector<uint8_t>& rawExtra, TransactionExtraDetails2& extraDetails);
   size_t median(std::vector<size_t>& v);
 
-  CryptoNote::ICore& core;
-  CryptoNote::ICryptoNoteProtocolQuery& protocol;
+  DynexCN::ICore& core;
+  DynexCN::IDynexCNProtocolQuery& protocol;
 };
 }

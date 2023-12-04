@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -40,18 +40,18 @@
 
 #include "Common/StdInputStream.h"
 #include "Common/StdOutputStream.h"
-#include "CryptoNoteCore/CryptoNoteBasicImpl.h"
+#include "DynexCNCore/DynexCNBasicImpl.h"
 #include "Serialization/BinaryInputStreamSerializer.h"
 #include "Serialization/BinaryOutputStreamSerializer.h"
 
 using namespace Common;
 using namespace Crypto;
 
-namespace CryptoNote {
+namespace DynexCN {
 
 const uint32_t TRANSFERS_STORAGE_ARCHIVE_VERSION = 0;
 
-TransfersSyncronizer::TransfersSyncronizer(const CryptoNote::Currency& currency, Logging::ILogger& logger, IBlockchainSynchronizer& sync, INode& node) :
+TransfersSyncronizer::TransfersSyncronizer(const DynexCN::Currency& currency, Logging::ILogger& logger, IBlockchainSynchronizer& sync, INode& node) :
   m_currency(currency), m_logger(logger, "TransfersSyncronizer"), m_sync(sync), m_node(node) {
 }
 
@@ -181,7 +181,7 @@ void TransfersSyncronizer::save(std::ostream& os) {
   m_sync.save(os);
 
   StdOutputStream stream(os);
-  CryptoNote::BinaryOutputStreamSerializer s(stream);
+  DynexCN::BinaryOutputStreamSerializer s(stream);
   s(const_cast<uint32_t&>(TRANSFERS_STORAGE_ARCHIVE_VERSION), "version");
 
   size_t subscriptionCount = m_consumers.size();
@@ -245,7 +245,7 @@ void TransfersSyncronizer::load(std::istream& is) {
   m_sync.load(is);
 
   StdInputStream inputStream(is);
-  CryptoNote::BinaryInputStreamSerializer s(inputStream);
+  DynexCN::BinaryInputStreamSerializer s(inputStream);
   uint32_t version = 0;
 
   s(version, "version");

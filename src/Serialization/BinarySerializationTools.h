@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2017-2019, The CROAT.community developers
 //
 // This file is part of Bytecoin.
@@ -16,7 +16,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
 
-#include <CryptoNote.h>
+#include <DynexCN.h>
 #include "BinaryInputStreamSerializer.h"
 #include "BinaryOutputStreamSerializer.h"
 #include "Common/MemoryInputStream.h"
@@ -26,7 +26,7 @@
 
 #include <fstream>
 
-namespace CryptoNote {
+namespace DynexCN {
 
 template <typename T>
 BinaryArray storeToBinary(const T& obj) {
@@ -55,7 +55,7 @@ bool storeToBinaryFile(const T& obj, const std::string& filename) {
 
     Common::StdOutputStream stream(dataFile);
     BinaryOutputStreamSerializer out(stream);
-    CryptoNote::serialize(const_cast<T&>(obj), out);
+    DynexCN::serialize(const_cast<T&>(obj), out);
       
     if (dataFile.fail()) {
       return false;

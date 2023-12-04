@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -50,9 +50,9 @@
 #include <System/Event.h>
 #include "Transfers/TransfersSynchronizer.h"
 #include "Transfers/BlockchainSynchronizer.h"
-#include "../CryptoNoteConfig.h"
+#include "../DynexCNConfig.h"
 
-namespace CryptoNote {
+namespace DynexCN {
 
 class WalletGreen : public IWallet,
                     ITransfersObserver,
@@ -60,7 +60,7 @@ class WalletGreen : public IWallet,
                     ITransfersSynchronizerObserver,
                     public IFusionManager {
 public:
-  WalletGreen(System::Dispatcher& dispatcher, const Currency& currency, INode& node, Logging::ILogger& logger, uint32_t transactionSoftLockTime = CryptoNote::parameters::CRYPTONOTE_TX_SPENDABLE_AGE);
+  WalletGreen(System::Dispatcher& dispatcher, const Currency& currency, INode& node, Logging::ILogger& logger, uint32_t transactionSoftLockTime = DynexCN::parameters::CRYPTONOTE_TX_SPENDABLE_AGE);
   virtual ~WalletGreen();
 
   virtual void initialize(const std::string& path, const std::string& password) override;
@@ -104,7 +104,7 @@ public:
   virtual Crypto::SecretKey getTransactionSecretKey(size_t transactionIndex) const override;
   virtual Crypto::SecretKey getTransactionSecretKey(Crypto::Hash& transactionHash) const override;
 
-  virtual bool getTransactionProof(const Crypto::Hash& transactionHash, const CryptoNote::AccountPublicAddress& destinationAddress, const Crypto::SecretKey& txKey, std::string& transactionProof) override;
+  virtual bool getTransactionProof(const Crypto::Hash& transactionHash, const DynexCN::AccountPublicAddress& destinationAddress, const Crypto::SecretKey& txKey, std::string& transactionProof) override;
 
   virtual size_t getTransactionTransferCount(size_t transactionIndex) const override;
   virtual WalletTransfer getTransactionTransfer(size_t transactionIndex, size_t transferIndex) const override;
@@ -173,7 +173,7 @@ protected:
   std::string doCreateAddress(const Crypto::PublicKey& spendPublicKey, const Crypto::SecretKey& spendSecretKey, uint64_t creationTimestamp);
   std::vector<std::string> doCreateAddressList(const std::vector<NewAddressData>& addressDataList);
 
-  CryptoNote::BlockDetails getBlock(const uint32_t blockHeight);
+  DynexCN::BlockDetails getBlock(const uint32_t blockHeight);
 
   uint64_t scanHeightToTimestamp(const uint32_t scanHeight);
   uint64_t getCurrentTimestampAdjusted();
@@ -190,7 +190,7 @@ protected:
   };
 
   struct ReceiverAmounts {
-    CryptoNote::AccountPublicAddress receiver;
+    DynexCN::AccountPublicAddress receiver;
     std::vector<uint64_t> amounts;
   };
 
@@ -253,14 +253,14 @@ protected:
   WalletOuts pickWallet(const std::string& address) const;
   std::vector<WalletOuts> pickWallets(const std::vector<std::string>& addresses) const;
 
-  void updateBalance(CryptoNote::ITransfersContainer* container);
+  void updateBalance(DynexCN::ITransfersContainer* container);
   void unlockBalances(uint32_t height);
 
   const WalletRecord& getWalletRecord(const Crypto::PublicKey& key) const;
   const WalletRecord& getWalletRecord(const std::string& address) const;
-  const WalletRecord& getWalletRecord(CryptoNote::ITransfersContainer* container) const;
+  const WalletRecord& getWalletRecord(DynexCN::ITransfersContainer* container) const;
 
-  CryptoNote::AccountPublicAddress parseAddress(const std::string& address) const;
+  DynexCN::AccountPublicAddress parseAddress(const std::string& address) const;
   std::string addWallet(const Crypto::PublicKey& spendPublicKey, const Crypto::SecretKey& spendSecretKey, uint64_t creationTimestamp);
   AccountKeys makeAccountKeys(const WalletRecord& wallet) const;
   size_t getTransactionId(const Crypto::Hash& transactionHash) const;
@@ -281,16 +281,16 @@ protected:
     const std::string& extra,
     uint64_t unlockTimestamp,
     const DonationSettings& donation,
-    const CryptoNote::AccountPublicAddress& changeDestinationAddress,
+    const DynexCN::AccountPublicAddress& changeDestinationAddress,
     PreparedTransaction& preparedTransaction,
     Crypto::SecretKey& txSecretKey);
 
   size_t doTransfer(const TransactionParameters& transactionParameters, Crypto::SecretKey& txSecretKey);
 
-  void checkIfEnoughMixins(std::vector<CryptoNote::COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount>& mixinResult, uint64_t mixIn) const;
+  void checkIfEnoughMixins(std::vector<DynexCN::COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount>& mixinResult, uint64_t mixIn) const;
   std::vector<WalletTransfer> convertOrdersToTransfers(const std::vector<WalletOrder>& orders) const;
-  uint64_t countNeededMoney(const std::vector<CryptoNote::WalletTransfer>& destinations, uint64_t fee) const;
-  CryptoNote::AccountPublicAddress parseAccountAddressString(const std::string& addressString) const;
+  uint64_t countNeededMoney(const std::vector<DynexCN::WalletTransfer>& destinations, uint64_t fee) const;
+  DynexCN::AccountPublicAddress parseAccountAddressString(const std::string& addressString) const;
   uint64_t pushDonationTransferIfPossible(const DonationSettings& donation, uint64_t freeAmount, uint64_t dustThreshold, std::vector<WalletTransfer>& destinations) const;
   void validateAddresses(const std::vector<std::string>& addresses) const;
   void validateOrders(const std::vector<WalletOrder>& orders) const;
@@ -300,10 +300,10 @@ protected:
 
   void requestMixinOuts(const std::vector<OutputToTransfer>& selectedTransfers,
     uint64_t mixIn,
-    std::vector<CryptoNote::COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount>& mixinResult);
+    std::vector<DynexCN::COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount>& mixinResult);
 
   void prepareInputs(const std::vector<OutputToTransfer>& selectedTransfers,
-    std::vector<CryptoNote::COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount>& mixinResult,
+    std::vector<DynexCN::COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount>& mixinResult,
     uint64_t mixIn,
     std::vector<InputInfo>& keysInfo);
 
@@ -317,16 +317,16 @@ protected:
     uint64_t dustThreshold, const Currency& currency);
   ReceiverAmounts splitAmount(uint64_t amount, const AccountPublicAddress& destination, uint64_t dustThreshold);
 
-  std::unique_ptr<CryptoNote::ITransaction> makeTransaction(const std::vector<ReceiverAmounts>& decomposedOutputs,
+  std::unique_ptr<DynexCN::ITransaction> makeTransaction(const std::vector<ReceiverAmounts>& decomposedOutputs,
     std::vector<InputInfo>& keysInfo, const std::string& extra, uint64_t unlockTimestamp, Crypto::SecretKey& txSecretKey);
 
-  void sendTransaction(const CryptoNote::Transaction& cryptoNoteTransaction);
+  void sendTransaction(const DynexCN::Transaction& cryptoNoteTransaction);
   size_t validateSaveAndSendTransaction(const ITransactionReader& transaction, const std::vector<WalletTransfer>& destinations, bool isFusion, bool send);
 
   size_t insertBlockchainTransaction(const TransactionInformation& info, int64_t txBalance);
   size_t insertOutgoingTransactionAndPushEvent(const Crypto::Hash& transactionHash, uint64_t fee, const BinaryArray& extra, uint64_t unlockTimestamp, Crypto::SecretKey& txSecretKey);
   void updateTransactionStateAndPushEvent(size_t transactionId, WalletTransactionState state);
-  bool updateWalletTransactionInfo(size_t transactionId, const CryptoNote::TransactionInformation& info, int64_t totalAmount);
+  bool updateWalletTransactionInfo(size_t transactionId, const DynexCN::TransactionInformation& info, int64_t totalAmount);
   bool updateTransactionTransfers(size_t transactionId, const std::vector<ContainerAmounts>& containerAmountsList,
     int64_t allInputsAmount, int64_t allOutputsAmount);
   TransfersMap getKnownTransfersMap(size_t transactionId, size_t firstTransferIdx) const;
@@ -339,7 +339,7 @@ protected:
   bool eraseTransfersByAddress(size_t transactionId, size_t firstTransferIdx, const std::string& address, bool eraseOutputTransfers);
   bool eraseForeignTransfers(size_t transactionId, size_t firstTransferIdx, const std::unordered_set<std::string>& knownAddresses, bool eraseOutputTransfers);
   void pushBackOutgoingTransfers(size_t txId, const std::vector<WalletTransfer>& destinations);
-  void insertUnlockTransactionJob(const Crypto::Hash& transactionHash, uint32_t blockHeight, CryptoNote::ITransfersContainer* container);
+  void insertUnlockTransactionJob(const Crypto::Hash& transactionHash, uint32_t blockHeight, DynexCN::ITransfersContainer* container);
   void deleteUnlockTransactionJob(const Crypto::Hash& transactionHash);
   void startBlockchainSynchronizer();
   void stopBlockchainSynchronizer();
@@ -382,7 +382,7 @@ protected:
   std::vector<WalletTransfer> getTransactionTransfers(const WalletTransaction& transaction) const;
   void filterOutTransactions(WalletTransactions& transactions, WalletTransfers& transfers, std::function<bool (const WalletTransaction&)>&& pred) const;
   void initBlockchain(const Crypto::PublicKey& viewPublicKey);
-  CryptoNote::AccountPublicAddress getChangeDestination(const std::string& changeDestinationAddress, const std::vector<std::string>& sourceAddresses) const;
+  DynexCN::AccountPublicAddress getChangeDestination(const std::string& changeDestinationAddress, const std::vector<std::string>& sourceAddresses) const;
   bool isMyAddress(const std::string& address) const;
 
   void deleteContainerFromUnlockTransactionJobs(const ITransfersContainer* container);
@@ -429,9 +429,9 @@ protected:
 
   BlockHashesContainer m_blockchain;
 
-  friend std::ostream& operator<<(std::ostream& os, CryptoNote::WalletGreen::WalletState state);
-  friend std::ostream& operator<<(std::ostream& os, CryptoNote::WalletGreen::WalletTrackingMode mode);
+  friend std::ostream& operator<<(std::ostream& os, DynexCN::WalletGreen::WalletState state);
+  friend std::ostream& operator<<(std::ostream& os, DynexCN::WalletGreen::WalletTrackingMode mode);
   friend class TransferListFormatter;
 };
 
-} //namespace CryptoNote
+} //namespace DynexCN

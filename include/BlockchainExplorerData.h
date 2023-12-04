@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -42,11 +42,11 @@
 #include <vector>
 
 #include "CryptoTypes.h"
-#include "CryptoNote.h"
+#include "DynexCN.h"
 #include "BlockchainExplorerData.h"
 #include <boost/variant.hpp>
 
-namespace CryptoNote {
+namespace DynexCN {
 
 enum class TransactionRemoveReason : uint8_t 
 { 
@@ -107,6 +107,11 @@ struct TransactionExtraDetails {
   std::vector<Crypto::PublicKey> publicKey; 
   std::vector<std::string> nonce;
   std::vector<uint8_t> raw;
+  // additional fields:
+  std::string from_address;
+  std::vector<std::string> to_address;
+  std::vector<std::string> amount;
+  std::string version;
 };
 
 struct transactionOutputDetails2 {
@@ -137,6 +142,11 @@ struct TransactionExtraDetails2 {
 	Crypto::PublicKey publicKey;
 	BinaryArray nonce;
 	BinaryArray raw;
+	// non-privacy fields:
+	std::string from_address;
+	std::vector<std::string> to_address;
+	std::vector<std::string> amount;
+	Crypto::SecretKey tx_key;
 };
 
 struct TransactionDetails {
@@ -158,6 +168,11 @@ struct TransactionDetails {
   std::vector<std::vector<Crypto::Signature>> signatures;
   std::vector<transactionInputDetails2> inputs;
   std::vector<transactionOutputDetails2> outputs;
+  // non-privacy fields:
+  std::string from_address;
+  std::vector<std::string> to_address;
+  std::vector<std::string> amount;
+  Crypto::SecretKey tx_key;
 };
 
 struct BlockDetails {

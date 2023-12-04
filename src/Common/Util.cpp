@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -41,7 +41,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 
-#include "CryptoNoteConfig.h"
+#include "DynexCNConfig.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -328,7 +328,7 @@ std::string get_nix_version_display_string()
 
 #ifdef _WIN32
     // Windows
-    config_folder = get_special_folder_path(CSIDL_APPDATA, true) + "/" + CryptoNote::CRYPTONOTE_NAME;
+    config_folder = get_special_folder_path(CSIDL_APPDATA, true) + "/" + DynexCN::CRYPTONOTE_NAME;
 #ifdef USE_LITE_WALLET
     config_folder = "./";
 #endif
@@ -341,9 +341,9 @@ std::string get_nix_version_display_string()
       pathRet = pszHome;
 #ifdef __APPLE__
     // Mac
-    std::string old_config_folder = (pathRet + "/." + CryptoNote::CRYPTONOTE_NAME);
+    std::string old_config_folder = (pathRet + "/." + DynexCN::CRYPTONOTE_NAME);
     std::string pathRet2 = (pathRet + "/" + "Library/Application Support");
-    config_folder =  (pathRet2 + "/" + CryptoNote::CRYPTONOTE_NAME);
+    config_folder =  (pathRet2 + "/" + DynexCN::CRYPTONOTE_NAME);
     // move to correct location
     boost::filesystem::path old_path(old_config_folder);
     if (!boost::filesystem::exists(config_folder) && boost::filesystem::is_directory(old_path)) {
@@ -359,7 +359,7 @@ std::string get_nix_version_display_string()
     }
 #else
     // Unix
-    config_folder = (pathRet + "/." + CryptoNote::CRYPTONOTE_NAME);
+    config_folder = (pathRet + "/." + DynexCN::CRYPTONOTE_NAME);
 #endif
 #endif
     return config_folder;

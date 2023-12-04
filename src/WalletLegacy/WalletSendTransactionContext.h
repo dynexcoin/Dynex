@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -40,26 +40,26 @@
 #include <list>
 #include <vector>
 
-#include "CryptoNoteCore/CryptoNoteBasic.h"
+#include "DynexCNCore/DynexCNBasic.h"
 #include "IWalletLegacy.h"
 #include "ITransfersContainer.h"
 
-namespace CryptoNote {
+namespace DynexCN {
 
 struct TxDustPolicy
 {
   uint64_t dustThreshold;
   bool addToFee;
-  CryptoNote::AccountPublicAddress addrForDust;
+  DynexCN::AccountPublicAddress addrForDust;
 
-  TxDustPolicy(uint64_t a_dust_threshold = 0, bool an_add_to_fee = true, CryptoNote::AccountPublicAddress an_addr_for_dust = CryptoNote::AccountPublicAddress())
+  TxDustPolicy(uint64_t a_dust_threshold = 0, bool an_add_to_fee = true, DynexCN::AccountPublicAddress an_addr_for_dust = DynexCN::AccountPublicAddress())
     : dustThreshold(a_dust_threshold), addToFee(an_add_to_fee), addrForDust(an_addr_for_dust) {}
 };
 
 struct SendTransactionContext
 {
   TransactionId transactionId;
-  std::vector<CryptoNote::COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount> outs;
+  std::vector<DynexCN::COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount> outs;
   uint64_t foundMoney;
   std::list<TransactionOutputInformation> selectedTransfers;
   TxDustPolicy dustPolicy;
@@ -67,4 +67,4 @@ struct SendTransactionContext
   Crypto::SecretKey tx_key = NULL_SECRET_KEY;
 };
 
-} //namespace CryptoNote
+} //namespace DynexCN

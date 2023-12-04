@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -47,14 +47,14 @@ std::string parseCommand(const std::vector<T> &printableCommands,
                          std::shared_ptr<WalletInfo> walletInfo);
 
 std::tuple<bool, std::shared_ptr<WalletInfo>>
-    selectionScreen(Config &config, CryptoNote::WalletGreen &wallet,
-                    CryptoNote::INode &node);
+    selectionScreen(Config &config, DynexCN::WalletGreen &wallet,
+                    DynexCN::INode &node);
 
-bool checkNodeStatus(CryptoNote::INode &node);
+bool checkNodeStatus(DynexCN::INode &node);
 
 std::string getAction(Config &config);
 
-void mainLoop(std::shared_ptr<WalletInfo> walletInfo, CryptoNote::INode &node);
+void mainLoop(std::shared_ptr<WalletInfo> walletInfo, DynexCN::INode &node);
 
 template<typename T>
 void printCommands(const std::vector<T> &commands, int offset = 0);

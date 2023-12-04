@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -39,9 +39,9 @@
 
 #include <ctime>
 #include "P2p/NetNode.h"
-#include "CryptoNoteCore/Miner.h"
-#include "CryptoNoteCore/Core.h"
-#include "CryptoNoteProtocol/CryptoNoteProtocolHandler.h"
+#include "DynexCNCore/Miner.h"
+#include "DynexCNCore/Core.h"
+#include "DynexCNProtocol/DynexCNProtocolHandler.h"
 #include "Serialization/SerializationTools.h"
 #include "version.h"
 #include <boost/format.hpp>
@@ -50,13 +50,13 @@
 namespace {
   template <typename T>
   static bool print_as_json(const T& obj) {
-    std::cout << CryptoNote::storeToJson(obj) << ENDL;
+    std::cout << DynexCN::storeToJson(obj) << ENDL;
     return true;
   }
 }
 
 
-DaemonCommandsHandler::DaemonCommandsHandler(CryptoNote::core& core, CryptoNote::NodeServer& srv, Logging::LoggerManager& log, const CryptoNote::ICryptoNoteProtocolQuery& protocol, CryptoNote::RpcServer* prpc_server) :
+DaemonCommandsHandler::DaemonCommandsHandler(DynexCN::core& core, DynexCN::NodeServer& srv, Logging::LoggerManager& log, const DynexCN::IDynexCNProtocolQuery& protocol, DynexCN::RpcServer* prpc_server) :
   m_core(core), m_srv(srv), logger(log, "daemon"), m_logManager(log), protocolQuery(protocol), m_prpc_server(prpc_server) {
   m_consoleHandler.setHandler("exit", boost::bind(&DaemonCommandsHandler::exit, this, boost::placeholders::_1), "Shutdown the daemon");
   m_consoleHandler.setHandler("help", boost::bind(&DaemonCommandsHandler::help, this, boost::placeholders::_1), "Show this help");
@@ -152,14 +152,14 @@ bool DaemonCommandsHandler::status(const std::vector<std::string>& args) {
   Crypto::Hash last_block_hash = m_core.getBlockIdByHeight(height);  
   uint32_t last_known_block_index = std::max(static_cast<uint32_t>(1), protocolQuery.getObservedHeight()) - 1;
   std::string coins_already_generated = m_core.currency().formatAmount(m_core.getTotalGeneratedAmount());
-  std::string coins_total_supply = m_core.currency().formatAmount(CryptoNote::parameters::MONEY_SUPPLY);  
+  std::string coins_total_supply = m_core.currency().formatAmount(DynexCN::parameters::MONEY_SUPPLY);  
   size_t total_conn = m_srv.get_connections_count();
   size_t rpc_conn = m_prpc_server->get_connections_count();
   size_t outgoing_connections_count = m_srv.get_outgoing_connections_count();
   size_t incoming_connections_count = total_conn - outgoing_connections_count;
   size_t white_peerlist_size = m_srv.getPeerlistManager().get_white_peers_count();
   size_t grey_peerlist_size = m_srv.getPeerlistManager().get_gray_peers_count();
-  uint64_t hashrate = (uint64_t) round(difficulty / CryptoNote::parameters::DIFFICULTY_TARGET);
+  uint64_t hashrate = (uint64_t) round(difficulty / DynexCN::parameters::DIFFICULTY_TARGET);
   std::time_t uptime = std::time(nullptr) - m_core.getStartTime();
   uint8_t majorVersion = m_core.getBlockMajorVersionForHeight(height);
   bool synced = ((uint32_t)height == (uint32_t)last_known_block_index);
@@ -311,7 +311,7 @@ bool DaemonCommandsHandler::set_log(const std::vector<std::string>& args)
 //--------------------------------------------------------------------------------
 bool DaemonCommandsHandler::print_block_by_height(uint32_t height)
 {
-  std::list<CryptoNote::Block> blocks;
+  std::list<DynexCN::Block> blocks;
   m_core.get_blocks(height, 1, blocks);
 
   if (1 == blocks.size()) {
@@ -337,7 +337,7 @@ bool DaemonCommandsHandler::print_block_by_hash(const std::string& arg)
 
   std::list<Crypto::Hash> block_ids;
   block_ids.push_back(block_hash);
-  std::list<CryptoNote::Block> blocks;
+  std::list<DynexCN::Block> blocks;
   std::list<Crypto::Hash> missed_ids;
   m_core.get_blocks(block_ids, blocks, missed_ids);
 
@@ -385,7 +385,7 @@ bool DaemonCommandsHandler::print_tx(const std::vector<std::string>& args)
 
   std::vector<Crypto::Hash> tx_ids;
   tx_ids.push_back(tx_hash);
-  std::list<CryptoNote::Transaction> txs;
+  std::list<DynexCN::Transaction> txs;
   std::list<Crypto::Hash> missed_ids;
   m_core.getTransactions(tx_ids, txs, missed_ids, true);
 
@@ -419,7 +419,7 @@ bool DaemonCommandsHandler::start_dynexchip(const std::vector<std::string> &args
     return true;
   }
 
-  CryptoNote::AccountPublicAddress adr;
+  DynexCN::AccountPublicAddress adr;
   if (!m_core.currency().parseAccountAddressString(args.front(), adr)) {
     std::cout << "target account address has wrong format" << std::endl;
     return true;
@@ -475,7 +475,7 @@ bool DaemonCommandsHandler::print_pool_count(const std::vector<std::string>& arg
     return true;
   }
 
-  CryptoNote::AccountPublicAddress adr;
+  DynexCN::AccountPublicAddress adr;
   if (!m_core.currency().parseAccountAddressString(args.front(), adr)) {
     std::cout << "target account address has wrong format" << std::endl;
     return true;

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2017-2019, The CROAT.community developers
 //
 // This file is part of Bytecoin.
@@ -20,7 +20,7 @@
 
 #include <limits>
 
-namespace CryptoNote {
+namespace DynexCN {
 
 void serializeBlockHeight(ISerializer& s, uint32_t& blockHeight, Common::StringView name) {
   if (s.type() == ISerializer::INPUT) {
@@ -43,4 +43,4 @@ void serializeGlobalOutputIndex(ISerializer& s, uint32_t& globalOutputIndex, Com
   serializeBlockHeight(s, globalOutputIndex, name);
 }
 
-} //namespace CryptoNote
+} //namespace DynexCN

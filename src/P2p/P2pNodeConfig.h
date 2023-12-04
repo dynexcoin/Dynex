@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -40,7 +40,7 @@
 #include <chrono>
 #include "NetNodeConfig.h"
 
-namespace CryptoNote {
+namespace DynexCN {
 
 class P2pNodeConfig : public NetNodeConfig {
 public:
@@ -74,6 +74,7 @@ private:
   std::chrono::nanoseconds connectInterval;
   std::chrono::nanoseconds connectTimeout;
   boost::uuids::uuid networkId;
+  boost::uuids::uuid networkId_np;
   size_t expectedOutgoingConnectionsCount;
   size_t whiteListConnectionsPercent;
   size_t peerListConnectRange;

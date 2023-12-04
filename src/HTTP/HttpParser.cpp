@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -46,26 +46,26 @@ namespace {
 void throwIfNotGood(std::istream& stream) {
   if (!stream.good()) {
     if (stream.eof()) {
-      throw std::system_error(make_error_code(CryptoNote::error::HttpParserErrorCodes::END_OF_STREAM));
+      throw std::system_error(make_error_code(DynexCN::error::HttpParserErrorCodes::END_OF_STREAM));
     } else {
-      throw std::system_error(make_error_code(CryptoNote::error::HttpParserErrorCodes::STREAM_NOT_GOOD));
+      throw std::system_error(make_error_code(DynexCN::error::HttpParserErrorCodes::STREAM_NOT_GOOD));
     }
   }
 }
 
 }
 
-namespace CryptoNote {
+namespace DynexCN {
 
 HttpResponse::HTTP_STATUS HttpParser::parseResponseStatusFromString(const std::string& status) {
-  if (status == "200 OK" || status == "200 Ok") return CryptoNote::HttpResponse::STATUS_200;
-  else if (status.substr(0, 4) == "401 ") return CryptoNote::HttpResponse::STATUS_401;
-  else if (status == "404 Not Found") return CryptoNote::HttpResponse::STATUS_404;
-  else if (status == "500 Internal Server Error") return CryptoNote::HttpResponse::STATUS_500;
-  else throw std::system_error(make_error_code(CryptoNote::error::HttpParserErrorCodes::UNEXPECTED_SYMBOL),
+  if (status == "200 OK" || status == "200 Ok") return DynexCN::HttpResponse::STATUS_200;
+  else if (status.substr(0, 4) == "401 ") return DynexCN::HttpResponse::STATUS_401;
+  else if (status == "404 Not Found") return DynexCN::HttpResponse::STATUS_404;
+  else if (status == "500 Internal Server Error") return DynexCN::HttpResponse::STATUS_500;
+  else throw std::system_error(make_error_code(DynexCN::error::HttpParserErrorCodes::UNEXPECTED_SYMBOL),
       "Unknown HTTP status code is given");
 
-  return CryptoNote::HttpResponse::STATUS_200; //unaccessible
+  return DynexCN::HttpResponse::STATUS_200; //unaccessible
 }
 
 
@@ -150,7 +150,7 @@ void HttpParser::readWord(std::istream& stream, std::string& word) {
   if (c == '\r') {
     stream.get(c);
     if (c != '\n') {
-      throw std::system_error(make_error_code(CryptoNote::error::HttpParserErrorCodes::UNEXPECTED_SYMBOL));
+      throw std::system_error(make_error_code(DynexCN::error::HttpParserErrorCodes::UNEXPECTED_SYMBOL));
     }
   }
 }
@@ -180,7 +180,7 @@ bool HttpParser::readHeader(std::istream& stream, std::string& name, std::string
       }
 
       if (name.empty()) {
-        throw std::system_error(make_error_code(CryptoNote::error::HttpParserErrorCodes::EMPTY_HEADER));
+        throw std::system_error(make_error_code(DynexCN::error::HttpParserErrorCodes::EMPTY_HEADER));
       }
 
       if (isName) {
@@ -203,7 +203,7 @@ bool HttpParser::readHeader(std::istream& stream, std::string& name, std::string
 
   stream.get(c);
   if (c != '\n') {
-    throw std::system_error(make_error_code(CryptoNote::error::HttpParserErrorCodes::UNEXPECTED_SYMBOL));
+    throw std::system_error(make_error_code(DynexCN::error::HttpParserErrorCodes::UNEXPECTED_SYMBOL));
   }
 
   std::transform(name.begin(), name.end(), name.begin(), ::tolower);
@@ -212,7 +212,7 @@ bool HttpParser::readHeader(std::istream& stream, std::string& name, std::string
   if (c == '\r') {
     stream.get(c).get(c);
     if (c != '\n') {
-      throw std::system_error(make_error_code(CryptoNote::error::HttpParserErrorCodes::UNEXPECTED_SYMBOL));
+      throw std::system_error(make_error_code(DynexCN::error::HttpParserErrorCodes::UNEXPECTED_SYMBOL));
     }
 
     return false; //no more headers

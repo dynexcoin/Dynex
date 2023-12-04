@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -55,7 +55,7 @@
 #include "Serialization/JsonInputValueSerializer.h"
 #include "Serialization/JsonOutputStreamSerializer.h"
 
-namespace CryptoNote {
+namespace DynexCN {
 
 JsonRpcServer::JsonRpcServer(System::Dispatcher& sys, System::Event& stopEvent, Logging::ILogger& loggerGroup) :
   HttpServer(sys, loggerGroup), 
@@ -71,7 +71,7 @@ void JsonRpcServer::start(const std::string& bindAddress, uint16_t bindPort, con
   HttpServer::stop();
 }
 
-void JsonRpcServer::processRequest(const CryptoNote::HttpRequest& req, CryptoNote::HttpResponse& resp) {
+void JsonRpcServer::processRequest(const DynexCN::HttpRequest& req, DynexCN::HttpResponse& resp) {
   try {
     logger(Logging::TRACE) << "HTTP request came: \n" << req;
 
@@ -85,7 +85,7 @@ void JsonRpcServer::processRequest(const CryptoNote::HttpRequest& req, CryptoNot
       } catch (std::runtime_error&) {
         logger(Logging::DEBUGGING) << "Couldn't parse request: \"" << req.getBody() << "\"";
         makeJsonParsingErrorResponse(jsonRpcResponse);
-        resp.setStatus(CryptoNote::HttpResponse::STATUS_200);
+        resp.setStatus(DynexCN::HttpResponse::STATUS_200);
         resp.setBody(jsonRpcResponse.toString());
         return;
       }
@@ -95,17 +95,17 @@ void JsonRpcServer::processRequest(const CryptoNote::HttpRequest& req, CryptoNot
       std::ostringstream jsonOutputStream;
       jsonOutputStream << jsonRpcResponse;
 
-      resp.setStatus(CryptoNote::HttpResponse::STATUS_200);
+      resp.setStatus(DynexCN::HttpResponse::STATUS_200);
       resp.setBody(jsonOutputStream.str());
 
     } else {
       logger(Logging::WARNING) << "Requested url \"" << req.getUrl() << "\" is not found";
-      resp.setStatus(CryptoNote::HttpResponse::STATUS_404);
+      resp.setStatus(DynexCN::HttpResponse::STATUS_404);
       return;
     }
   } catch (std::exception& e) {
     logger(Logging::WARNING) << "Error while processing http request: " << e.what();
-    resp.setStatus(CryptoNote::HttpResponse::STATUS_500);
+    resp.setStatus(DynexCN::HttpResponse::STATUS_500);
   }
 }
 
@@ -125,7 +125,7 @@ void JsonRpcServer::makeErrorResponse(const std::error_code& ec, Common::JsonVal
   JsonValue error(JsonValue::OBJECT);
 
   JsonValue code;
-  code = static_cast<int64_t>(CryptoNote::JsonRpc::errParseError); //Application specific error code
+  code = static_cast<int64_t>(DynexCN::JsonRpc::errParseError); //Application specific error code
 
   JsonValue message;
   message = ec.message();
@@ -173,7 +173,7 @@ void JsonRpcServer::makeMethodNotFoundResponse(Common::JsonValue& resp) {
   JsonValue error(JsonValue::OBJECT);
 
   JsonValue code;
-  code = static_cast<int64_t>(CryptoNote::JsonRpc::errMethodNotFound); //ambigous declaration of JsonValue::operator= (between int and JsonValue)
+  code = static_cast<int64_t>(DynexCN::JsonRpc::errMethodNotFound); //ambigous declaration of JsonValue::operator= (between int and JsonValue)
 
   JsonValue message;
   message = "Method not found";
@@ -197,7 +197,7 @@ void JsonRpcServer::makeJsonParsingErrorResponse(Common::JsonValue& resp) {
 
   JsonValue error(JsonValue::OBJECT);
   JsonValue code;
-  code = static_cast<int64_t>(CryptoNote::JsonRpc::errParseError); //ambigous declaration of JsonValue::operator= (between int and JsonValue)
+  code = static_cast<int64_t>(DynexCN::JsonRpc::errParseError); //ambigous declaration of JsonValue::operator= (between int and JsonValue)
 
   JsonValue message = "Parse error";
 

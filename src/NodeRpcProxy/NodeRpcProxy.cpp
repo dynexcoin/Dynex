@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -49,11 +49,11 @@
 #include <System/Event.h>
 #include <System/EventLock.h>
 #include <System/Timer.h>
-#include <CryptoNoteCore/TransactionApi.h>
+#include <DynexCNCore/TransactionApi.h>
 
 #include "Common/StringTools.h"
-#include "CryptoNoteCore/CryptoNoteBasicImpl.h"
-#include "CryptoNoteCore/CryptoNoteTools.h"
+#include "DynexCNCore/DynexCNBasicImpl.h"
+#include "DynexCNCore/DynexCNTools.h"
 #include "Rpc/CoreRpcServerCommandsDefinitions.h"
 #include "Rpc/HttpClient.h"
 #include "Rpc/JsonRpc.h"
@@ -66,7 +66,7 @@ using namespace Crypto;
 using namespace Common;
 using namespace System;
 
-namespace CryptoNote {
+namespace DynexCN {
 
 namespace {
 
@@ -90,7 +90,7 @@ NodeRpcProxy::NodeRpcProxy(const std::string& nodeHost, unsigned short nodePort)
     m_peerCount(0),
     m_networkHeight(0),
 	m_nodeHeight(0),
-	m_minimalFee(CryptoNote::parameters::MAXIMUM_FEE) {
+	m_minimalFee(DynexCN::parameters::MAXIMUM_FEE) {
   resetInternalState();
 }
 
@@ -109,8 +109,8 @@ void NodeRpcProxy::resetInternalState() {
   lastLocalBlockHeaderInfo.majorVersion = 0;
   lastLocalBlockHeaderInfo.minorVersion = 0;
   lastLocalBlockHeaderInfo.timestamp = 0;
-  lastLocalBlockHeaderInfo.hash = CryptoNote::NULL_HASH;
-  lastLocalBlockHeaderInfo.prevHash = CryptoNote::NULL_HASH;
+  lastLocalBlockHeaderInfo.hash = DynexCN::NULL_HASH;
+  lastLocalBlockHeaderInfo.prevHash = DynexCN::NULL_HASH;
   lastLocalBlockHeaderInfo.nonce = 0;
   lastLocalBlockHeaderInfo.isAlternative = false;
   lastLocalBlockHeaderInfo.depth = 0;
@@ -244,8 +244,8 @@ bool NodeRpcProxy::updatePoolStatus() {
 }
 
 void NodeRpcProxy::updateBlockchainStatus() {
-  CryptoNote::COMMAND_RPC_GET_LAST_BLOCK_HEADER::request req = AUTO_VAL_INIT(req);
-  CryptoNote::COMMAND_RPC_GET_LAST_BLOCK_HEADER::response rsp = AUTO_VAL_INIT(rsp);
+  DynexCN::COMMAND_RPC_GET_LAST_BLOCK_HEADER::request req = AUTO_VAL_INIT(req);
+  DynexCN::COMMAND_RPC_GET_LAST_BLOCK_HEADER::response rsp = AUTO_VAL_INIT(rsp);
 
   std::error_code ec = jsonRpcCommand("getlastblockheader", req, rsp);
 
@@ -275,8 +275,8 @@ void NodeRpcProxy::updateBlockchainStatus() {
     }
   }
 
-  CryptoNote::COMMAND_RPC_GET_INFO::request getInfoReq = AUTO_VAL_INIT(getInfoReq);
-  CryptoNote::COMMAND_RPC_GET_INFO::response getInfoResp = AUTO_VAL_INIT(getInfoResp);
+  DynexCN::COMMAND_RPC_GET_INFO::request getInfoReq = AUTO_VAL_INIT(getInfoReq);
+  DynexCN::COMMAND_RPC_GET_INFO::response getInfoResp = AUTO_VAL_INIT(getInfoResp);
 
   ec = jsonCommand("/getinfo", getInfoReq, getInfoResp);
   if (!ec) {
@@ -321,8 +321,8 @@ void NodeRpcProxy::updatePoolState(const std::vector<std::unique_ptr<ITransactio
 }
 
 void NodeRpcProxy::getFeeAddress() {
-  CryptoNote::COMMAND_RPC_GET_FEE_ADDRESS::request ireq = AUTO_VAL_INIT(ireq);
-  CryptoNote::COMMAND_RPC_GET_FEE_ADDRESS::response iresp = AUTO_VAL_INIT(iresp);
+  DynexCN::COMMAND_RPC_GET_FEE_ADDRESS::request ireq = AUTO_VAL_INIT(ireq);
+  DynexCN::COMMAND_RPC_GET_FEE_ADDRESS::response iresp = AUTO_VAL_INIT(iresp);
 
   std::error_code ec = jsonCommand("/feeaddress", ireq, iresp);
 
@@ -350,11 +350,11 @@ bool NodeRpcProxy::removeObserver(INodeObserver* observer) {
   return m_observerManager.remove(observer);
 }
 
-bool NodeRpcProxy::addObserver(CryptoNote::INodeRpcProxyObserver* observer) {
+bool NodeRpcProxy::addObserver(DynexCN::INodeRpcProxyObserver* observer) {
   return m_rpcProxyObserverManager.add(observer);
 }
 
-bool NodeRpcProxy::removeObserver(CryptoNote::INodeRpcProxyObserver* observer) {
+bool NodeRpcProxy::removeObserver(DynexCN::INodeRpcProxyObserver* observer) {
   return m_rpcProxyObserverManager.remove(observer);
 }
 
@@ -398,7 +398,7 @@ uint32_t NodeRpcProxy::getNodeHeight() const {
   return m_nodeHeight.load(std::memory_order_relaxed);
 }
 
-void NodeRpcProxy::relayTransaction(const CryptoNote::Transaction& transaction, const Callback& callback) {
+void NodeRpcProxy::relayTransaction(const DynexCN::Transaction& transaction, const Callback& callback) {
   std::lock_guard<std::mutex> lock(m_mutex);
   if (m_state != STATE_INITIALIZED) {
     callback(make_error_code(error::NOT_INITIALIZED));
@@ -422,7 +422,7 @@ void NodeRpcProxy::getRandomOutsByAmounts(std::vector<uint64_t>&& amounts, uint6
 }
 
 void NodeRpcProxy::getNewBlocks(std::vector<Crypto::Hash>&& knownBlockIds,
-                                std::vector<CryptoNote::block_complete_entry>& newBlocks,
+                                std::vector<DynexCN::block_complete_entry>& newBlocks,
                                 uint32_t& startHeight,
                                 const Callback& callback) {
   std::lock_guard<std::mutex> lock(m_mutex);
@@ -566,7 +566,7 @@ void NodeRpcProxy::isSynchronized(bool& syncStatus, const Callback& callback) {
   callback(std::error_code());
 }
 
-std::error_code NodeRpcProxy::doRelayTransaction(const CryptoNote::Transaction& transaction) {
+std::error_code NodeRpcProxy::doRelayTransaction(const DynexCN::Transaction& transaction) {
   COMMAND_RPC_SEND_RAW_TX::request req;
   COMMAND_RPC_SEND_RAW_TX::response rsp;
   req.tx_as_hex = toHex(toBinaryArray(transaction));
@@ -589,10 +589,10 @@ std::error_code NodeRpcProxy::doGetRandomOutsByAmounts(std::vector<uint64_t>& am
 }
 
 std::error_code NodeRpcProxy::doGetNewBlocks(std::vector<Crypto::Hash>& knownBlockIds,
-                                             std::vector<CryptoNote::block_complete_entry>& newBlocks,
+                                             std::vector<DynexCN::block_complete_entry>& newBlocks,
                                              uint32_t& startHeight) {
-  CryptoNote::COMMAND_RPC_GET_BLOCKS_FAST::request req = AUTO_VAL_INIT(req);
-  CryptoNote::COMMAND_RPC_GET_BLOCKS_FAST::response rsp = AUTO_VAL_INIT(rsp);
+  DynexCN::COMMAND_RPC_GET_BLOCKS_FAST::request req = AUTO_VAL_INIT(req);
+  DynexCN::COMMAND_RPC_GET_BLOCKS_FAST::response rsp = AUTO_VAL_INIT(rsp);
   req.block_ids = std::move(knownBlockIds);
 
   std::error_code ec = binaryCommand("/getblocks.bin", req, rsp);
@@ -606,8 +606,8 @@ std::error_code NodeRpcProxy::doGetNewBlocks(std::vector<Crypto::Hash>& knownBlo
 
 std::error_code NodeRpcProxy::doGetTransactionOutsGlobalIndices(const Crypto::Hash& transactionHash,
                                                                 std::vector<uint32_t>& outsGlobalIndices) {
-  CryptoNote::COMMAND_RPC_GET_TX_GLOBAL_OUTPUTS_INDEXES::request req = AUTO_VAL_INIT(req);
-  CryptoNote::COMMAND_RPC_GET_TX_GLOBAL_OUTPUTS_INDEXES::response rsp = AUTO_VAL_INIT(rsp);
+  DynexCN::COMMAND_RPC_GET_TX_GLOBAL_OUTPUTS_INDEXES::request req = AUTO_VAL_INIT(req);
+  DynexCN::COMMAND_RPC_GET_TX_GLOBAL_OUTPUTS_INDEXES::response rsp = AUTO_VAL_INIT(rsp);
   req.txid = transactionHash;
 
   std::error_code ec = binaryCommand("/get_o_indexes.bin", req, rsp);
@@ -622,9 +622,9 @@ std::error_code NodeRpcProxy::doGetTransactionOutsGlobalIndices(const Crypto::Ha
 }
 
 std::error_code NodeRpcProxy::doQueryBlocksLite(const std::vector<Crypto::Hash>& knownBlockIds, uint64_t timestamp,
-        std::vector<CryptoNote::BlockShortEntry>& newBlocks, uint32_t& startHeight) {
-  CryptoNote::COMMAND_RPC_QUERY_BLOCKS_LITE::request req = AUTO_VAL_INIT(req);
-  CryptoNote::COMMAND_RPC_QUERY_BLOCKS_LITE::response rsp = AUTO_VAL_INIT(rsp);
+        std::vector<DynexCN::BlockShortEntry>& newBlocks, uint32_t& startHeight) {
+  DynexCN::COMMAND_RPC_QUERY_BLOCKS_LITE::request req = AUTO_VAL_INIT(req);
+  DynexCN::COMMAND_RPC_QUERY_BLOCKS_LITE::response rsp = AUTO_VAL_INIT(rsp);
 
   req.blockIds = knownBlockIds;
   req.timestamp = timestamp;
@@ -664,8 +664,8 @@ std::error_code NodeRpcProxy::doQueryBlocksLite(const std::vector<Crypto::Hash>&
 
 std::error_code NodeRpcProxy::doGetPoolSymmetricDifference(std::vector<Crypto::Hash>&& knownPoolTxIds, Crypto::Hash knownBlockId, bool& isBcActual,
         std::vector<std::unique_ptr<ITransactionReader>>& newTxs, std::vector<Crypto::Hash>& deletedTxIds) {
-  CryptoNote::COMMAND_RPC_GET_POOL_CHANGES_LITE::request req = AUTO_VAL_INIT(req);
-  CryptoNote::COMMAND_RPC_GET_POOL_CHANGES_LITE::response rsp = AUTO_VAL_INIT(rsp);
+  DynexCN::COMMAND_RPC_GET_POOL_CHANGES_LITE::request req = AUTO_VAL_INIT(req);
+  DynexCN::COMMAND_RPC_GET_POOL_CHANGES_LITE::response rsp = AUTO_VAL_INIT(rsp);
 
   req.tailBlockId = knownBlockId;
   req.knownTxsIds = knownPoolTxIds;

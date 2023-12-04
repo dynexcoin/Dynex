@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -37,7 +37,7 @@
 
 #include "IWalletLegacy.h"
 #include "Wallet/WalletErrors.h"
-#include "CryptoNoteCore/TransactionExtra.h"
+#include "DynexCNCore/TransactionExtra.h"
 #include "WalletLegacy/WalletUserTransactionsCache.h"
 #include "WalletLegacy/WalletLegacySerialization.h"
 #include "WalletLegacy/WalletUtils.h"
@@ -48,20 +48,20 @@
 
 using namespace Crypto;
 
-namespace CryptoNote {
+namespace DynexCN {
 
 WalletUserTransactionsCache::WalletUserTransactionsCache(uint64_t mempoolTxLiveTime) : m_unconfirmedTransactions(mempoolTxLiveTime) {
 }
 
-bool WalletUserTransactionsCache::serialize(CryptoNote::ISerializer& s) {
-  if (s.type() == CryptoNote::ISerializer::INPUT) {
+bool WalletUserTransactionsCache::serialize(DynexCN::ISerializer& s) {
+  if (s.type() == DynexCN::ISerializer::INPUT) {
     s(m_transactions, "transactions");
     s(m_transfers, "transfers");
     s(m_unconfirmedTransactions, "unconfirmed");
 
     updateUnconfirmedTransactions();
     deleteOutdatedTransactions();
-	rebuildPaymentsIndex();
+	  rebuildPaymentsIndex();
   } else {
     UserTransactions txsToSave;
     UserTransfers transfersToSave;
@@ -154,7 +154,7 @@ TransactionId WalletUserTransactionsCache::addNewTransaction(
 }
 
 void WalletUserTransactionsCache::updateTransaction(
-  TransactionId transactionId, const CryptoNote::Transaction& tx, uint64_t amount, const std::list<TransactionOutputInformation>& usedOutputs, Crypto::SecretKey& tx_key) {
+  TransactionId transactionId, const DynexCN::Transaction& tx, uint64_t amount, const std::list<TransactionOutputInformation>& usedOutputs, Crypto::SecretKey& tx_key) {
   // update extra field from created transaction
   auto& txInfo = m_transactions.at(transactionId);
   txInfo.extra.assign(tx.extra.begin(), tx.extra.end());
@@ -176,7 +176,7 @@ void WalletUserTransactionsCache::updateTransactionSendingState(TransactionId tr
 std::shared_ptr<WalletLegacyEvent> WalletUserTransactionsCache::onTransactionUpdated(const TransactionInformation& txInfo, int64_t txBalance) {
   std::shared_ptr<WalletLegacyEvent> event;
 
-  TransactionId id = CryptoNote::WALLET_LEGACY_INVALID_TRANSACTION_ID;
+  TransactionId id = DynexCN::WALLET_LEGACY_INVALID_TRANSACTION_ID;
 
   if (!m_unconfirmedTransactions.findTransactionId(txInfo.transactionHash, id)) {
     id = findTransactionByHash(txInfo.transactionHash);
@@ -186,7 +186,7 @@ std::shared_ptr<WalletLegacyEvent> WalletUserTransactionsCache::onTransactionUpd
 
   bool isCoinbase = txInfo.totalAmountIn == 0;
 
-  if (id == CryptoNote::WALLET_LEGACY_INVALID_TRANSACTION_ID) {
+  if (id == DynexCN::WALLET_LEGACY_INVALID_TRANSACTION_ID) {
     WalletLegacyTransaction transaction;
     transaction.firstTransferId = WALLET_LEGACY_INVALID_TRANSFER_ID;
     transaction.transferCount = 0;
@@ -218,7 +218,7 @@ std::shared_ptr<WalletLegacyEvent> WalletUserTransactionsCache::onTransactionUpd
 }
 
 std::shared_ptr<WalletLegacyEvent> WalletUserTransactionsCache::onTransactionDeleted(const Hash& transactionHash) {
-  TransactionId id = CryptoNote::WALLET_LEGACY_INVALID_TRANSACTION_ID;
+  TransactionId id = DynexCN::WALLET_LEGACY_INVALID_TRANSACTION_ID;
   if (m_unconfirmedTransactions.findTransactionId(transactionHash, id)) {
     m_unconfirmedTransactions.erase(transactionHash);
     // LOG_ERROR("Unconfirmed transaction is deleted: id = " << id << ", hash = " << transactionHash);
@@ -228,7 +228,7 @@ std::shared_ptr<WalletLegacyEvent> WalletUserTransactionsCache::onTransactionDel
   }
 
   std::shared_ptr<WalletLegacyEvent> event;
-  if (id != CryptoNote::WALLET_LEGACY_INVALID_TRANSACTION_ID) {
+  if (id != DynexCN::WALLET_LEGACY_INVALID_TRANSACTION_ID) {
     WalletLegacyTransaction& tr = getTransaction(id);
 	std::vector<uint8_t> extra(tr.extra.begin(), tr.extra.end());
     PaymentId paymentId;
@@ -317,7 +317,7 @@ TransactionId WalletUserTransactionsCache::findTransactionByHash(const Hash& has
   auto it = std::find_if(m_transactions.begin(), m_transactions.end(), [&hash](const WalletLegacyTransaction& tx) { return tx.hash == hash; });
 
   if (it == m_transactions.end())
-    return CryptoNote::WALLET_LEGACY_INVALID_TRANSACTION_ID;
+    return DynexCN::WALLET_LEGACY_INVALID_TRANSACTION_ID;
 
   return std::distance(m_transactions.begin(), it);
 }
@@ -407,4 +407,4 @@ std::vector<TransactionId> WalletUserTransactionsCache::deleteOutdatedTransactio
   return deletedTransactions;
 }
 
-} //namespace CryptoNote
+} //namespace DynexCN

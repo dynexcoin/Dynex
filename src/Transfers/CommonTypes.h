@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -46,7 +46,7 @@
 #include "INode.h"
 #include "ITransaction.h"
 
-namespace CryptoNote {
+namespace DynexCN {
 
 struct BlockchainInterval {
   uint32_t startHeight;
@@ -55,7 +55,7 @@ struct BlockchainInterval {
 
 struct CompleteBlock {
   Crypto::Hash blockHash;
-  boost::optional<CryptoNote::Block> block;
+  boost::optional<DynexCN::Block> block;
   // first transaction is always coinbase
   std::list<std::shared_ptr<ITransactionReader>> transactions;
 };

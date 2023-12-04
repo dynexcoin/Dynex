@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -36,17 +36,17 @@
 
 
 #pragma once
-#include "CryptoNoteProtocol/CryptoNoteProtocolDefinitions.h"
-#include "CryptoNoteCore/CryptoNoteBasic.h"
+#include "DynexCNProtocol/DynexCNProtocolDefinitions.h"
+#include "DynexCNCore/DynexCNBasic.h"
 #include "crypto/hash.h"
 #include "Rpc/CoreRpcServerCommandsDefinitions.h"
 #include "WalletRpcServerErrorCodes.h"
-#include "../CryptoNoteConfig.h"
+#include "../DynexCNConfig.h"
 
 namespace Tools {
 namespace wallet_rpc {
 
-using CryptoNote::ISerializer;
+using DynexCN::ISerializer;
 
 #define WALLET_RPC_STATUS_OK      "OK"
 #define WALLET_RPC_STATUS_BUSY    "BUSY"
@@ -54,7 +54,7 @@ using CryptoNote::ISerializer;
 	/* Command: get_balance */
 	struct COMMAND_RPC_GET_BALANCE
 	{
-		typedef CryptoNote::EMPTY_STRUCT request;
+		typedef DynexCN::EMPTY_STRUCT request;
 		struct response
 		{
 			uint64_t locked_amount;
@@ -86,7 +86,7 @@ using CryptoNote::ISerializer;
 		struct request
 		{
 			std::list<transfer_destination> destinations;
-			uint64_t fee = CryptoNote::parameters::MINIMUM_FEE;
+			uint64_t fee = DynexCN::parameters::MINIMUM_FEE;
 			uint64_t mixin = 0;
 			uint64_t unlock_time = 0;
 			std::string payment_id;
@@ -116,7 +116,7 @@ using CryptoNote::ISerializer;
 	/* Command: store */
 	struct COMMAND_RPC_STORE
 	{
-		typedef CryptoNote::EMPTY_STRUCT request;
+		typedef DynexCN::EMPTY_STRUCT request;
 		struct response
 		{
 			bool stored;
@@ -131,8 +131,8 @@ using CryptoNote::ISerializer;
 	/* Command: stop_wallet */
 	struct COMMAND_RPC_STOP
 	{
-		typedef CryptoNote::EMPTY_STRUCT request;
-		typedef CryptoNote::EMPTY_STRUCT response;
+		typedef DynexCN::EMPTY_STRUCT request;
+		typedef DynexCN::EMPTY_STRUCT response;
 	};
 
 	/* Command: get_payments */
@@ -207,7 +207,7 @@ using CryptoNote::ISerializer;
 
 	struct COMMAND_RPC_GET_TRANSFERS
 	{
-		typedef CryptoNote::EMPTY_STRUCT request;
+		typedef DynexCN::EMPTY_STRUCT request;
 		struct response
 		{
 			std::list<Transfer> transfers;
@@ -246,7 +246,7 @@ using CryptoNote::ISerializer;
 
 	struct COMMAND_RPC_GET_HEIGHT
 	{
-		typedef CryptoNote::EMPTY_STRUCT request;
+		typedef DynexCN::EMPTY_STRUCT request;
 		struct response
 		{
 			uint64_t height;
@@ -261,8 +261,8 @@ using CryptoNote::ISerializer;
 	/* Command: reset */
 	struct COMMAND_RPC_RESET
 	{
-		typedef CryptoNote::EMPTY_STRUCT request;
-		typedef CryptoNote::EMPTY_STRUCT response;
+		typedef DynexCN::EMPTY_STRUCT request;
+		typedef DynexCN::EMPTY_STRUCT response;
 	}; 
 
 	/* Command: query_key */
@@ -291,7 +291,7 @@ using CryptoNote::ISerializer;
 	/* Command: get_address */
 	struct COMMAND_RPC_GET_ADDRESS
 	{
-		typedef CryptoNote::EMPTY_STRUCT request;
+		typedef DynexCN::EMPTY_STRUCT request;
 		struct response
 		{
 			std::string address;
@@ -306,7 +306,7 @@ using CryptoNote::ISerializer;
 	/* Command: paymentid */
 	struct COMMAND_RPC_GEN_PAYMENT_ID
 	{
-		typedef CryptoNote::EMPTY_STRUCT request;
+		typedef DynexCN::EMPTY_STRUCT request;
 		struct response
 		{
 			std::string payment_id;
@@ -418,7 +418,7 @@ using CryptoNote::ISerializer;
 
 	struct COMMAND_RPC_GET_OUTPUTS
     {
-      typedef CryptoNote::EMPTY_STRUCT request;
+      typedef DynexCN::EMPTY_STRUCT request;
 
       struct response
       {

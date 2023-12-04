@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -41,15 +41,15 @@
 
 namespace {
 
-const char* getStatusString(CryptoNote::HttpResponse::HTTP_STATUS status) {
+const char* getStatusString(DynexCN::HttpResponse::HTTP_STATUS status) {
   switch (status) {
-  case CryptoNote::HttpResponse::STATUS_200:
+  case DynexCN::HttpResponse::STATUS_200:
     return "200 OK";
-  case CryptoNote::HttpResponse::STATUS_401:
+  case DynexCN::HttpResponse::STATUS_401:
     return "401 Unauthorized";
-  case CryptoNote::HttpResponse::STATUS_404:
+  case DynexCN::HttpResponse::STATUS_404:
     return "404 Not Found";
-  case CryptoNote::HttpResponse::STATUS_500:
+  case DynexCN::HttpResponse::STATUS_500:
     return "500 Internal Server Error";
   default:
     throw std::runtime_error("Unknown HTTP status code is given");
@@ -58,13 +58,13 @@ const char* getStatusString(CryptoNote::HttpResponse::HTTP_STATUS status) {
   return ""; //unaccessible
 }
 
-const char* getErrorBody(CryptoNote::HttpResponse::HTTP_STATUS status) {
+const char* getErrorBody(DynexCN::HttpResponse::HTTP_STATUS status) {
   switch (status) {
-  case CryptoNote::HttpResponse::STATUS_401:
+  case DynexCN::HttpResponse::STATUS_401:
     return "Authorization required\n";
-  case CryptoNote::HttpResponse::STATUS_404:
+  case DynexCN::HttpResponse::STATUS_404:
     return "Requested url is not found\n";
-  case CryptoNote::HttpResponse::STATUS_500:
+  case DynexCN::HttpResponse::STATUS_500:
     return "Internal server error is occurred\n";
   default:
     throw std::runtime_error("Error body for given status is not available");
@@ -75,11 +75,11 @@ const char* getErrorBody(CryptoNote::HttpResponse::HTTP_STATUS status) {
 
 } //namespace
 
-namespace CryptoNote {
+namespace DynexCN {
 
 HttpResponse::HttpResponse() {
   status = STATUS_200;
-  headers["Server"] = "CryptoNote-based HTTP server";
+  headers["Server"] = "DynexCN-based HTTP server";
   headers["Access-Control-Allow-Origin"] = "*";
 }
 
@@ -119,4 +119,4 @@ std::ostream& HttpResponse::printHttpResponse(std::ostream& os) const {
   return os;
 }
 
-} //namespace CryptoNote
+} //namespace DynexCN

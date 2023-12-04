@@ -15,7 +15,7 @@
 
 using namespace Common;
 
-namespace CryptoNote {
+namespace DynexCN {
 
 namespace {
 

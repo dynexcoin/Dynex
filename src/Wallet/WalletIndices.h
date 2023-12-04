@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -53,14 +53,14 @@
 #include "Common/FileMappedVector.h"
 #include "crypto/chacha8.h"
 
-namespace CryptoNote {
+namespace DynexCN {
 
 const uint64_t ACCOUNT_CREATE_TIME_ACCURACY = 60 * 60 * 24;
 
 struct WalletRecord {
   Crypto::PublicKey spendPublicKey;
   Crypto::SecretKey spendSecretKey;
-  CryptoNote::ITransfersContainer* container = nullptr;
+  DynexCN::ITransfersContainer* container = nullptr;
   uint64_t pendingBalance = 0;
   uint64_t actualBalance = 0;
   time_t creationTimestamp;
@@ -93,13 +93,13 @@ typedef boost::multi_index_container <
     boost::multi_index::hashed_unique < boost::multi_index::tag <KeysIndex>,
     BOOST_MULTI_INDEX_MEMBER(WalletRecord, Crypto::PublicKey, spendPublicKey)>,
     boost::multi_index::hashed_unique < boost::multi_index::tag <TransfersContainerIndex>,
-      BOOST_MULTI_INDEX_MEMBER(WalletRecord, CryptoNote::ITransfersContainer*, container) >
+      BOOST_MULTI_INDEX_MEMBER(WalletRecord, DynexCN::ITransfersContainer*, container) >
   >
 > WalletsContainer;
 
 struct UnlockTransactionJob {
   uint32_t blockHeight;
-  CryptoNote::ITransfersContainer* container;
+  DynexCN::ITransfersContainer* container;
   Crypto::Hash transactionHash;
 };
 
@@ -116,22 +116,22 @@ typedef boost::multi_index_container <
 > UnlockTransactionJobs;
 
 typedef boost::multi_index_container <
-  CryptoNote::WalletTransaction,
+  DynexCN::WalletTransaction,
   boost::multi_index::indexed_by <
     boost::multi_index::random_access < boost::multi_index::tag <RandomAccessIndex> >,
     boost::multi_index::hashed_unique < boost::multi_index::tag <TransactionIndex>,
-      boost::multi_index::member<CryptoNote::WalletTransaction, Crypto::Hash, &CryptoNote::WalletTransaction::hash >
+      boost::multi_index::member<DynexCN::WalletTransaction, Crypto::Hash, &DynexCN::WalletTransaction::hash >
     >,
     boost::multi_index::ordered_non_unique < boost::multi_index::tag <BlockHeightIndex>,
-      boost::multi_index::member<CryptoNote::WalletTransaction, uint32_t, &CryptoNote::WalletTransaction::blockHeight >
+      boost::multi_index::member<DynexCN::WalletTransaction, uint32_t, &DynexCN::WalletTransaction::blockHeight >
     >
   >
 > WalletTransactions;
 
 typedef Common::FileMappedVector<EncryptedWalletRecord> ContainerStorage;
-typedef std::pair<size_t, CryptoNote::WalletTransfer> TransactionTransferPair;
+typedef std::pair<size_t, DynexCN::WalletTransfer> TransactionTransferPair;
 typedef std::vector<TransactionTransferPair> WalletTransfers;
-typedef std::map<size_t, CryptoNote::Transaction> UncommitedTransactions;
+typedef std::map<size_t, DynexCN::Transaction> UncommitedTransactions;
 
 typedef boost::multi_index_container<
   Crypto::Hash,

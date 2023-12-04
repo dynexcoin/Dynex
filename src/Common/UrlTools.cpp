@@ -1,5 +1,5 @@
 
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -28,7 +28,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -41,7 +41,7 @@
 #include <stdio.h>
 #include <string>
 #include <boost/regex.hpp>
-#include "CryptoNoteConfig.h"
+#include "DynexCNConfig.h"
 
 
 namespace Common {
@@ -69,7 +69,7 @@ bool parseUrlAddress(const std::string& url, std::string& host, uint16_t& port, 
     } else {
       if (strcmp(reg_res.str(1).c_str(), "http://") == 0) port = HTTP_PORT;
       else if (strcmp(reg_res.str(1).c_str(), "https://") == 0) port = HTTPS_PORT;
-      else port = CryptoNote::RPC_DEFAULT_PORT;
+      else port = DynexCN::RPC_DEFAULT_PORT;
     }
     if (port != 0) {
       if (strcmp(reg_res.str(1).c_str(), "https://") == 0) ssl = true;

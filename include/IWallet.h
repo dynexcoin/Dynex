@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -41,10 +41,10 @@
 #include <string>
 #include <vector>
 #include <boost/optional.hpp>
-#include "CryptoNote.h"
+#include "DynexCN.h"
 #include "ITransfersContainer.h"
 
-namespace CryptoNote {
+namespace DynexCN {
 
 const size_t WALLET_INVALID_TRANSACTION_ID = std::numeric_limits<size_t>::max();
 const size_t WALLET_INVALID_TRANSFER_ID = std::numeric_limits<size_t>::max();
@@ -195,7 +195,7 @@ public:
   virtual WalletTransaction getTransaction(size_t transactionIndex) const = 0;
   virtual Crypto::SecretKey getTransactionSecretKey(size_t transactionIndex) const = 0;
   virtual Crypto::SecretKey getTransactionSecretKey(Crypto::Hash& transactionHash) const = 0;
-  virtual bool getTransactionProof(const Crypto::Hash& transactionHash, const CryptoNote::AccountPublicAddress& destinationAddress, const Crypto::SecretKey& txKey, std::string& transactionProof) = 0;
+  virtual bool getTransactionProof(const Crypto::Hash& transactionHash, const DynexCN::AccountPublicAddress& destinationAddress, const Crypto::SecretKey& txKey, std::string& transactionProof) = 0;
   virtual size_t getTransactionTransferCount(size_t transactionIndex) const = 0;
   virtual WalletTransfer getTransactionTransfer(size_t transactionIndex, size_t transferIndex) const = 0;
 

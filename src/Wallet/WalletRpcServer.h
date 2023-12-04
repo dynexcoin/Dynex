@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -48,15 +48,15 @@
 
 namespace Tools {
 
-class wallet_rpc_server : CryptoNote::HttpServer
+class wallet_rpc_server : DynexCN::HttpServer
 {
 public:
 	wallet_rpc_server(
 		System::Dispatcher& dispatcher, 
 		Logging::ILogger& log,
-		CryptoNote::IWalletLegacy &w, 
-		CryptoNote::INode &n, 
-		CryptoNote::Currency& currency,
+		DynexCN::IWalletLegacy &w, 
+		DynexCN::INode &n, 
+		DynexCN::Currency& currency,
 		const std::string& walletFilename);
 
 	static const command_line::arg_descriptor<uint16_t>    arg_rpc_bind_port;
@@ -71,7 +71,7 @@ public:
 	void send_stop_signal();
 
 private:
-	virtual void processRequest(const CryptoNote::HttpRequest& request, CryptoNote::HttpResponse& response) override;
+	virtual void processRequest(const DynexCN::HttpRequest& request, DynexCN::HttpResponse& response) override;
 
 	//json_rpc
 	bool on_getbalance(const wallet_rpc::COMMAND_RPC_GET_BALANCE::request& req, wallet_rpc::COMMAND_RPC_GET_BALANCE::response& res);
@@ -100,14 +100,14 @@ private:
 
 private:
 	Logging::LoggerRef logger;
-	CryptoNote::IWalletLegacy& m_wallet;
-	CryptoNote::INode& m_node;
+	DynexCN::IWalletLegacy& m_wallet;
+	DynexCN::INode& m_node;
 
 	uint16_t m_port;
 	std::string m_bind_ip;
 	std::string m_rpcUser;
 	std::string m_rpcPassword;
-	CryptoNote::Currency& m_currency;
+	DynexCN::Currency& m_currency;
 	const std::string m_walletFilename;
 
 	System::Dispatcher& m_dispatcher;

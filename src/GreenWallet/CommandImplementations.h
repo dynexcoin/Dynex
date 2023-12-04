@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -43,15 +43,15 @@
 
 bool handleCommand(const std::string command,
                    std::shared_ptr<WalletInfo> walletInfo,
-                   CryptoNote::INode &node);
+                   DynexCN::INode &node);
 
 void changePassword(std::shared_ptr<WalletInfo> walletInfo);
 
-void printPrivateKeys(CryptoNote::WalletGreen &wallet, bool viewWallet);
+void printPrivateKeys(DynexCN::WalletGreen &wallet, bool viewWallet);
 
-void reset(CryptoNote::INode &node, std::shared_ptr<WalletInfo> walletInfo);
+void reset(DynexCN::INode &node, std::shared_ptr<WalletInfo> walletInfo);
 
-void status(CryptoNote::INode &node, CryptoNote::WalletGreen &wallet);
+void status(DynexCN::INode &node, DynexCN::WalletGreen &wallet);
 
 void printHeights(uint32_t localHeight, uint32_t remoteHeight,
 	uint32_t walletHeight);
@@ -66,27 +66,27 @@ void printPeerCount(size_t peerCount);
 
 void printHashrate(uint64_t difficulty);
 
-void blockchainHeight(CryptoNote::INode &node, CryptoNote::WalletGreen &wallet);
+void blockchainHeight(DynexCN::INode &node, DynexCN::WalletGreen &wallet);
 
-void balance(CryptoNote::INode &node, CryptoNote::WalletGreen &wallet,
+void balance(DynexCN::INode &node, DynexCN::WalletGreen &wallet,
              bool viewWallet);
 
 void exportKeys(std::shared_ptr<WalletInfo> walletInfo);
 
-void saveCSV(CryptoNote::WalletGreen &wallet, CryptoNote::INode &node);
+void saveCSV(DynexCN::WalletGreen &wallet, DynexCN::INode &node);
 
-void save(CryptoNote::WalletGreen &wallet);
+void save(DynexCN::WalletGreen &wallet);
 
 void listTransfers(bool incoming, bool outgoing, 
-                   CryptoNote::WalletGreen &wallet, CryptoNote::INode &node);
+                   DynexCN::WalletGreen &wallet, DynexCN::INode &node);
 
-void printOutgoingTransfer(CryptoNote::WalletTransaction t,
-                           CryptoNote::INode &node);
+void printOutgoingTransfer(DynexCN::WalletTransaction t,
+                           DynexCN::INode &node);
 
-void printIncomingTransfer(CryptoNote::WalletTransaction t,
-                           CryptoNote::INode &node);
+void printIncomingTransfer(DynexCN::WalletTransaction t,
+                           DynexCN::INode &node);
 
-std::string getGUIPrivateKey(CryptoNote::WalletGreen &wallet);
+std::string getGUIPrivateKey(DynexCN::WalletGreen &wallet);
 
 void help(std::shared_ptr<WalletInfo> wallet);
 
@@ -94,6 +94,6 @@ void advanced(std::shared_ptr<WalletInfo> wallet);
 
 void reserveProof(std::shared_ptr<WalletInfo> walletInfo, bool viewWallet);
 
-void txSecretKey(CryptoNote::WalletGreen &wallet);
+void txSecretKey(DynexCN::WalletGreen &wallet);
 
-void txProof(CryptoNote::WalletGreen &wallet);
+void txProof(DynexCN::WalletGreen &wallet);

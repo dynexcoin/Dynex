@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -48,7 +48,7 @@
 
 bool handleCommand(const std::string command,
                    std::shared_ptr<WalletInfo> walletInfo,
-                   CryptoNote::INode &node)
+                   DynexCN::INode &node)
 {
     /* Basic commands */
     if (command == "advanced")
@@ -158,7 +158,7 @@ bool handleCommand(const std::string command,
     return true;
 }
 
-std::shared_ptr<WalletInfo> handleLaunchCommand(CryptoNote::WalletGreen &wallet,
+std::shared_ptr<WalletInfo> handleLaunchCommand(DynexCN::WalletGreen &wallet,
                                                 std::string launchCommand,
                                                 Config &config)
 {

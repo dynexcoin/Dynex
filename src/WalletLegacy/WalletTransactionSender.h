@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -37,8 +37,8 @@
 
 #pragma once
 
-#include "CryptoNoteCore/Account.h"
-#include "CryptoNoteCore/Currency.h"
+#include "DynexCNCore/Account.h"
+#include "DynexCNCore/Currency.h"
 
 #include "INode.h"
 #include "WalletLegacy/WalletSendTransactionContext.h"
@@ -48,7 +48,7 @@
 
 #include "ITransfersContainer.h"
 
-namespace CryptoNote {
+namespace DynexCN {
 
 class WalletTransactionSender
 {
@@ -96,4 +96,4 @@ private:
   ITransfersContainer& m_transferDetails;
 };
 
-} /* namespace CryptoNote */
+} /* namespace DynexCN */

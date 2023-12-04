@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -41,9 +41,9 @@
 #include "crypto/hash.h"
 #include "Common/CommandLine.h"
 #include "Common/StringTools.h"
-#include "CryptoNoteCore/CryptoNoteFormatUtils.h"
-#include "CryptoNoteCore/CryptoNoteBasicImpl.h"
-#include "CryptoNoteCore/Account.h"
+#include "DynexCNCore/DynexCNFormatUtils.h"
+#include "DynexCNCore/DynexCNBasicImpl.h"
+#include "DynexCNCore/Account.h"
 #include "Rpc/JsonRpc.h"
 #include "WalletLegacy/WalletHelper.h"
 #include "WalletLegacy/WalletLegacy.h"
@@ -54,7 +54,7 @@
 #include "ITransfersContainer.h"
 
 using namespace Logging;
-using namespace CryptoNote;
+using namespace DynexCN;
 
 namespace Tools {
 
@@ -80,9 +80,9 @@ void wallet_rpc_server::init_options(boost::program_options::options_description
 wallet_rpc_server::wallet_rpc_server(
 	System::Dispatcher& dispatcher, 
 	Logging::ILogger& log, 
-	CryptoNote::IWalletLegacy&w,
-	CryptoNote::INode& n, 
-	CryptoNote::Currency& currency, 
+	DynexCN::IWalletLegacy&w,
+	DynexCN::INode& n, 
+	DynexCN::Currency& currency, 
 	const std::string& walletFile) : 
 		HttpServer(dispatcher, log), 
 		logger(log, "WalletRpc"), 
@@ -135,9 +135,9 @@ bool wallet_rpc_server::init(const boost::program_options::variables_map& vm)
 	return true;
 }
 
-void wallet_rpc_server::processRequest(const CryptoNote::HttpRequest& request, CryptoNote::HttpResponse& response)
+void wallet_rpc_server::processRequest(const DynexCN::HttpRequest& request, DynexCN::HttpResponse& response)
 {
-	using namespace CryptoNote::JsonRpc;
+	using namespace DynexCN::JsonRpc;
 
 	JsonRpcRequest jsonRequest;
 	JsonRpcResponse jsonResponse;
@@ -217,10 +217,10 @@ bool wallet_rpc_server::on_transfer(const wallet_rpc::COMMAND_RPC_TRANSFER::requ
 			std::string("Requested mixin " + std::to_string(req.mixin) + " is too low"));
 	}
 	
-	std::vector<CryptoNote::WalletLegacyTransfer> transfers;
+	std::vector<DynexCN::WalletLegacyTransfer> transfers;
 	for (auto it = req.destinations.begin(); it != req.destinations.end(); ++it)
 	{
-		CryptoNote::WalletLegacyTransfer transfer;
+		DynexCN::WalletLegacyTransfer transfer;
 		transfer.address = it->address;
 		transfer.amount  = it->amount;
 		transfers.push_back(transfer);
@@ -231,15 +231,15 @@ bool wallet_rpc_server::on_transfer(const wallet_rpc::COMMAND_RPC_TRANSFER::requ
 	{
 		std::string payment_id_str = req.payment_id;
 		Crypto::Hash payment_id;
-		if (!CryptoNote::parsePaymentId(payment_id_str, payment_id))
+		if (!DynexCN::parsePaymentId(payment_id_str, payment_id))
 		{
 			throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_WRONG_PAYMENT_ID, 
 				"Payment ID has invalid format: " + payment_id_str + ", expected 64-character string");
 		}
 
 		BinaryArray extra_nonce;
-		CryptoNote::setPaymentIdToTransactionExtraNonce(extra_nonce, payment_id);
-		if (!CryptoNote::addExtraNonceToTransactionExtra(extra, extra_nonce))
+		DynexCN::setPaymentIdToTransactionExtraNonce(extra_nonce, payment_id);
+		if (!DynexCN::addExtraNonceToTransactionExtra(extra, extra_nonce))
 		{
 			throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_WRONG_PAYMENT_ID,
 				"Something went wrong with payment_id. Please check its format: " + payment_id_str + ", expected 64-character string");
@@ -250,10 +250,10 @@ bool wallet_rpc_server::on_transfer(const wallet_rpc::COMMAND_RPC_TRANSFER::requ
 	std::copy(extra.begin(), extra.end(), std::back_inserter(extraString));
 	try
 	{
-		CryptoNote::WalletHelper::SendCompleteResultObserver sent;
+		DynexCN::WalletHelper::SendCompleteResultObserver sent;
 		WalletHelper::IWalletRemoveObserverGuard removeGuard(m_wallet, sent);
 
-		CryptoNote::TransactionId tx = m_wallet.sendTransaction(transfers, req.fee == 0 ? m_currency.minimumFee() : req.fee, extraString, req.mixin, req.unlock_time);
+		DynexCN::TransactionId tx = m_wallet.sendTransaction(transfers, req.fee == 0 ? m_currency.minimumFee() : req.fee, extraString, 0, req.unlock_time);
 		if (tx == WALLET_LEGACY_INVALID_TRANSACTION_ID)
 			throw std::runtime_error("Couldn't send transaction");
 
@@ -263,7 +263,7 @@ bool wallet_rpc_server::on_transfer(const wallet_rpc::COMMAND_RPC_TRANSFER::requ
 		if (sendError)
 			throw std::system_error(sendError);
 
-		CryptoNote::WalletLegacyTransaction txInfo;
+		DynexCN::WalletLegacyTransaction txInfo;
 		m_wallet.getTransaction(tx, txInfo);
 		res.tx_hash = Common::podToHex(txInfo.hash);
 		res.tx_key = Common::podToHex(txInfo.secretKey);
@@ -298,7 +298,7 @@ bool wallet_rpc_server::on_get_payments(const wallet_rpc::COMMAND_RPC_GET_PAYMEN
 	wallet_rpc::COMMAND_RPC_GET_PAYMENTS::response& res)
 {
 	Crypto::Hash expectedPaymentId;
-	CryptoNote::BinaryArray payment_id_blob;
+	DynexCN::BinaryArray payment_id_blob;
 
 	if (!Common::fromHex(req.payment_id, payment_id_blob))
 		throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_WRONG_PAYMENT_ID, "Payment ID has invald format");
@@ -563,7 +563,7 @@ bool wallet_rpc_server::on_get_tx_proof(const wallet_rpc::COMMAND_RPC_GET_TX_PRO
 	if (!parse_hash256(req.tx_hash, txid)) {
 		throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_UNKNOWN_ERROR, std::string("Failed to parse tx_hash"));
 	}
-	CryptoNote::AccountPublicAddress dest_address;
+	DynexCN::AccountPublicAddress dest_address;
 	if (!m_currency.parseAccountAddressString(req.dest_address, dest_address)) {
 		throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_WRONG_ADDRESS, std::string("Failed to parse address"));
 	}
@@ -632,7 +632,7 @@ bool wallet_rpc_server::on_sign_message(const wallet_rpc::COMMAND_RPC_SIGN_MESSA
 //------------------------------------------------------------------------------------------------------------------------------
 bool wallet_rpc_server::on_verify_message(const wallet_rpc::COMMAND_RPC_VERIFY_MESSAGE::request& req, wallet_rpc::COMMAND_RPC_VERIFY_MESSAGE::response& res)
 {
-    CryptoNote::AccountPublicAddress address;
+    DynexCN::AccountPublicAddress address;
 	if (!m_currency.parseAccountAddressString(req.address, address)) {
 		throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_WRONG_ADDRESS, std::string("Failed to parse address"));
 	}
@@ -712,10 +712,10 @@ bool wallet_rpc_server::on_send_fusion(const wallet_rpc::COMMAND_RPC_SEND_FUSION
 		}
 
 		std::string extraString;
-		CryptoNote::WalletHelper::SendCompleteResultObserver sent;
+		DynexCN::WalletHelper::SendCompleteResultObserver sent;
 		WalletHelper::IWalletRemoveObserverGuard removeGuard(m_wallet, sent);
 
-		CryptoNote::TransactionId tx = m_wallet.sendFusionTransaction(fusionInputs, 0, extraString, req.mixin, req.unlock_time);
+		DynexCN::TransactionId tx = m_wallet.sendFusionTransaction(fusionInputs, 0, extraString, req.mixin, req.unlock_time);
 		if (tx == WALLET_LEGACY_INVALID_TRANSACTION_ID)
 			throw std::runtime_error("Couldn't send fusion transaction");
 
@@ -725,7 +725,7 @@ bool wallet_rpc_server::on_send_fusion(const wallet_rpc::COMMAND_RPC_SEND_FUSION
 		if (sendError)
 			throw std::system_error(sendError);
 
-		CryptoNote::WalletLegacyTransaction txInfo;
+		DynexCN::WalletLegacyTransaction txInfo;
 		m_wallet.getTransaction(tx, txInfo);
 		res.tx_hash = Common::podToHex(txInfo.hash);
 	}

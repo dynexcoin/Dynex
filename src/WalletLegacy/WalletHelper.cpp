@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -41,7 +41,7 @@
 #include <fstream>
 #include <boost/filesystem.hpp>
 
-using namespace CryptoNote;
+using namespace DynexCN;
 
 namespace {
 
@@ -52,8 +52,8 @@ void openOutputFileStream(const std::string& filename, std::ofstream& file) {
   }
 }
 
-std::error_code walletSaveWrapper(CryptoNote::IWalletLegacy& wallet, std::ofstream& file, bool saveDetailes, bool saveCache) {
-  CryptoNote::WalletHelper::SaveWalletResultObserver o;
+std::error_code walletSaveWrapper(DynexCN::IWalletLegacy& wallet, std::ofstream& file, bool saveDetailes, bool saveCache) {
+  DynexCN::WalletHelper::SaveWalletResultObserver o;
 
   std::error_code e;
   try {
@@ -85,13 +85,13 @@ void WalletHelper::prepareFileNames(const std::string& file_path, std::string& k
   }
 }
 
-void WalletHelper::SendCompleteResultObserver::sendTransactionCompleted(CryptoNote::TransactionId transactionId, std::error_code result) {
+void WalletHelper::SendCompleteResultObserver::sendTransactionCompleted(DynexCN::TransactionId transactionId, std::error_code result) {
   std::lock_guard<std::mutex> lock(m_mutex);
   m_finishedTransactions[transactionId] = result;
   m_condition.notify_one();
 }
 
-std::error_code WalletHelper::SendCompleteResultObserver::wait(CryptoNote::TransactionId transactionId) {
+std::error_code WalletHelper::SendCompleteResultObserver::wait(DynexCN::TransactionId transactionId) {
   std::unique_lock<std::mutex> lock(m_mutex);
 
   m_condition.wait(lock, [this, &transactionId] {
@@ -107,7 +107,7 @@ std::error_code WalletHelper::SendCompleteResultObserver::wait(CryptoNote::Trans
   return m_result;
 }
 
-WalletHelper::IWalletRemoveObserverGuard::IWalletRemoveObserverGuard(CryptoNote::IWalletLegacy& wallet, CryptoNote::IWalletLegacyObserver& observer) :
+WalletHelper::IWalletRemoveObserverGuard::IWalletRemoveObserverGuard(DynexCN::IWalletLegacy& wallet, DynexCN::IWalletLegacyObserver& observer) :
   m_wallet(wallet),
   m_observer(observer),
   m_removed(false) {
@@ -125,7 +125,7 @@ void WalletHelper::IWalletRemoveObserverGuard::removeObserver() {
   m_removed = true;
 }
 
-bool WalletHelper::storeWallet(CryptoNote::IWalletLegacy& wallet, const std::string& walletFilename) {
+bool WalletHelper::storeWallet(DynexCN::IWalletLegacy& wallet, const std::string& walletFilename) {
 	boost::filesystem::path tempFile = boost::filesystem::unique_path(walletFilename + ".tmp.%%%%-%%%%");
 
 	if (boost::filesystem::exists(walletFilename)) {

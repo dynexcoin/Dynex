@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -40,7 +40,7 @@
 #include "IWalletLegacy.h"
 #include "Common/ObserverManager.h"
 
-namespace CryptoNote
+namespace DynexCN
 {
 
 class WalletLegacyEvent
@@ -49,7 +49,7 @@ public:
   virtual ~WalletLegacyEvent() {
   };
 
-  virtual void notify(Tools::ObserverManager<CryptoNote::IWalletLegacyObserver>& observer) = 0;
+  virtual void notify(Tools::ObserverManager<DynexCN::IWalletLegacyObserver>& observer) = 0;
 };
 
 class WalletTransactionUpdatedEvent : public WalletLegacyEvent
@@ -58,7 +58,7 @@ public:
   WalletTransactionUpdatedEvent(TransactionId transactionId) : m_id(transactionId) {};
   virtual ~WalletTransactionUpdatedEvent() {};
 
-  virtual void notify(Tools::ObserverManager<CryptoNote::IWalletLegacyObserver>& observer) override
+  virtual void notify(Tools::ObserverManager<DynexCN::IWalletLegacyObserver>& observer) override
   {
     observer.notify(&IWalletLegacyObserver::transactionUpdated, m_id);
   }
@@ -73,7 +73,7 @@ public:
   WalletSendTransactionCompletedEvent(TransactionId transactionId, std::error_code result) : m_id(transactionId), m_error(result) {};
   virtual ~WalletSendTransactionCompletedEvent() {};
 
-  virtual void notify(Tools::ObserverManager<CryptoNote::IWalletLegacyObserver>& observer) override
+  virtual void notify(Tools::ObserverManager<DynexCN::IWalletLegacyObserver>& observer) override
   {
     observer.notify(&IWalletLegacyObserver::sendTransactionCompleted, m_id, m_error);
   }
@@ -89,7 +89,7 @@ public:
   WalletExternalTransactionCreatedEvent(TransactionId transactionId) : m_id(transactionId) {};
   virtual ~WalletExternalTransactionCreatedEvent() {};
 
-  virtual void notify(Tools::ObserverManager<CryptoNote::IWalletLegacyObserver>& observer) override
+  virtual void notify(Tools::ObserverManager<DynexCN::IWalletLegacyObserver>& observer) override
   {
     observer.notify(&IWalletLegacyObserver::externalTransactionCreated, m_id);
   }
@@ -103,7 +103,7 @@ public:
   WalletSynchronizationProgressUpdatedEvent(uint32_t current, uint32_t total) : m_current(current), m_total(total) {};
   virtual ~WalletSynchronizationProgressUpdatedEvent() {};
 
-  virtual void notify(Tools::ObserverManager<CryptoNote::IWalletLegacyObserver>& observer) override
+  virtual void notify(Tools::ObserverManager<DynexCN::IWalletLegacyObserver>& observer) override
   {
     observer.notify(&IWalletLegacyObserver::synchronizationProgressUpdated, m_current, m_total);
   }
@@ -118,7 +118,7 @@ public:
   WalletSynchronizationCompletedEvent(uint32_t current, uint32_t total, std::error_code result) : m_ec(result) {};
   virtual ~WalletSynchronizationCompletedEvent() {};
 
-  virtual void notify(Tools::ObserverManager<CryptoNote::IWalletLegacyObserver>& observer) override {
+  virtual void notify(Tools::ObserverManager<DynexCN::IWalletLegacyObserver>& observer) override {
     observer.notify(&IWalletLegacyObserver::synchronizationCompleted, m_ec);
   }
 
@@ -132,7 +132,7 @@ public:
   WalletActualBalanceUpdatedEvent(uint64_t balance) : m_balance(balance) {};
   virtual ~WalletActualBalanceUpdatedEvent() {};
 
-  virtual void notify(Tools::ObserverManager<CryptoNote::IWalletLegacyObserver>& observer) override
+  virtual void notify(Tools::ObserverManager<DynexCN::IWalletLegacyObserver>& observer) override
   {
     observer.notify(&IWalletLegacyObserver::actualBalanceUpdated, m_balance);
   }
@@ -146,7 +146,7 @@ public:
   WalletPendingBalanceUpdatedEvent(uint64_t balance) : m_balance(balance) {};
   virtual ~WalletPendingBalanceUpdatedEvent() {};
 
-  virtual void notify(Tools::ObserverManager<CryptoNote::IWalletLegacyObserver>& observer) override
+  virtual void notify(Tools::ObserverManager<DynexCN::IWalletLegacyObserver>& observer) override
   {
     observer.notify(&IWalletLegacyObserver::pendingBalanceUpdated, m_balance);
   }
@@ -154,4 +154,4 @@ private:
   uint64_t m_balance;
 };
 
-} /* namespace CryptoNote */
+} /* namespace DynexCN */

@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -43,9 +43,9 @@
 
 #include "Serialization/SerializationOverloads.h"
 
-using namespace CryptoNote;
+using namespace DynexCN;
 
-namespace CryptoNote {
+namespace DynexCN {
   template <typename T, typename Indexes>
   bool serialize(boost::multi_index_container<T, Indexes>& value, Common::StringView name, ISerializer& s) {
     if (s.type() == ISerializer::INPUT) {
@@ -113,8 +113,8 @@ void PeerlistManager::Peerlist::trim() {
 }
 
 PeerlistManager::PeerlistManager() : 
-  m_whitePeerlist(m_peers_white, CryptoNote::P2P_LOCAL_WHITE_PEERLIST_LIMIT),
-  m_grayPeerlist(m_peers_gray, CryptoNote::P2P_LOCAL_GRAY_PEERLIST_LIMIT) {}
+  m_whitePeerlist(m_peers_white, DynexCN::P2P_LOCAL_WHITE_PEERLIST_LIMIT),
+  m_grayPeerlist(m_peers_gray, DynexCN::P2P_LOCAL_GRAY_PEERLIST_LIMIT) {}
 
 //--------------------------------------------------------------------------------------------------
 bool PeerlistManager::init(bool allow_local_ip)

@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -39,25 +39,25 @@
 
 #include <GreenWallet/Types.h>
 
-std::shared_ptr<WalletInfo> importFromKeys(CryptoNote::WalletGreen &wallet, 
+std::shared_ptr<WalletInfo> importFromKeys(DynexCN::WalletGreen &wallet, 
                                            Crypto::SecretKey privateSpendKey,
                                            Crypto::SecretKey privateViewKey);
 
-std::shared_ptr<WalletInfo> openWallet(CryptoNote::WalletGreen &wallet,
+std::shared_ptr<WalletInfo> openWallet(DynexCN::WalletGreen &wallet,
                                        Config &config);
 
-std::shared_ptr<WalletInfo> createViewWallet(CryptoNote::WalletGreen &wallet);
+std::shared_ptr<WalletInfo> createViewWallet(DynexCN::WalletGreen &wallet);
 
-std::shared_ptr<WalletInfo> importWallet(CryptoNote::WalletGreen &wallet);
+std::shared_ptr<WalletInfo> importWallet(DynexCN::WalletGreen &wallet);
 
-std::shared_ptr<WalletInfo> createViewWallet(CryptoNote::WalletGreen &wallet);
+std::shared_ptr<WalletInfo> createViewWallet(DynexCN::WalletGreen &wallet);
 
-std::shared_ptr<WalletInfo> mnemonicImportWallet(CryptoNote::WalletGreen 
+std::shared_ptr<WalletInfo> mnemonicImportWallet(DynexCN::WalletGreen 
                                                  &wallet);
 
-std::shared_ptr<WalletInfo> generateWallet(CryptoNote::WalletGreen &wallet);
+std::shared_ptr<WalletInfo> generateWallet(DynexCN::WalletGreen &wallet);
 
-std::shared_ptr<WalletInfo> importGUIWallet(CryptoNote::WalletGreen &wallet);
+std::shared_ptr<WalletInfo> importGUIWallet(DynexCN::WalletGreen &wallet);
 
 Crypto::SecretKey getPrivateKey(std::string outputMsg);
 
@@ -76,4 +76,4 @@ void viewWalletMsg();
 
 void connectingMsg();
 
-void promptSaveKeys(CryptoNote::WalletGreen &wallet);
+void promptSaveKeys(DynexCN::WalletGreen &wallet);

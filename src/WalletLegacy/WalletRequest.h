@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -48,7 +48,7 @@
 #include <functional>
 #include <memory>
 
-namespace CryptoNote {
+namespace DynexCN {
 
 class WalletRequest
 {
@@ -83,7 +83,7 @@ private:
 class WalletRelayTransactionRequest: public WalletRequest
 {
 public:
-  WalletRelayTransactionRequest(const CryptoNote::Transaction& tx, Callback cb) : m_tx(tx), m_cb(cb) {};
+  WalletRelayTransactionRequest(const DynexCN::Transaction& tx, Callback cb) : m_tx(tx), m_cb(cb) {};
   virtual ~WalletRelayTransactionRequest() {};
 
   virtual void perform(INode& node, std::function<void (WalletRequest::Callback, std::error_code)> cb) override
@@ -92,8 +92,8 @@ public:
   }
 
 private:
-  CryptoNote::Transaction m_tx;
+  DynexCN::Transaction m_tx;
   Callback m_cb;
 };
 
-} //namespace CryptoNote
+} //namespace DynexCN

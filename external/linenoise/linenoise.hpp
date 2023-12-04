@@ -1,10 +1,10 @@
 /*
- *  linenoise.hpp -- Multi-platfrom C++ header-only linenoise library.
+ *  linenoise.hpp -- Multi-platform C++ header-only linenoise library.
  *
  *  All credits and commendations have to go to the authors of the
  *  following excellent libraries.
  *
- *  - linenoise.h and linenose.c (https://github.com/antirez/linenoise)
+ *  - linenoise.h and linenoise.c (https://github.com/antirez/linenoise)
  *  - ANSI.c (https://github.com/adoxa/ansicon)
  *  - Win32_ANSI.h and Win32_ANSI.c (https://github.com/MSOpenTech/redis)
  *
@@ -142,12 +142,13 @@
 #define isatty _isatty
 #define write win32_write
 #define read _read
+#pragma warning(push)
+#pragma warning(disable : 4996)
 #endif
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
-#include <stdlib.h>
 #include <ctype.h>
 #include <sys/types.h>
 #include <string>
@@ -155,37 +156,6 @@
 #include <functional>
 #include <vector>
 #include <iostream>
-
-#if defined(_MSC_VER) && _MSC_VER < 1900
-
-#define snprintf c99_snprintf
-#define vsnprintf c99_vsnprintf
-
-__inline int c99_vsnprintf(char *outBuf, size_t size, const char *format, va_list ap)
-{
-    int count = -1;
-
-    if (size != 0)
-        count = _vsnprintf_s(outBuf, size, _TRUNCATE, format, ap);
-    if (count == -1)
-        count = _vscprintf(format, ap);
-
-    return count;
-}
-
-__inline int c99_snprintf(char *outBuf, size_t size, const char *format, ...)
-{
-    int count;
-    va_list ap;
-
-    va_start(ap, format);
-    count = c99_vsnprintf(outBuf, size, format, ap);
-    va_end(ap);
-
-    return count;
-}
-
-#endif
 
 namespace linenoise {
 
@@ -402,7 +372,7 @@ inline void SendSequence(LPCWSTR seq)
 inline void InterpretEscSeq(void)
 {
     int  i;
-    WORD attribut;
+    WORD attribute;
     CONSOLE_SCREEN_BUFFER_INFO Info;
     CONSOLE_CURSOR_INFO CursInfo;
     DWORD len, NumberOfCharsWritten;
@@ -493,34 +463,34 @@ inline void InterpretEscSeq(void)
                         {
                         if (grm.rvideo)
                             {
-                            attribut = foregroundcolor[grm.foreground]
+                            attribute = foregroundcolor[grm.foreground]
                                 | backgroundcolor[grm.foreground];
                             if (grm.bold)
-                                attribut |= FOREGROUND_INTENSITY | BACKGROUND_INTENSITY;
+                                attribute |= FOREGROUND_INTENSITY | BACKGROUND_INTENSITY;
                             }
                         else
                             {
-                            attribut = foregroundcolor[grm.background]
+                            attribute = foregroundcolor[grm.background]
                                 | backgroundcolor[grm.background];
                             if (grm.underline)
-                                attribut |= FOREGROUND_INTENSITY | BACKGROUND_INTENSITY;
+                                attribute |= FOREGROUND_INTENSITY | BACKGROUND_INTENSITY;
                             }
                         }
                     else if (grm.rvideo)
                         {
-                        attribut = foregroundcolor[grm.background]
+                        attribute = foregroundcolor[grm.background]
                             | backgroundcolor[grm.foreground];
                         if (grm.bold)
-                            attribut |= BACKGROUND_INTENSITY;
+                            attribute |= BACKGROUND_INTENSITY;
                         if (grm.underline)
-                            attribut |= FOREGROUND_INTENSITY;
+                            attribute |= FOREGROUND_INTENSITY;
                         }
                     else
-                        attribut = foregroundcolor[grm.foreground] | grm.bold
+                        attribute = foregroundcolor[grm.foreground] | grm.bold
                         | backgroundcolor[grm.background] | grm.underline;
                     if (grm.reverse)
-                        attribut = ((attribut >> 4) & 15) | ((attribut & 15) << 4);
-                    SetConsoleTextAttribute(hConOut, attribut);
+                        attribute = ((attribute >> 4) & 15) | ((attribute & 15) << 4);
+                    SetConsoleTextAttribute(hConOut, attribute);
                     return;
 
                 case 'J':
@@ -807,7 +777,7 @@ inline void InterpretEscSeq(void)
                     if (es_argv[0] == 21)   // ESC[21t Report xterm window's title
                         {
                         WCHAR buf[MAX_PATH * 2];
-                        DWORD len = GetConsoleTitleW(buf + 3, lenof(buf) - 3 - 2);
+                        len = GetConsoleTitleW(buf + 3, lenof(buf) - 3 - 2);
                         // Too bad if it's too big or fails.
                         buf[0] = ESC;
                         buf[1] = ']';
@@ -1055,7 +1025,7 @@ inline int win32read(int *c) {
                         *c = 8;
                         return 1;
                     case VK_DELETE:
-                        *c = 127;
+                        *c = 4; /* same as Ctrl+D above */
                         return 1;
                     default:
                         if (*c) return 1;
@@ -1638,16 +1608,11 @@ inline bool enableRawMode(int fd) {
      * no start/stop output control. */
     raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
     /* output modes - disable post processing */
-
-    /* This line has been commented out due to causing issues whilst writing
-       to the terminal on another thread, whilst waiting for input with
-       readline. See further - https://github.com/antirez/linenoise/issues/128
-    raw.c_oflag &= ~(OPOST);
-    */
-
+    // NOTE: Multithreaded issue #20 (https://github.com/yhirose/cpp-linenoise/issues/20)
+    // raw.c_oflag &= ~(OPOST);
     /* control modes - set 8 bit chars */
     raw.c_cflag |= (CS8);
-    /* local modes - choing off, canonical off, no extended functions,
+    /* local modes - echoing off, canonical off, no extended functions,
      * no signal chars (^Z,^C) */
     raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
     /* control chars - set return condition: min number of bytes and timer.
@@ -1683,8 +1648,8 @@ inline bool enableRawMode(int fd) {
     }
 
     GetConsoleMode(hIn, &consolemodeIn);
-    DWORD consolemodeInWithRaw = consolemodeIn & ~ENABLE_PROCESSED_INPUT;
-    SetConsoleMode(hIn, consolemodeInWithRaw);
+    /* Enable raw mode */
+    SetConsoleMode(hIn, consolemodeIn & ~ENABLE_PROCESSED_INPUT);
 
     rawmode = true;
 #endif
@@ -1920,7 +1885,7 @@ inline void refreshMultiLine(struct linenoiseState *l) {
     int rows = (pcolwid+colpos+l->cols-1)/l->cols; /* rows used by current buf. */
     int rpos = (pcolwid+l->oldcolpos+l->cols)/l->cols; /* cursor relative row. */
     int rpos2; /* rpos after refresh. */
-    int col; /* colum position, zero-based. */
+    int col; /* column position, zero-based. */
     int old_rows = (int)l->maxrows;
     int fd = l->ofd, j;
     std::string ab;
@@ -1968,7 +1933,7 @@ inline void refreshMultiLine(struct linenoiseState *l) {
     /* Move cursor to right position. */
     rpos2 = (pcolwid+colpos2+l->cols)/l->cols; /* current cursor relative row. */
 
-    /* Go up till we reach the expected positon. */
+    /* Go up till we reach the expected position. */
     if (rows-rpos2 > 0) {
         snprintf(seq,64,"\x1b[%dA", rows-rpos2);
         ab += seq;
@@ -2106,7 +2071,7 @@ inline void linenoiseEditBackspace(struct linenoiseState *l) {
     }
 }
 
-/* Delete the previosu word, maintaining the cursor at the start of the
+/* Delete the previous word, maintaining the cursor at the start of the
  * current word. */
 inline void linenoiseEditDeletePrevWord(struct linenoiseState *l) {
     int old_pos = l->pos;
@@ -2444,6 +2409,7 @@ inline const std::vector<std::string>& GetHistory() {
 #undef isatty
 #undef write
 #undef read
+#pragma warning(pop)
 #endif
 
 #endif /* __LINENOISE_HPP */

@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022, Dynex Developers
+// Copyright (c) 2021-2023, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -41,11 +41,11 @@
 #include "Common/StdOutputStream.h"
 #include "Serialization/BinaryInputStreamSerializer.h"
 #include "Serialization/BinaryOutputStreamSerializer.h"
-#include "CryptoNoteCore/CryptoNoteSerialization.h"
+#include "DynexCNCore/DynexCNSerialization.h"
 
 using namespace Common;
 
-namespace CryptoNote {
+namespace DynexCN {
 
 SynchronizationState::ShortHistory SynchronizationState::getShortHistory(uint32_t localHeight) const {
   ShortHistory history;
@@ -129,17 +129,17 @@ const std::vector<Crypto::Hash>& SynchronizationState::getKnownBlockHashes() con
 
 void SynchronizationState::save(std::ostream& os) {
   StdOutputStream stream(os);
-  CryptoNote::BinaryOutputStreamSerializer s(stream);
+  DynexCN::BinaryOutputStreamSerializer s(stream);
   serialize(s, "state");
 }
 
 void SynchronizationState::load(std::istream& in) {
   StdInputStream stream(in);
-  CryptoNote::BinaryInputStreamSerializer s(stream);
+  DynexCN::BinaryInputStreamSerializer s(stream);
   serialize(s, "state");
 }
 
-CryptoNote::ISerializer& SynchronizationState::serialize(CryptoNote::ISerializer& s, const std::string& name) {
+DynexCN::ISerializer& SynchronizationState::serialize(DynexCN::ISerializer& s, const std::string& name) {
   s.beginObject(name);
   s(m_blockchain, "blockchain");
   s.endObject();

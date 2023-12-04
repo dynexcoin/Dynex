@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
 // Copyright (c) 2017-2019, The CROAT.community developers
 //
 // This file is part of Bytecoin.
@@ -22,7 +22,7 @@
 #include "ISerializer.h"
 #include "SerializationOverloads.h"
 
-namespace CryptoNote {
+namespace DynexCN {
 
 class BinaryInputStreamSerializer : public ISerializer {
 public:
