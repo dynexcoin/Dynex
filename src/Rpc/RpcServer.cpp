@@ -1572,7 +1572,7 @@ bool RpcServer::on_getblocktemplate(const COMMAND_RPC_GETBLOCKTEMPLATE::request&
       logger(ERROR) << "Failed to find tx pub key in blockblob";
       throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: failed to create block template" };
     }
-    res.reserved_offset += sizeof(tx_pub_key) + 64 + 64 + 8 + 32 + 7; //extra tags TX_EXTRA_TAG_PUBKEY, etc.
+    res.reserved_offset += sizeof(tx_pub_key) + 3; //64 + 64 + 8 + 32 + 7; //extra tags TX_EXTRA_TAG_PUBKEY, etc.
     if (res.reserved_offset + req.reserve_size > block_blob.size()) {
       logger(ERROR) << "Failed to calculate offset for reserved bytes";
       throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: failed to create block template" };
