@@ -193,7 +193,7 @@ public:
     m_coreConfig(coreConfig),
     m_logManager(logManager),
     m_netNodeConfig(netNodeConfig),
-    m_core(currency, NULL, logManager, true),
+    m_core(currency, NULL, logManager, false),
     m_protocolHandler(currency, m_dispatcher, m_core, nullptr, logManager),
     m_nodeServer(m_dispatcher, m_protocolHandler, logManager),
     m_node(m_core, m_protocolHandler) {
@@ -233,8 +233,14 @@ public:
     });
 
     m_nodeServer.run();
+
+    //deinitialize components
+    LoggerAdapter::instance().log("Deinitializing core...");
+    m_core.deinit();
     m_nodeServer.deinit();
-    m_node.shutdown();
+    m_core.set_cryptonote_protocol(NULL);
+    m_protocolHandler.set_p2p_endpoint(NULL);
+    m_node.shutdown();  
   }
 
   void deinit() override {

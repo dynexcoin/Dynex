@@ -64,9 +64,12 @@ private:
   void sendTransactionCompleted(DynexCN::TransactionId _id, bool _error, const QString& _error_text);
   void walletActualBalanceUpdated(quint64 _balance);
   void insertPaymentId(QString _paymentId);
+  void walletSynchronizationInProgress();
+  void walletSynchronized(int _error, const QString& _error_text);
 
   Q_SLOT void addRecipientClicked();
   Q_SLOT void clearAllClicked();
+  Q_SLOT void optimizeClicked();
   //Q_SLOT void mixinValueChanged(int _value);
   Q_SLOT void sendClicked();
 };

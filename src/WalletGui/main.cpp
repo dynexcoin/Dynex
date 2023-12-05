@@ -123,12 +123,12 @@ int main(int argc, char* argv[]) {
   }
 #endif
 
-  LoggerAdapter::instance().init();
-
   QString dataDirPath = Settings::instance().getDataDir().absolutePath();
   if (!QDir().exists(dataDirPath)) {
     QDir().mkpath(dataDirPath);
   }
+
+  LoggerAdapter::instance().init();
 
   QLockFile lockFile(Settings::instance().getDataDir().absoluteFilePath(QApplication::applicationName() + ".lock"));
   if (!lockFile.tryLock()) {
@@ -194,7 +194,13 @@ int main(int argc, char* argv[]) {
   splash = nullptr;
 
   MainWindow::instance().show();
-  Settings::instance().setWalletFile(Settings::instance().getWalletFile()); // update recent
+  QString wallet = Settings::instance().getWalletFile();
+  if (!wallet.isEmpty()) {
+    Settings::instance().setWalletFile(wallet);
+  } else {
+    WalletAdapter::instance().setWalletFile(Settings::instance().getDataDir().absoluteFilePath(QCoreApplication::applicationName() + ".wallet"));
+    WalletAdapter::instance().createWallet();
+  }
   WalletAdapter::instance().open("");
 
   return app.exec();

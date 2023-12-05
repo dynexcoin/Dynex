@@ -27,6 +27,7 @@
         <file alias="export">icons/export.png</file>
         <file alias="tx-inout">icons/tx_inout.png</file>
         <file alias="unconfirmed">icons/unconfirmed.png</file>
+        <file alias="cancelled">icons/cancelled.png</file>
     </qresource>
     <qresource prefix="/images">
         <file alias="splash">images/splash.png</file>

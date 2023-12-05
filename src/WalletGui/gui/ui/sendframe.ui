@@ -79,13 +79,13 @@
        </property>
        <property name="minimumSize">
         <size>
-         <width>150</width>
+         <width>100</width>
          <height>0</height>
         </size>
        </property>
        <property name="baseSize">
         <size>
-         <width>150</width>
+         <width>100</width>
          <height>0</height>
         </size>
        </property>
@@ -99,19 +99,19 @@
         <string/>
        </property>
        <property name="decimals">
-        <number>8</number>
+        <number>4</number>
        </property>
        <property name="minimum">
-        <double>0.000100000000000</double>
+        <double>0.0010</double>
        </property>
        <property name="maximum">
-        <double>9999.000000000000000</double>
+        <double>1.000000000000000</double>
        </property>
        <property name="singleStep">
-        <double>0.000100000000000</double>
+        <double>0.0001</double>
        </property>
        <property name="value">
-        <double>0.000100000000000</double>
+        <double>0.0010</double>
        </property>
       </widget>
      </item>
@@ -186,6 +186,17 @@
       </widget>
      </item>
      <item>
+      <widget class="QPushButton" name="m_optimizeButton">
+       <property name="text">
+        <string>Optimize</string>
+       </property>
+       <property name="icon">
+        <iconset resource="../../resources.qrc">
+         <normaloff>:/icons/transactions</normaloff>:/icons/transactions</iconset>
+       </property>
+      </widget>
+     </item>
+     <item>
       <spacer name="horizontalSpacer_2">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
@@ -227,6 +238,7 @@
   <tabstop>m_paymentIdEdit</tabstop>
   <tabstop>m_sendButton</tabstop>
   <tabstop>m_clearAllButton</tabstop>
+  <tabstop>m_optimizeButton</tabstop>
   <tabstop>m_addRecipientButton</tabstop>
   <tabstop>m_transfersScrollarea</tabstop>
  </tabstops>
@@ -267,6 +279,22 @@
    </hints>
   </connection>
   <connection>
+   <sender>m_optimizeButton</sender>
+   <signal>clicked()</signal>
+   <receiver>SendFrame</receiver>
+   <slot>optimizeClicked()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>181</x>
+     <y>561</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>432</x>
+     <y>294</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
    <sender>m_sendButton</sender>
    <signal>clicked()</signal>
    <receiver>SendFrame</receiver>
@@ -286,6 +314,7 @@
  <slots>
   <slot>sendClicked()</slot>
   <slot>clearAllClicked()</slot>
+  <slot>optimizeClicked()</slot>
   <slot>addRecipientClicked()</slot>
   <slot>mixinValueChanged(int)</slot>
  </slots>

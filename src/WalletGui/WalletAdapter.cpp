@@ -131,20 +131,21 @@ quint64 WalletAdapter::getPendingBalance() const {
 void WalletAdapter::open(const QString& _password) {
   Q_ASSERT(m_wallet == nullptr);
   Settings::instance().setEncrypted(!_password.isEmpty());
-  QString msg = "Opening wallet " + Settings::instance().getWalletFile();
+  QString wallet = Settings::instance().getWalletFile();
+  QString msg = "Opening wallet " + wallet;
   Q_EMIT walletStateChangedSignal(msg);
 
   m_wallet = NodeAdapter::instance().createWallet();
   m_wallet->addObserver(this);
 
-  if (QFile::exists(Settings::instance().getWalletFile())) {
+  if (QFile::exists(wallet)) {
     if (Settings::instance().getWalletFile().endsWith(".keys")) {
       if(!importLegacyWallet(_password)) {
         return;
       }
     }
 
-    if (openFile(Settings::instance().getWalletFile(), true)) {
+    if (openFile(wallet, true)) {
       try {
         m_wallet->initAndLoad(m_file, _password.toStdString());
       } catch (std::system_error&) {
@@ -154,19 +155,7 @@ void WalletAdapter::open(const QString& _password) {
       }
     }
   } else {
-    Settings::instance().setEncrypted(false);
-    try {
-#ifndef GENERATE_DETERMINISTIC
-      m_wallet->initAndGenerate("");
-#else
-      m_wallet->initAndGenerateDeterministic("");
-      VerifyMnemonicSeedDialog dlg(nullptr);
-      dlg.exec();
-#endif
-    } catch (std::system_error&) {
-      delete m_wallet;
-      m_wallet = nullptr;
-    }
+    QMessageBox::critical(nullptr, tr("Wallet file not found"), wallet, QMessageBox::Ok);
   }
 }
 
@@ -373,7 +362,10 @@ bool WalletAdapter::getAccountKeys(DynexCN::AccountKeys& _keys) {
 
 void WalletAdapter::sendTransaction(const QVector<DynexCN::WalletLegacyTransfer>& _transfers, quint64 _fee, const QString& _paymentId, quint64 _mixin) {
   Q_CHECK_PTR(m_wallet);
-  
+  if (!m_isSynchronized) {
+    QMessageBox::warning(nullptr, tr("Warning"), tr("Wallet is not synchronized!"), QMessageBox::Ok);
+    return;
+  }  
   try {
     lock();
     std::vector<DynexCN::WalletLegacyTransfer> vec(_transfers.begin(), _transfers.end());
@@ -618,6 +610,60 @@ DynexCN::AccountKeys WalletAdapter::getKeysFromMnemonicSeed(QString& _seed) cons
   keccak((uint8_t *)&keys.spendSecretKey, sizeof(Crypto::SecretKey), (uint8_t *)&second, sizeof(Crypto::SecretKey));
   Crypto::generate_deterministic_keys(keys.address.viewPublicKey,keys.viewSecretKey,second);
   return keys;
+}
+
+quint64 WalletAdapter::estimateFusion(quint64 _threshold) {
+  Q_CHECK_PTR(m_wallet);
+  try {
+    return m_wallet->estimateFusion(_threshold);
+  } catch (std::system_error&) {
+  }
+  return 0;
+}
+
+std::list<DynexCN::TransactionOutputInformation> WalletAdapter::getFusionTransfersToSend(quint64 _threshold, size_t _min_input_count, size_t _max_input_count) {
+  Q_CHECK_PTR(m_wallet);
+  try {
+    return m_wallet->selectFusionTransfersToSend(_threshold, _min_input_count, _max_input_count);
+  } catch (std::system_error&) {
+  }
+  return {};
+}
+
+void WalletAdapter::sendFusionTransaction(const std::list<DynexCN::TransactionOutputInformation>& _fusion_inputs, quint64 _mixin) {
+  Q_CHECK_PTR(m_wallet);
+  try {
+    lock();
+    Q_EMIT walletStateChangedSignal(tr("Optimizing wallet"));
+    m_wallet->sendFusionTransaction(_fusion_inputs, 0, "", _mixin, 0);
+  } catch (std::system_error&) {
+    unlock();
+  }
+}
+
+bool WalletAdapter::isFusionTransaction(const DynexCN::WalletLegacyTransaction& walletTx) const {
+  Q_CHECK_PTR(m_wallet);
+  return m_wallet->isFusionTransaction(walletTx);
+}
+
+void WalletAdapter::optimize(const quint64 mixin) {
+  if (!isOpen() || !m_isSynchronized) return;
+  uint64_t fusionThreshold = getActualBalance();
+  //size_t fusionReadyCount = estimateFusion(fusionThreshold);
+  const size_t MAX_FUSION_OUTPUT_COUNT = 4;
+  size_t estimatedFusionInputsCount = CurrencyAdapter::instance().getCurrency().getApproximateMaximumInputCount(CurrencyAdapter::instance().getCurrency().fusionTxMaxSize(), MAX_FUSION_OUTPUT_COUNT, mixin);
+  if (estimatedFusionInputsCount < CurrencyAdapter::instance().getCurrency().fusionTxMinInputCount()) {
+    QMessageBox::warning(nullptr, tr("Optimize"), tr("Anonimity level is too high!"), QMessageBox::Ok);
+    return;
+  }
+  std::list<DynexCN::TransactionOutputInformation> fusionInputs = getFusionTransfersToSend(fusionThreshold, CurrencyAdapter::instance().getCurrency().fusionTxMinInputCount(), estimatedFusionInputsCount);
+  if (fusionInputs.size() < CurrencyAdapter::instance().getCurrency().fusionTxMinInputCount()) {
+    QMessageBox::warning(nullptr, tr("Optimize"), tr("Nothing to do!"), QMessageBox::Ok);
+    return;
+  }
+  if (QMessageBox::warning(nullptr, tr("Optimize"), tr("Send fusion transaction?"), QMessageBox::Ok, QMessageBox::Cancel) == QMessageBox::Ok) {
+    sendFusionTransaction(fusionInputs, mixin);
+  }
 }
 
 }

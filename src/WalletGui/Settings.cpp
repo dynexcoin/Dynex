@@ -176,8 +176,7 @@ QDir Settings::getDataDir() const {
 }
 
 QString Settings::getWalletFile() const {
-  return m_settings.contains("walletFile") ? m_settings.value("walletFile").toString() :
-    getDataDir().absoluteFilePath(QCoreApplication::applicationName() + ".wallet");
+  return m_settings.contains("walletFile") ? m_settings.value("walletFile").toString() : QString();
 }
 
 QStringList Settings::getRecentWalletsList() const {

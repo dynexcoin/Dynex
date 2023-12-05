@@ -55,21 +55,39 @@ namespace WalletGui {
 SendFrame::SendFrame(QWidget* _parent) : QFrame(_parent), m_ui(new Ui::SendFrame) {
   m_ui->setupUi(this);
   clearAllClicked();
+  m_ui->m_sendButton->setEnabled(false);
+  m_ui->m_optimizeButton->setEnabled(false);
 
   connect(&WalletAdapter::instance(), &WalletAdapter::walletSendTransactionCompletedSignal, this, &SendFrame::sendTransactionCompleted,
     Qt::QueuedConnection);
   connect(&WalletAdapter::instance(), &WalletAdapter::walletActualBalanceUpdatedSignal, this, &SendFrame::walletActualBalanceUpdated,
     Qt::QueuedConnection);
 
+  connect(&WalletAdapter::instance(), &WalletAdapter::walletSynchronizationProgressUpdatedSignal,
+    this, &SendFrame::walletSynchronizationInProgress, Qt::QueuedConnection);
+  connect(&WalletAdapter::instance(), &WalletAdapter::walletSynchronizationCompletedSignal, this, &SendFrame::walletSynchronized
+    , Qt::QueuedConnection);
+
   m_ui->m_tickerLabel->setText(CurrencyAdapter::instance().getCurrencyTicker().toUpper());
   m_ui->m_feeSpin->setSuffix(" " + CurrencyAdapter::instance().getCurrencyTicker().toUpper());
-  double fee = CurrencyAdapter::instance().formatAmount(NodeAdapter::instance().getMinimalFee()).toDouble();
-  m_ui->m_feeSpin->setValue(fee);
-  m_ui->m_feeSpin->setMinimum(fee);
-  m_ui->m_feeSpin->setMaximum(fee*1000);
+  //double fee = CurrencyAdapter::instance().formatAmount(NodeAdapter::instance().getMinimalFee()).toDouble();
+  //m_ui->m_feeSpin->setValue(fee);
+  //m_ui->m_feeSpin->setMinimum(fee);
+  //m_ui->m_feeSpin->setMaximum(fee*1000);
 }
 
 SendFrame::~SendFrame() {
+}
+
+void SendFrame::walletSynchronizationInProgress() {
+  m_ui->m_sendButton->setEnabled(false);
+  m_ui->m_optimizeButton->setEnabled(false);
+}
+
+void SendFrame::walletSynchronized(int _error, const QString& _error_text) {
+  bool enabled = (WalletAdapter::instance().getActualBalance() > 0 && _error == 0);
+  m_ui->m_sendButton->setEnabled(enabled);
+  m_ui->m_optimizeButton->setEnabled(enabled);
 }
 
 void SendFrame::addRecipientClicked() {
@@ -103,10 +121,15 @@ void SendFrame::clearAllClicked() {
   m_ui->m_feeSpin->setValue(CurrencyAdapter::instance().formatAmount(NodeAdapter::instance().getMinimalFee()).toDouble());
 }
 
+void SendFrame::optimizeClicked() {
+  WalletAdapter::instance().optimize(0);
+}
+
 void SendFrame::sendClicked() {
 
   double minfee = CurrencyAdapter::instance().formatAmount(NodeAdapter::instance().getMinimalFee()).toDouble();
-  if (m_ui->m_feeSpin->value() > minfee*1000) {
+
+  if (m_ui->m_feeSpin->value() > 1.0) { // minfee*1000
     QCoreApplication::postEvent(&MainWindow::instance(), new ShowMessageEvent(tr("Fee is too high"), QtCriticalMsg)); 
     return;
   }

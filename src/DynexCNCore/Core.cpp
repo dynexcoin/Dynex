@@ -1141,15 +1141,8 @@ bool core::getTransactionsByAddress(const std::string address, std::vector<Trans
   std::vector<Crypto::Hash> blockchainTransactionHashes;
   m_blockchain.getTransactionIdsByAddress(address, blockchainTransactionHashes); // Blockchain.cpp
 
-  std::vector<Crypto::Hash> poolTransactionHashes;
-  m_mempool.getTransactionIdsByAddress(address, poolTransactionHashes); //TransactionPool.cpp
-
   std::list<Transaction> txs;
   std::list<Crypto::Hash> missed_txs;
-
-  if (!poolTransactionHashes.empty()) {
-    blockchainTransactionHashes.insert(blockchainTransactionHashes.end(), poolTransactionHashes.begin(), poolTransactionHashes.end());
-  }
 
   if (blockchainTransactionHashes.empty()) {
     return false;

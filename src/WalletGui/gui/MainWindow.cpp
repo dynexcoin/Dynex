@@ -475,7 +475,7 @@ void MainWindow::openRecent() {
       WalletAdapter::instance().setWalletFile(filePath);
       WalletAdapter::instance().open("");
     } else {
-       QMessageBox::warning(this, tr("Recent wallet file not found"), tr("The recent wallet file is missing. Probably it was removed."), QMessageBox::Ok);
+       QMessageBox::warning(this, tr("Wallet file not found"), tr("The recent wallet file is missing. Probably it was removed."), QMessageBox::Ok);
     }
   }
 }

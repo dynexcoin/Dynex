@@ -39,6 +39,7 @@
 #include <QFont>
 #include <QMetaEnum>
 #include <QPixmap>
+#include <QPixmapCache>
 
 #include "CurrencyAdapter.h"
 #include "NodeAdapter.h"
@@ -48,7 +49,9 @@
 
 namespace WalletGui {
 
-enum class TransactionType : quint8 {MINED, INPUT, OUTPUT, INOUT};
+enum class TransactionType : quint8 {MINED, INPUT, OUTPUT, INOUT, FUSION};
+
+enum class TransactionState : quint8 {ACTIVE, DELETED, SENDING, CANCELLED, FAILED};
 
 namespace {
 
@@ -61,6 +64,7 @@ QPixmap getTransactionIcon(TransactionType _transactionType) {
   case TransactionType::OUTPUT:
     return QPixmap(":icons/tx-output");
   case TransactionType::INOUT:
+  case TransactionType::FUSION:
     return QPixmap(":icons/tx-inout");
   default:
     break;
@@ -217,7 +221,7 @@ QVariant TransactionsModel::getDisplayRole(const QModelIndex& _index) const {
   case COLUMN_ADDRESS: {
     TransactionType transactionType = static_cast<TransactionType>(_index.data(ROLE_TYPE).value<quint8>());
     if (transactionType == TransactionType::INPUT || transactionType == TransactionType::MINED ||
-        transactionType == TransactionType::INOUT) {
+        transactionType == TransactionType::INOUT || transactionType == TransactionType::FUSION) {
       return QString(tr("me (%1)").arg(WalletAdapter::instance().getAddress()));
     } 
 
@@ -261,21 +265,32 @@ QVariant TransactionsModel::getDisplayRole(const QModelIndex& _index) const {
 QVariant TransactionsModel::getDecorationRole(const QModelIndex& _index) const {
   if(_index.column() == COLUMN_STATE) {
     quint64 numberOfConfirmations = _index.data(ROLE_NUMBER_OF_CONFIRMATIONS).value<quint64>();
-    if(numberOfConfirmations == 0) {
-      return QPixmap(":icons/unconfirmed");
+    TransactionState transactionState = static_cast<TransactionState>(_index.data(ROLE_STATE).value<quint8>());
+    QString file;
+    if (transactionState != TransactionState::ACTIVE && transactionState != TransactionState::SENDING) {
+      file = QString(":icons/cancelled");
+    } else if (numberOfConfirmations == 0) {
+      file = QString(":icons/unconfirmed");
     } else if(numberOfConfirmations < 2) {
-      return QPixmap(":icons/clock1");
+      file = QString(":icons/clock1");
     } else if(numberOfConfirmations < 4) {
-      return QPixmap(":icons/clock2");
+      file = QString(":icons/clock2");
     } else if(numberOfConfirmations < 6) {
-      return QPixmap(":icons/clock3");
+      file = QString(":icons/clock3");
     } else if(numberOfConfirmations < 8) {
-      return QPixmap(":icons/clock4");
+      file = QString(":icons/clock4");
     } else if(numberOfConfirmations < 10) {
-      return QPixmap(":icons/clock5");
+      file = QString(":icons/clock5");
     } else {
-      return QPixmap(":icons/transaction");
+      file = QString(":icons/transaction");
     }
+    QPixmap pixmap;
+    if (!QPixmapCache::find(file, &pixmap)) {
+      pixmap.load(file);
+      QPixmapCache::insert(file, pixmap);
+    }
+    return pixmap;
+
   } else if (_index.column() == COLUMN_ADDRESS) {
     return _index.data(ROLE_ICON).value<QPixmap>().scaled(20, 20, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
   }
@@ -290,6 +305,10 @@ QVariant TransactionsModel::getAlignmentRole(const QModelIndex& _index) const {
 QVariant TransactionsModel::getUserRole(const QModelIndex& _index, int _role, DynexCN::TransactionId _transactionId,
   DynexCN::WalletLegacyTransaction& _transaction, DynexCN::TransferId _transferId, DynexCN::WalletLegacyTransfer& _transfer) const {
   switch(_role) {
+
+  case ROLE_STATE:
+    return static_cast<quint8>(_transaction.state);
+      
   case ROLE_DATE:
     return (_transaction.timestamp > 0 ? QDateTime::fromTime_t(_transaction.timestamp) : QDateTime());
 
@@ -297,6 +316,8 @@ QVariant TransactionsModel::getUserRole(const QModelIndex& _index, int _role, Dy
     QString transactionAddress = _index.data(ROLE_ADDRESS).toString();
     if(_transaction.isCoinbase) {
       return static_cast<quint8>(TransactionType::MINED);
+    } else if (WalletAdapter::instance().isFusionTransaction(_transaction)) {
+      return static_cast<quint8>(TransactionType::FUSION);
     } else if (!transactionAddress.compare(WalletAdapter::instance().getAddress())) {
       return static_cast<quint8>(TransactionType::INOUT);
     } else if(_transaction.totalAmount < 0) {

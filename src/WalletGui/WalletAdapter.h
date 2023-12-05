@@ -95,6 +95,12 @@ public:
   QString getMnemonicSeed(QString _language) const;
   DynexCN::AccountKeys getKeysFromMnemonicSeed(QString& _seed) const;
 
+  quint64 estimateFusion(quint64 _threshold);
+  std::list<DynexCN::TransactionOutputInformation> getFusionTransfersToSend(quint64 _threshold, size_t _min_input_count, size_t _max_input_count);
+  void sendFusionTransaction(const std::list<DynexCN::TransactionOutputInformation>& _fusion_inputs, quint64 _mixin);
+  bool isFusionTransaction(const DynexCN::WalletLegacyTransaction& walletTx) const;
+  void optimize(const quint64 mixin);
+
 private:
   std::fstream m_file;
   DynexCN::IWalletLegacy* m_wallet;
