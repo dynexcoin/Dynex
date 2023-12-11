@@ -287,6 +287,20 @@ namespace DynexCN
     int ret = 0;
     handled = true;
 
+    // enforce new version?:
+    if (m_network_id!=m_network_id_np && newversiondate()) {
+      m_network_id = m_network_id_np;
+      logger(INFO, BRIGHT_GREEN) << "Switched network to non-privacy " << m_network_id;
+      // drop this connection:
+      ctx.m_state = DynexCNConnectionContext::state_shutdown;
+      // drop all other connections:
+      forEachConnection([&](P2pConnectionContext& context) {
+          context.m_state = DynexCNConnectionContext::state_shutdown;
+          logger(INFO) << "Node connection to " << Common::ipAddressToString(context.m_remote_ip) << " dropped";
+      });
+      return 0;
+    }
+
     if (cmd.isResponse && cmd.command == COMMAND_TIMED_SYNC::ID) {
       if (!handleTimedSyncResponse(cmd.buf, ctx)) {
         // invalid response, close connection

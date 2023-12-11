@@ -53,7 +53,7 @@ using namespace Logging;
 namespace DynexCN {
 
 	// mallob block authentication endpoints
-	static const std::vector<std::string> mallob_endpoints{ "https://node.dynexcoin.org", "https://node2.dynexcoin.org", "https://network.dynexcoin.org" };
+	static const std::vector<std::string> mallob_endpoints{ "https://networkv2.dynexcoin.org", "https://node.dynexcoin.org", "https://node2.dynexcoin.org", "https://network.dynexcoin.org" };
 	static const int mallob_timeout = 20;
 
 	// curl return value function
