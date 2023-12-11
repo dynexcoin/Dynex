@@ -143,6 +143,9 @@ public:
   virtual size_t getTransactionCount() = 0;
   virtual size_t getTransferCount() = 0;
   virtual size_t getUnlockedOutputsCount() = 0;
+  // offline-signature:
+  virtual std::vector<TransactionOutputInformation> getUnlockedOutputs() = 0;
+  virtual TransactionId signTransaction(Transaction& tx, Crypto::SecretKey tx_key, uint64_t amount, uint64_t fee) = 0;
 
   virtual TransactionId findTransactionByTransferId(TransferId transferId) = 0;
   

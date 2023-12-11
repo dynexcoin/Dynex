@@ -27,7 +27,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 // Parts of this project are originally copyright by:
-// Copyright (c) 2012-2016, The CN developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The DynexCN developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
@@ -48,6 +48,7 @@
 #include <Logging/LoggerGroup.h>
 
 #include <random>
+#include <fstream>
 
 using namespace Crypto;
 
@@ -162,6 +163,63 @@ std::shared_ptr<WalletRequest> WalletTransactionSender::makeSendRequest(Transact
   }
 
   return doSendTransaction(context, events);
+}
+
+// offline transaction
+std::shared_ptr<WalletRequest> WalletTransactionSender::makeSignRequest(TransactionId& transactionId, std::deque<std::shared_ptr<WalletLegacyEvent>>& events,
+     Transaction& tx, Crypto::SecretKey tx_key, uint64_t amount, uint64_t fee) {
+
+    std::shared_ptr<SendTransactionContext> context = std::make_shared<SendTransactionContext>();
+
+    context->tx_key = tx_key;
+    context->foundMoney = amount;
+    context->mixIn = 0;
+    uint64_t neededMoney = (uint64_t)(amount/1000000000);
+
+    std::string extra = "";
+    std::vector<WalletLegacyTransfer> transfers;
+    uint64_t unlockTimestamp = 0;
+
+    transactionId = m_transactionsCache.addNewTransaction(neededMoney, fee, extra, transfers, unlockTimestamp);
+    
+    /// print tx:
+    std::cout << "-----------------------------------------------------------------------------------------" << std::endl;
+    std::cout << "SIGNING OFFLINE TRANSACTION" << std::endl;
+    std::cout << "-----------------------------------------------------------------------------------------" << std::endl;
+    //std::cout     << "tx_key           : " << Common::podToHex(tx_key) << std::endl;
+    std::cout     << "amount           : " << amount << std::endl;
+    std::cout     << "fee              : " << fee << std::endl;
+    std::cout     << "version          : " << tx.version << std::endl;
+    std::cout     << "unlockTime       : " << tx.unlockTime << std::endl;
+    std::cout     << "extra            : " << Common::podToHex(tx.extra) << std::endl;
+    std::cout     << "extra size       : " << tx.extra.size() << std::endl;
+
+    for (auto input: tx.inputs) {
+        DynexCN::KeyInput inp = boost::get<KeyInput>(input);
+        std::cout << "input - amount   : " << inp.amount << std::endl;
+        std::cout << "input - keyimage : " << Common::podToHex(inp.keyImage) << std::endl;
+        for (auto index : inp.outputIndexes) std::cout << "input outputIndex " << index << std::endl;
+    }
+    for (auto output : tx.outputs) {
+        std::cout << "output - amount  : " << output.amount << std::endl;
+        DynexCN::KeyOutput outt = boost::get<KeyOutput>(output.target);
+        std::cout << "output - target key : " << Common::podToHex(outt) << std::endl;
+    }
+    for (auto signatures : tx.signatures) {
+        std::cout << "signature(s)        : ";
+        for (auto signature : signatures) {
+          std::cout << Common::podToHex(signature) << " ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << "-----------------------------------------------------------------------------------------" << std::endl;
+
+    m_transactionsCache.updateTransaction(context->transactionId, tx, amount, context->selectedTransfers, context->tx_key);
+    std::error_code ec;
+    events.push_back(makeCompleteEvent(m_transactionsCache, context->transactionId, ec));
+
+    return std::make_shared<WalletRelayTransactionRequest>(tx, std::bind(&WalletTransactionSender::relayTransactionCallback, this, context,
+        std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 }
 
 std::shared_ptr<WalletRequest> WalletTransactionSender::makeSendDustRequest(TransactionId& transactionId, std::deque<std::shared_ptr<WalletLegacyEvent>>& events,

@@ -61,7 +61,7 @@ bool WalletUserTransactionsCache::serialize(DynexCN::ISerializer& s) {
 
     updateUnconfirmedTransactions();
     deleteOutdatedTransactions();
-	  rebuildPaymentsIndex();
+	rebuildPaymentsIndex();
   } else {
     UserTransactions txsToSave;
     UserTransfers transfersToSave;
@@ -136,7 +136,7 @@ TransactionId WalletUserTransactionsCache::addNewTransaction(
   uint64_t amount, uint64_t fee, const std::string& extra, const std::vector<WalletLegacyTransfer>& transfers, uint64_t unlockTime) {
   
   WalletLegacyTransaction transaction;
-
+ 
   transaction.firstTransferId = insertTransfers(transfers);
   transaction.transferCount = transfers.size();
   transaction.totalAmount = -static_cast<int64_t>(amount);
@@ -155,10 +155,12 @@ TransactionId WalletUserTransactionsCache::addNewTransaction(
 
 void WalletUserTransactionsCache::updateTransaction(
   TransactionId transactionId, const DynexCN::Transaction& tx, uint64_t amount, const std::list<TransactionOutputInformation>& usedOutputs, Crypto::SecretKey& tx_key) {
+
   // update extra field from created transaction
   auto& txInfo = m_transactions.at(transactionId);
   txInfo.extra.assign(tx.extra.begin(), tx.extra.end());
   txInfo.secretKey = tx_key;
+
   m_unconfirmedTransactions.add(tx, transactionId, amount, usedOutputs, tx_key);
 }
 

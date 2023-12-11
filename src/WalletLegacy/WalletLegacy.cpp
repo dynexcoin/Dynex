@@ -687,6 +687,13 @@ size_t WalletLegacy::getUnlockedOutputsCount() {
   return outputs.size();
 }
 
+// offline signature:
+std::vector<TransactionOutputInformation> WalletLegacy::getUnlockedOutputs() {
+  std::vector<TransactionOutputInformation> outputs;
+  m_transferDetails->getOutputs(outputs, ITransfersContainer::IncludeKeyUnlocked);
+  return outputs;
+}
+
 size_t WalletLegacy::estimateFusion(const uint64_t& threshold) {
   size_t fusionReadyCount = 0;
   std::vector<TransactionOutputInformation> outputs;
@@ -815,6 +822,30 @@ TransactionId WalletLegacy::sendTransaction(const std::vector<WalletLegacyTransf
   }
 
   return txId;
+}
+
+// offline transaction
+TransactionId WalletLegacy::signTransaction(Transaction& tx, Crypto::SecretKey tx_key, uint64_t amount, uint64_t fee) {
+
+  TransactionId txId = 0;
+  std::shared_ptr<WalletRequest> request;
+  std::deque<std::shared_ptr<WalletLegacyEvent>> events;
+  throwIfNotInitialised();
+
+  {
+    std::unique_lock<std::mutex> lock(m_cacheMutex);
+    request = m_sender->makeSignRequest(txId, events, tx, tx_key, amount, fee);
+  }
+
+  notifyClients(events);
+
+  if (request) {
+    m_asyncContextCounter.addAsyncContext();
+    request->perform(m_node, std::bind(&WalletLegacy::sendTransactionCallback, this, std::placeholders::_1, std::placeholders::_2));
+  }
+
+  return txId;
+
 }
 
 TransactionId WalletLegacy::sendDustTransaction(const std::vector<WalletLegacyTransfer>& transfers, uint64_t fee, const std::string& extra, uint64_t mixIn, uint64_t unlockTimestamp) {

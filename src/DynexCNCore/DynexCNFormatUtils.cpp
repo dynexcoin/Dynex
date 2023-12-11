@@ -161,7 +161,7 @@ bool constructTransaction(
   tx_key = txkey.secretKey;
   //add tx_key to extra:
   addTxkeyToExtra(tx.extra, tx_key);
-
+  
   struct input_generation_context_data {
     KeyPair in_ephemeral;
   };
@@ -269,6 +269,7 @@ bool constructTransaction(
     tx.signatures.push_back(std::vector<Signature>());
     std::vector<Signature>& sigs = tx.signatures.back();
     sigs.resize(src_entr.outputs.size());
+
     generate_ring_signature(tx_prefix_hash, boost::get<KeyInput>(tx.inputs[i]).keyImage, keys_ptrs,
       in_contexts[i].in_ephemeral.secretKey, src_entr.realOutput, sigs.data());
     i++;
