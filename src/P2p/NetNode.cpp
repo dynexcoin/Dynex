@@ -1390,6 +1390,7 @@ namespace DynexCN
       add_host_fail(context.m_remote_ip);
       logger(Logging::INFO) << context << "WRONG NETWORK AGENT CONNECTED! id=" << arg.node_data.network_id;
       context.m_state = DynexCNConnectionContext::state_shutdown;
+      block_host(context.m_remote_ip, 24 * 60 * 60); // 24h
       return 1;
     }
 
