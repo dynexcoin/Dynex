@@ -130,25 +130,7 @@ namespace DynexCN {
 
      // non-privacy functions:
      bool check_non_privacy(const Transaction& tx);
-     int daysFromNowToInputDate(int day, int month, int year) {
-        auto now = std::chrono::system_clock::now();
-        time_t now_c = std::chrono::system_clock::to_time_t(now);
-        struct tm * timeGMT;
-        timeGMT = gmtime (&now_c);
-        struct tm inputDate = {0};
-        inputDate.tm_year = year - 1900;
-        inputDate.tm_mon = month - 1;
-        inputDate.tm_mday = day;
-        time_t inputDate_c = mktime(&inputDate);
-        time_t timeGMT_c = mktime(timeGMT);
-        double diff_seconds = difftime(inputDate_c, timeGMT_c);
-        int diff_days = diff_seconds / (60 * 60 * 24);
-        return diff_days;
-     }
-     bool newversiondate();
      
-
-
      bool have_block(const Crypto::Hash& id) override;
      std::vector<Crypto::Hash> buildSparseChain() override;
      std::vector<Crypto::Hash> buildSparseChain(const Crypto::Hash& startBlockId) override;

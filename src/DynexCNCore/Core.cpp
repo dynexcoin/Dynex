@@ -1213,22 +1213,7 @@ bool core::getPaymentId(const Transaction& transaction, Crypto::Hash& paymentId)
   return getPaymentIdFromTransactionExtraNonce(extraNonce.nonce, paymentId);
 }
 
-bool core::newversiondate() {
-  const int day = 15;
-  const int month = 12;
-  const int year = 2023;
-
-  if (daysFromNowToInputDate(day, month, year) < 0) 
-    return true;
-
-  return false;
-}
-
 bool core::check_non_privacy(const Transaction& tx) {
-
-  if (!newversiondate()) {
-    return true;
-  }
 
   logger(DEBUGGING) << "DEBUG (Core.cpp): check_non_privacy invoked for transaction " << getObjectHash(tx);
 
@@ -1256,7 +1241,7 @@ bool core::check_non_privacy(const Transaction& tx) {
   }
 
   // enforce only non-privacy tx:
-  if (newversiondate() && (amount.empty() || to_address.empty())) {
+  if (amount.empty() || to_address.empty()) {
      {
         logger(ERROR) << "Transaction " << getObjectHash(tx) << " rejected: privacy transaction";
         return false;

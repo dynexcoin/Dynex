@@ -454,17 +454,8 @@ bool Blockchain::have_tx_keyimg_as_spent(const Crypto::KeyImage &key_im) {
 }
 
 bool Blockchain::check_tx_inputs_keyimages_domain(const Crypto::KeyImage& keyImage) {
-  // scalar multiplication over I & R:
-  Crypto::KeyImage Ry = scalarmultKey(I, R);
-  // first validation:
-  if (!(scalarmultKey(I,R) == I)) {
-    logger(ERROR, BRIGHT_RED) << "Transaction uses key image not in the valid domain";
-    return true;
-  }
-  // validate ((key image * curve order) == (identity element)
-  Crypto::KeyImage Rx = scalarmultKey(R, keyImage);
-  bool r = keyImage!=R;
-  return r;
+  if (getCurrentBlockchainHeight()>334581) return true;
+  return keyImage!=R;
 }
 
 bool Blockchain::checkIfSpent(const Crypto::KeyImage& keyImage, uint32_t blockIndex) {
@@ -2094,22 +2085,7 @@ bool Blockchain::pushBlock(const Block& blockData, block_verification_context& b
   return true;
 }
 
-bool Blockchain::newversiondate() {
-    const int day = 15;
-    const int month = 12;
-    const int year = 2023;
-
-    if (daysFromNowToInputDate(day, month, year) < 0) 
-      return true;
-
-    return false;
-  }
-
 bool Blockchain::check_non_privacy(const Transaction& tx) {
-
-  if (!newversiondate()) {
-    return true;
-  }
 
   logger(DEBUGGING) << "DEBUG (Blockchain.cpp): check_non_privacy invoked for transaction " << getObjectHash(tx);
   DynexCN::TransactionPrefix transaction = *static_cast<const TransactionPrefix*>(&tx);
@@ -2136,7 +2112,7 @@ bool Blockchain::check_non_privacy(const Transaction& tx) {
   }
 
   // enforce only non-privacy tx:
-  if (newversiondate() && (amount.empty() || to_address.empty())) {
+  if (amount.empty() || to_address.empty()) {
      {
         logger(ERROR) << "Transaction " << getObjectHash(tx) << " rejected: privacy transaction";
         return false;

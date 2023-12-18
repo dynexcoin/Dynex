@@ -87,22 +87,6 @@ size_t get_random_index_with_fixed_probability(size_t max_index) {
   return (x*x*x) / (max_index*max_index); //parabola \/
 }
 
-int daysFromNowToInputDate(int day, int month, int year) {
-  auto now = std::chrono::system_clock::now();
-  time_t now_c = std::chrono::system_clock::to_time_t(now);
-  struct tm * timeGMT;
-  timeGMT = gmtime (&now_c);
-  struct tm inputDate = {0};
-  inputDate.tm_year = year - 1900;
-  inputDate.tm_mon = month - 1;
-  inputDate.tm_mday = day;
-  time_t inputDate_c = mktime(&inputDate);
-  time_t timeGMT_c = mktime(timeGMT);
-  double diff_seconds = difftime(inputDate_c, timeGMT_c);
-  int diff_days = diff_seconds / (60 * 60 * 24);
-  return diff_days;
-}
-
 void addPortMapping(Logging::LoggerRef& logger, uint32_t port) {
   // Add UPnP port mapping
   logger(INFO) << "Attempting to add IGD port mapping.";
@@ -255,16 +239,13 @@ namespace DynexCN
     m_payload_handler(payload_handler),
     m_allow_local_ip(false),
     m_hide_my_port(false),
-    m_network_id(BYTECOIN_NETWORK),
-    m_network_id_np(DYNEX_NETWORK),
+    m_network_id(DYNEX_NETWORK),
     logger(log, "node_server"),
     m_stopEvent(m_dispatcher),
     m_idleTimer(m_dispatcher),
     m_timedSyncTimer(m_dispatcher),
     m_timeoutTimer(m_dispatcher),
     m_stop(false),
-    // intervals
-    // m_peer_handshake_idle_maker_interval(DynexCN::P2P_DEFAULT_HANDSHAKE_INTERVAL),
     m_connections_maker_interval(1),
     m_peerlist_store_interval(60*30, false) {
   }
@@ -286,20 +267,6 @@ namespace DynexCN
   int NodeServer::handleCommand(const LevinProtocol::Command& cmd, BinaryArray& out, P2pConnectionContext& ctx, bool& handled) {
     int ret = 0;
     handled = true;
-
-    // enforce new version?:
-    if (m_network_id!=m_network_id_np && newversiondate()) {
-      m_network_id = m_network_id_np;
-      logger(INFO, BRIGHT_GREEN) << "Switched network to non-privacy " << m_network_id;
-      // drop this connection:
-      ctx.m_state = DynexCNConnectionContext::state_shutdown;
-      // drop all other connections:
-      forEachConnection([&](P2pConnectionContext& context) {
-          context.m_state = DynexCNConnectionContext::state_shutdown;
-          logger(INFO) << "Node connection to " << Common::ipAddressToString(context.m_remote_ip) << " dropped";
-      });
-      return 0;
-    }
 
     if (cmd.isResponse && cmd.command == COMMAND_TIMED_SYNC::ID) {
       if (!handleTimedSyncResponse(cmd.buf, ctx)) {
@@ -579,17 +546,6 @@ namespace DynexCN
 
 
   //-----------------------------------------------------------------------------------
-  bool NodeServer::newversiondate() {
-    const int day = 15;
-    const int month = 12;
-    const int year = 2023;
-
-    if (daysFromNowToInputDate(day, month, year) < 0) 
-      return true;
-
-    return false;
-  }
-  
   bool NodeServer::init(const NetNodeConfig& config) {
     if (!config.getTestnet()) {
       for (auto seed : DynexCN::SEED_NODES) {
@@ -597,7 +553,6 @@ namespace DynexCN
       }
     } else {
       m_network_id.data[0] += 1;
-      m_network_id_np.data[0] += 1;
     }
 
     if (!handleConfig(config)) { 
@@ -627,14 +582,8 @@ namespace DynexCN
     m_last_stat_request_time = 0;
 #endif
 
-    // enforce new version?:
-    if (newversiondate() || config.getTestnet()) {
-      m_network_id = m_network_id_np;
-    }
+    logger(INFO) << "Network (non-privacy): " << m_network_id;
     
-    logger(INFO) << "Network: " << m_network_id;
-    logger(INFO) << "Network (non-privacy): " << m_network_id_np;
-
     //try to bind
     logger(INFO) << "Binding on " << m_bind_ip << ":" << m_port;
     m_listeningPort = Common::fromString<uint16_t>(m_port);
@@ -755,11 +704,6 @@ namespace DynexCN
   //----------------------------------------------------------------------------------- 
   bool NodeServer::handshake(DynexCN::LevinProtocol& proto, P2pConnectionContext& context, bool just_take_peerlist) {
 
-    // enforce new version?
-    if (m_network_id!=m_network_id_np && newversiondate()) {
-      m_network_id = m_network_id_np;
-    }
-
     COMMAND_HANDSHAKE::request arg;
     COMMAND_HANDSHAKE::response rsp;
     get_local_node_data(arg.node_data);
@@ -772,7 +716,7 @@ namespace DynexCN
 
     context.version = rsp.node_data.version;
     
-    if ((rsp.node_data.network_id != m_network_id) && (rsp.node_data.network_id != m_network_id_np)) {
+    if (rsp.node_data.network_id != m_network_id) {
       logger(Logging::DEBUGGING) << context << "COMMAND_HANDSHAKE Failed, wrong network!  (" << rsp.node_data.network_id << "), closing connection.";
       return false;
     }
@@ -1179,11 +1123,6 @@ namespace DynexCN
   bool NodeServer::get_local_node_data(basic_node_data& node_data)
   {
 
-    // enforce new version?
-    if (m_network_id!=m_network_id_np && newversiondate()) {
-      m_network_id = m_network_id_np;
-    }
-
     node_data.version = P2PProtocolVersion::CURRENT;
     node_data.node_version = CN_PROJECT_VERSION;   
 
@@ -1373,11 +1312,6 @@ namespace DynexCN
   
   int NodeServer::handle_handshake(int command, COMMAND_HANDSHAKE::request& arg, COMMAND_HANDSHAKE::response& rsp, P2pConnectionContext& context)
   {
-    // enforce new version?
-    if (m_network_id!=m_network_id_np && newversiondate()) {
-      m_network_id = m_network_id_np;
-    }
-    
     context.version = arg.node_data.version;
 
 	if (!is_remote_host_allowed(context.m_remote_ip)) {
@@ -1386,7 +1320,7 @@ namespace DynexCN
 		return 1;
 	}
 
-    if ((arg.node_data.network_id != m_network_id) && (arg.node_data.network_id != m_network_id_np)) {
+    if (arg.node_data.network_id != m_network_id) {
       add_host_fail(context.m_remote_ip);
       logger(Logging::INFO) << context << "WRONG NETWORK AGENT CONNECTED! id=" << arg.node_data.network_id;
       context.m_state = DynexCNConnectionContext::state_shutdown;
