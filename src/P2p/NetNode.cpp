@@ -89,7 +89,7 @@ size_t get_random_index_with_fixed_probability(size_t max_index) {
 
 void addPortMapping(Logging::LoggerRef& logger, uint32_t port) {
   // Add UPnP port mapping
-  logger(INFO) << "Attempting to add IGD port mapping.";
+  logger(INFO) << "Attempting to add IGD port mapping for TCP " << std::to_string(port) << ".";
   int result;
   UPNPDev* deviceList = upnpDiscover(1000, NULL, NULL, 0, 0, 2, &result);
   UPNPUrls urls;
@@ -595,7 +595,7 @@ namespace DynexCN
     if(m_external_port)
       logger(INFO) << "External port defined as " << m_external_port;
 
-    addPortMapping(logger, m_listeningPort);
+    addPortMapping(logger, m_external_port?m_external_port:m_listeningPort);
 
     return true;
   }
@@ -721,31 +721,17 @@ namespace DynexCN
       return false;
     }
 
-    std::stringstream ss;
-    ss << CN_PROJECT_VERSION;
-    std::string lvs;
-    ss >> lvs;
-
     // only allow current version
-  	if (rsp.node_data.node_version!=lvs) {
+  	if (rsp.node_data.node_version != CN_PROJECT_VERSION) {
   	    logger(Logging::DEBUGGING) << context << "COMMAND_HANDSHAKE Failed, wrong daemon version!  (" << rsp.node_data.node_version << "), closing connection.";
   	    return false;
   	} 
     // ---
 
-	  // Check for latest Daemon version (unused from here)
-    std::string remote_version = boost::replace_all_copy(rsp.node_data.node_version, ".", "");
-    std::string remote_version_str = rsp.node_data.node_version;
-    remote_version_str.erase(std::remove(remote_version_str.begin(), remote_version_str.end(), '\n'), remote_version_str.end());          
-      
-    auto local_version = boost::replace_all_copy(lvs, ".", "");
-    auto remote_ip = Common::ipAddressToString(context.m_remote_ip);
-    std::string min_version = "200";
-      
     // Check if is trusted node
     if (std::find(std::begin(DynexCN::TRUSTED_NODES), std::end(DynexCN::TRUSTED_NODES), Common::ipAddressToString(context.m_remote_ip)) != std::end(DynexCN::TRUSTED_NODES))
     {
-    logger(Logging::DEBUGGING, Logging::BRIGHT_BLUE) << context << "CONNECTING TO TRUSTED NODE! - Skip version check!";      
+      logger(Logging::DEBUGGING, Logging::BRIGHT_BLUE) << context << "CONNECTING TO TRUSTED NODE!";
     } 
     
     if (!handle_remote_peerlist(rsp.local_peerlist, rsp.node_data.local_time, context)) {
@@ -1115,7 +1101,7 @@ namespace DynexCN
     if(!fix_time_delta(peerlist_, local_time, delta))
       return false;
     logger(Logging::TRACE) << context << "REMOTE PEERLIST: TIME_DELTA: " << delta << ", remote peerlist size=" << peerlist_.size();
-    logger(Logging::TRACE) << context << "REMOTE PEERLIST: " <<  print_peerlist_to_string(peerlist_);
+    //logger(Logging::TRACE) << context << "REMOTE PEERLIST: " <<  print_peerlist_to_string(peerlist_);
     return m_peerlist.merge_peerlist(peerlist_);
   }
   //-----------------------------------------------------------------------------------
@@ -1303,9 +1289,18 @@ namespace DynexCN
 
     //fill response
     rsp.local_time = time(NULL);
-    m_peerlist.get_peerlist_head(rsp.local_peerlist);
+    std::list<PeerlistEntry> local_peerlist_new;
+    m_peerlist.get_peerlist_head(local_peerlist_new);
+    size_t cnt = local_peerlist_new.size();
+    //only include out peers we did not already send
+    for (auto &pe : local_peerlist_new)
+    {
+      if (!context.sent_addresses.insert(pe.adr).second)
+        continue;
+      rsp.local_peerlist.push_back(std::move(pe));
+    }
     m_payload_handler.get_payload_sync_data(rsp.payload_data);
-    logger(Logging::TRACE) << context << "COMMAND_TIMED_SYNC";
+    logger(Logging::TRACE) << context << "COMMAND_TIMED_SYNC (peers: " << rsp.local_peerlist.size() << "/" << cnt << ")";
     return 1;
   }
   //-----------------------------------------------------------------------------------
@@ -1321,56 +1316,19 @@ namespace DynexCN
 	}
 
     if (arg.node_data.network_id != m_network_id) {
-      add_host_fail(context.m_remote_ip);
+      //add_host_fail(context.m_remote_ip);
       logger(Logging::INFO) << context << "WRONG NETWORK AGENT CONNECTED! id=" << arg.node_data.network_id;
       context.m_state = DynexCNConnectionContext::state_shutdown;
-      block_host(context.m_remote_ip, 24 * 60 * 60); // 24h
+      block_host(context.m_remote_ip, 1 * 60 * 60); // 1h
       return 1;
     }
 
+    // Check if is trusted node
+    if (std::find(std::begin(DynexCN::TRUSTED_NODES), std::end(DynexCN::TRUSTED_NODES), Common::ipAddressToString(context.m_remote_ip)) != std::end(DynexCN::TRUSTED_NODES))
+    {
+      logger(Logging::DEBUGGING, Logging::BRIGHT_BLUE)  << context <<  "INCOMMING TRUSTED NODE DETECTED!";
+    }
 
-	// By DYNEX
-    //Check for latest Daemon version
-      std::string remote_version = boost::replace_all_copy(arg.node_data.node_version, ".", "");
-      
-      std::string remote_version_str = arg.node_data.node_version;
-      remote_version_str.erase(std::remove(remote_version_str.begin(), remote_version_str.end(), '\n'), remote_version_str.end());          
-          
-      std::stringstream ss;
-      ss << CN_PROJECT_VERSION;
-      std::string lvs;
-      ss >> lvs;
-      
-      auto local_version = boost::replace_all_copy(lvs, ".", "");
-      auto remote_ip = Common::ipAddressToString(context.m_remote_ip);
-      std::string min_version = "200";
-      
-      // Check if is trusted node
-      if (std::find(std::begin(DynexCN::TRUSTED_NODES), std::end(DynexCN::TRUSTED_NODES), Common::ipAddressToString(context.m_remote_ip)) != std::end(DynexCN::TRUSTED_NODES))
-      {
-      logger(Logging::DEBUGGING, Logging::BRIGHT_BLUE)  << context <<  "INCOMMING TRUSTED NODE DETECTED! - Skip version check!";      
-      } 
-      // Else Continue checking versions
-      /*else 
-      {
-          if(local_version == remote_version)
-          {
-                logger(Logging::DEBUGGING, Logging::BRIGHT_GREEN)  << context <<  "GREAT!! Imcomming peer " << remote_ip << " are using same version!! (" << remote_version_str << ")";
-          }
-          else if(remote_version > min_version)
-          {
-                logger(Logging::DEBUGGING, Logging::BRIGHT_GREEN)  << context <<  "GREAT!! Imcomming peer " << remote_ip << " are using accepted version!! (" << remote_version_str << ")";
-          }
-          else if((local_version > remote_version) && (remote_version < min_version))
-          {
-              logger(DEBUGGING, Logging::BRIGHT_RED)  << context <<  "Daemon version on imcomming peer " << remote_ip << " is not up to date! (" << remote_version_str << ") Closing connection...";
-              context.m_state = DynexCNConnectionContext::state_shutdown;
-              return 1;
-          }
-      }*/
-	
-    // Continue
-    
     if(!context.m_is_income) {
       add_host_fail(context.m_remote_ip);
       logger(Logging::DEBUGGING) << context << "COMMAND_HANDSHAKE came not from incoming connection";
@@ -1411,6 +1369,9 @@ namespace DynexCN
 
     //fill response
     m_peerlist.get_peerlist_head(rsp.local_peerlist);
+    for (const auto &e : rsp.local_peerlist) {
+      context.sent_addresses.insert(e.adr);
+    }
     get_local_node_data(rsp.node_data);
     m_payload_handler.get_payload_sync_data(rsp.payload_data);
 

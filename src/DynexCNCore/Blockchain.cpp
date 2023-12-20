@@ -57,8 +57,6 @@
 using namespace Logging;
 using namespace Common;
 
-std::unordered_map<Crypto::Hash, bool> PrivacyMemBC;
-
 namespace {
 
 std::string appendPath(const std::string& path, const std::string& fileName) {
@@ -2090,20 +2088,20 @@ bool Blockchain::pushBlock(const Block& blockData, block_verification_context& b
 bool Blockchain::check_non_privacy(const Transaction& tx) {
 
   // purge?:
-  const Crypto::Hash _txhash = getObjectHash(tx);
+  const Crypto::Hash txhash = getObjectHash(tx);
   if (PrivacyMemBC.size()>1000) {
     logger(DEBUGGING) << "DEBUG (Blockchain.cpp): memory purged ";
     PrivacyMemBC.clear();
   } else {
     // check only once
-    auto it = PrivacyMemBC.find(_txhash);
+    auto it = PrivacyMemBC.find(txhash);
     if (it != PrivacyMemBC.end()) {
-      logger(DEBUGGING) << "DEBUG (Blockchain.cpp): using check_non_privacy memory for transaction " << getObjectHash(tx);
+      logger(DEBUGGING) << "DEBUG (Blockchain.cpp): using check_non_privacy memory for transaction " << txhash;
       return it->second;
     }
   }
 
-  logger(DEBUGGING) << "DEBUG (Blockchain.cpp): check_non_privacy invoked for transaction " << getObjectHash(tx);
+  logger(DEBUGGING) << "DEBUG (Blockchain.cpp): check_non_privacy invoked for transaction " << txhash;
   DynexCN::TransactionPrefix transaction = *static_cast<const TransactionPrefix*>(&tx);
 
   std::vector<TransactionExtraField> txExtraFields;
@@ -2130,8 +2128,8 @@ bool Blockchain::check_non_privacy(const Transaction& tx) {
   // enforce only non-privacy tx:
   if (amount.empty() || to_address.empty()) {
      {
-        logger(ERROR) << "Transaction " << getObjectHash(tx) << " rejected: privacy transaction";
-        PrivacyMemBC.insert({_txhash, false});
+        logger(ERROR) << "Transaction " << txhash << " rejected: privacy transaction";
+        PrivacyMemBC.insert({txhash, false});
         return false;
       }
   }
@@ -2145,14 +2143,14 @@ bool Blockchain::check_non_privacy(const Transaction& tx) {
       if (!Crypto::generate_key_derivation(address.viewPublicKey, tx_key, derivation))
       {
         logger(ERROR) << "Failed to generate key derivation from transaction";
-        PrivacyMemBC.insert({_txhash, false});
+        PrivacyMemBC.insert({txhash, false});
         return false;
       }
       
       // look for outputs
       uint64_t received(0);
       size_t keyIndex(0);
-      std::vector<TransactionOutput> outputs;
+      //std::vector<TransactionOutput> outputs;
       try {
         for (const TransactionOutput& o : transaction.outputs) {
           if (o.target.type() == typeid(KeyOutput)) {
@@ -2161,7 +2159,7 @@ bool Blockchain::check_non_privacy(const Transaction& tx) {
             derive_public_key(derivation, keyIndex, address.spendPublicKey, pubkey);
             if (pubkey == out_key.key) {
               received += o.amount;
-              outputs.push_back(o);
+              //outputs.push_back(o);
             }
           }
           ++keyIndex;
@@ -2170,18 +2168,18 @@ bool Blockchain::check_non_privacy(const Transaction& tx) {
       catch (...)
       {
         logger(ERROR) << "Failed to parse transaction outputs";
-        PrivacyMemBC.insert({_txhash, false});
+        PrivacyMemBC.insert({txhash, false});
         return false;
       }
 
       if ((uint64_t)amount[i] != received) {
         logger(ERROR) << "Error: transaction addresses & output amount mismatch";
-        PrivacyMemBC.insert({_txhash, false});
+        PrivacyMemBC.insert({txhash, false});
         return false;
       }
   }
-  logger(DEBUGGING) << "PASSED non_privacy transaction validation: " << getObjectHash(tx);
-  PrivacyMemBC.insert({_txhash, true});
+  logger(DEBUGGING) << "PASSED non_privacy transaction validation: " << txhash;
+  PrivacyMemBC.insert({txhash, true});
   return true;
 }
 

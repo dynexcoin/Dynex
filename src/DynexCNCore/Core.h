@@ -128,9 +128,6 @@ namespace DynexCN {
 
      static bool getPaymentId(const Transaction& transaction, Crypto::Hash& paymentId);
 
-     // non-privacy functions:
-     bool check_non_privacy(const Transaction& tx);
-     
      bool have_block(const Crypto::Hash& id) override;
      std::vector<Crypto::Hash> buildSparseChain() override;
      std::vector<Crypto::Hash> buildSparseChain(const Crypto::Hash& startBlockId) override;

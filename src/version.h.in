@@ -23,4 +23,4 @@
 #define CN_CURRENCY_DISPLAY_NAME "DYNEX"
 #define CN_CURRENCY_TICKER "DNX"
 
-#define CN_WALLET_REV ".3 (non-privacy)"
+#define CN_WALLET_REV ".5 (non-privacy)"

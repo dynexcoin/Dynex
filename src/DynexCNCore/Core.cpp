@@ -1216,106 +1216,6 @@ bool core::getPaymentId(const Transaction& transaction, Crypto::Hash& paymentId)
   return getPaymentIdFromTransactionExtraNonce(extraNonce.nonce, paymentId);
 }
 
-bool core::check_non_privacy(const Transaction& tx) {
-
-  // purge?:
-  const Crypto::Hash _txhash = getObjectHash(tx);
-  if (PrivacyMem.size()>1000) {
-    logger(DEBUGGING) << "DEBUG (Core.cpp): memory purged ";
-    PrivacyMem.clear();
-  } else {
-    // check only once
-    auto it = PrivacyMem.find(_txhash);
-    if (it != PrivacyMem.end()) {
-      logger(DEBUGGING) << "DEBUG (Core.cpp): using check_non_privacy memory for transaction " << getObjectHash(tx);
-      return it->second;
-    }
-  }
-
-  logger(DEBUGGING) << "DEBUG (Core.cpp): check_non_privacy invoked for transaction " << getObjectHash(tx);
-
-  DynexCN::TransactionPrefix transaction = *static_cast<const TransactionPrefix*>(&tx);
-
-  std::vector<TransactionExtraField> txExtraFields;
-  parseTransactionExtra(tx.extra, txExtraFields);
-  AccountPublicAddress from_address;
-  Crypto::SecretKey tx_key;
-  std::vector<AccountPublicAddress> to_address;
-  std::vector<int64_t> amount;
-
-  for (const TransactionExtraField& field : txExtraFields) {
-    if (typeid(TransactionExtraFromAddress) == field.type()) {
-      from_address = boost::get<TransactionExtraFromAddress>(field).address;
-    } else if (typeid(TransactionExtraToAddress) == field.type()) {
-      to_address.push_back(boost::get<TransactionExtraToAddress>(field).address);
-    } else if (typeid(TransactionExtraAmount) == field.type()) {
-      std::vector<uint8_t> amount_vec = boost::get<TransactionExtraAmount>(field).amount;
-      int64_t amtint = getAmountInt64(amount_vec);
-      amount.push_back(amtint);
-    } else if (typeid(TransactionExtraTxkey) == field.type()) {
-      tx_key = boost::get<TransactionExtraTxkey>(field).tx_key;
-    }
-  }
-
-  // enforce only non-privacy tx:
-  if (amount.empty() || to_address.empty()) {
-     {
-        logger(ERROR) << "Transaction " << getObjectHash(tx) << " rejected: privacy transaction";
-        PrivacyMem.insert({_txhash, false});
-        return false;
-      }
-  }
-
-  // check for all destination address(es):
-  for (uint32_t i=0; i<to_address.size(); i++) {
-      AccountPublicAddress address = to_address[i];
-      
-      // obtain key derivation
-      Crypto::KeyDerivation derivation;
-      if (!Crypto::generate_key_derivation(address.viewPublicKey, tx_key, derivation))
-      {
-        logger(ERROR) << "Failed to generate key derivation from transaction";
-        PrivacyMem.insert({_txhash, false});
-        return false;
-      }
-      
-      // look for outputs
-      uint64_t received(0);
-      size_t keyIndex(0);
-      std::vector<TransactionOutput> outputs;
-      try {
-        for (const TransactionOutput& o : transaction.outputs) {
-          if (o.target.type() == typeid(KeyOutput)) {
-            const KeyOutput out_key = boost::get<KeyOutput>(o.target);
-            Crypto::PublicKey pubkey;
-            derive_public_key(derivation, keyIndex, address.spendPublicKey, pubkey);
-            if (pubkey == out_key.key) {
-              received += o.amount;
-              outputs.push_back(o);
-            }
-          }
-          ++keyIndex;
-        }
-      }
-      catch (...)
-      {
-        logger(ERROR) << "Failed to parse transaction outputs";
-        PrivacyMem.insert({_txhash, false});
-        return false;
-      }
-
-      if ((uint64_t)amount[i] != received) {
-        logger(ERROR) << "Error: transaction addresses & output amount mismatch";
-        PrivacyMem.insert({_txhash, false});
-        return false;
-      }
-
-  }
-  logger(DEBUGGING) << "PASSED non_privacy transaction validation: " << getObjectHash(tx);
-  PrivacyMem.insert({_txhash, true});
-  return true;
-}
-
 bool core::handleIncomingTransaction(const Transaction& tx, const Crypto::Hash& txHash, size_t blobSize, tx_verification_context& tvc, bool keptByBlock, uint32_t height) {
   if (!check_tx_syntax(tx)) {
     logger(INFO) << "WRONG TRANSACTION BLOB, Failed to check tx " << txHash << " syntax, rejected";
@@ -1348,7 +1248,7 @@ bool core::handleIncomingTransaction(const Transaction& tx, const Crypto::Hash& 
       return false;
 	  }
 
-    if (!check_non_privacy(tx)) {
+    if (!m_blockchain.check_non_privacy(tx)) {
       logger(ERROR) << "Transaction verification failed: incorrect non-privacy data " << txHash << ", rejected";
       tvc.m_verification_failed = true;
       return false;      

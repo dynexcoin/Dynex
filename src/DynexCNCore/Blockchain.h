@@ -250,8 +250,12 @@ namespace DynexCN {
     bool is_tx_spendtime_unlocked(uint64_t unlock_time);
     bool is_tx_spendtime_unlocked(uint64_t unlock_time, uint32_t height);
     bool check_tx_inputs_keyimages_domain(const Crypto::KeyImage& keyImage);
+    // non-privacy functions:
+    bool check_non_privacy(const Transaction& tx);
 
   private:
+
+    std::unordered_map<Crypto::Hash, bool> PrivacyMemBC;
 
     struct MultisignatureOutputUsage {
       TransactionIndex transactionIndex;
@@ -382,8 +386,6 @@ namespace DynexCN {
     bool checkTransactionInputs(const Transaction& tx, const Crypto::Hash& tx_prefix_hash, uint32_t* pmax_used_block_height = NULL);
     bool checkTransactionInputs(const Transaction& tx, uint32_t* pmax_used_block_height = NULL);
     const TransactionEntry& transactionByIndex(TransactionIndex index);
-    // non-privacy functions:
-    bool check_non_privacy(const Transaction& tx);
     bool pushBlock(const Block& blockData, block_verification_context& bvc);
     bool pushBlock(const Block& blockData, const std::vector<Transaction>& transactions, block_verification_context& bvc);
     bool pushBlock(BlockEntry& block);
