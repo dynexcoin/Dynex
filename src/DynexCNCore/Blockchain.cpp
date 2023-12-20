@@ -57,6 +57,8 @@
 using namespace Logging;
 using namespace Common;
 
+std::unordered_map<Crypto::Hash, bool> PrivacyMemBC;
+
 namespace {
 
 std::string appendPath(const std::string& path, const std::string& fileName) {
@@ -2087,6 +2089,20 @@ bool Blockchain::pushBlock(const Block& blockData, block_verification_context& b
 
 bool Blockchain::check_non_privacy(const Transaction& tx) {
 
+  // purge?:
+  const Crypto::Hash _txhash = getObjectHash(tx);
+  if (PrivacyMemBC.size()>1000) {
+    logger(DEBUGGING) << "DEBUG (Blockchain.cpp): memory purged ";
+    PrivacyMemBC.clear();
+  } else {
+    // check only once
+    auto it = PrivacyMemBC.find(_txhash);
+    if (it != PrivacyMemBC.end()) {
+      logger(DEBUGGING) << "DEBUG (Blockchain.cpp): using check_non_privacy memory for transaction " << getObjectHash(tx);
+      return it->second;
+    }
+  }
+
   logger(DEBUGGING) << "DEBUG (Blockchain.cpp): check_non_privacy invoked for transaction " << getObjectHash(tx);
   DynexCN::TransactionPrefix transaction = *static_cast<const TransactionPrefix*>(&tx);
 
@@ -2115,6 +2131,7 @@ bool Blockchain::check_non_privacy(const Transaction& tx) {
   if (amount.empty() || to_address.empty()) {
      {
         logger(ERROR) << "Transaction " << getObjectHash(tx) << " rejected: privacy transaction";
+        PrivacyMemBC.insert({_txhash, false});
         return false;
       }
   }
@@ -2128,6 +2145,7 @@ bool Blockchain::check_non_privacy(const Transaction& tx) {
       if (!Crypto::generate_key_derivation(address.viewPublicKey, tx_key, derivation))
       {
         logger(ERROR) << "Failed to generate key derivation from transaction";
+        PrivacyMemBC.insert({_txhash, false});
         return false;
       }
       
@@ -2152,19 +2170,18 @@ bool Blockchain::check_non_privacy(const Transaction& tx) {
       catch (...)
       {
         logger(ERROR) << "Failed to parse transaction outputs";
+        PrivacyMemBC.insert({_txhash, false});
         return false;
       }
 
       if ((uint64_t)amount[i] != received) {
         logger(ERROR) << "Error: transaction addresses & output amount mismatch";
+        PrivacyMemBC.insert({_txhash, false});
         return false;
       }
-
-      logger(DEBUGGING) << "PASSED non_privacy transaction validation: " << getObjectHash(tx);
-
   }
-  
-
+  logger(DEBUGGING) << "PASSED non_privacy transaction validation: " << getObjectHash(tx);
+  PrivacyMemBC.insert({_txhash, true});
   return true;
 }
 

@@ -64,6 +64,9 @@ using namespace Logging;
 
 using namespace  Common;
 
+std::unordered_map<Crypto::Hash, bool> PrivacyMem;
+
+
 namespace DynexCN {
 
 class BlockWithTransactions : public IBlock {
@@ -1215,6 +1218,20 @@ bool core::getPaymentId(const Transaction& transaction, Crypto::Hash& paymentId)
 
 bool core::check_non_privacy(const Transaction& tx) {
 
+  // purge?:
+  const Crypto::Hash _txhash = getObjectHash(tx);
+  if (PrivacyMem.size()>1000) {
+    logger(DEBUGGING) << "DEBUG (Core.cpp): memory purged ";
+    PrivacyMem.clear();
+  } else {
+    // check only once
+    auto it = PrivacyMem.find(_txhash);
+    if (it != PrivacyMem.end()) {
+      logger(DEBUGGING) << "DEBUG (Core.cpp): using check_non_privacy memory for transaction " << getObjectHash(tx);
+      return it->second;
+    }
+  }
+
   logger(DEBUGGING) << "DEBUG (Core.cpp): check_non_privacy invoked for transaction " << getObjectHash(tx);
 
   DynexCN::TransactionPrefix transaction = *static_cast<const TransactionPrefix*>(&tx);
@@ -1244,6 +1261,7 @@ bool core::check_non_privacy(const Transaction& tx) {
   if (amount.empty() || to_address.empty()) {
      {
         logger(ERROR) << "Transaction " << getObjectHash(tx) << " rejected: privacy transaction";
+        PrivacyMem.insert({_txhash, false});
         return false;
       }
   }
@@ -1257,6 +1275,7 @@ bool core::check_non_privacy(const Transaction& tx) {
       if (!Crypto::generate_key_derivation(address.viewPublicKey, tx_key, derivation))
       {
         logger(ERROR) << "Failed to generate key derivation from transaction";
+        PrivacyMem.insert({_txhash, false});
         return false;
       }
       
@@ -1281,19 +1300,19 @@ bool core::check_non_privacy(const Transaction& tx) {
       catch (...)
       {
         logger(ERROR) << "Failed to parse transaction outputs";
+        PrivacyMem.insert({_txhash, false});
         return false;
       }
 
       if ((uint64_t)amount[i] != received) {
         logger(ERROR) << "Error: transaction addresses & output amount mismatch";
+        PrivacyMem.insert({_txhash, false});
         return false;
       }
 
-      logger(DEBUGGING) << "PASSED non_privacy transaction validation: " << getObjectHash(tx);
-
   }
-  
-
+  logger(DEBUGGING) << "PASSED non_privacy transaction validation: " << getObjectHash(tx);
+  PrivacyMem.insert({_txhash, true});
   return true;
 }
 
