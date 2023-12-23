@@ -126,6 +126,7 @@ public:
   std::error_code estimateFusion(uint64_t threshold, const std::vector<std::string>& addresses, uint32_t& fusionReadyCount, uint32_t& totalOutputCount);
   std::error_code validateAddress(const std::string& address, bool& isvalid, std::string& _address, std::string& spendPublicKey, std::string& viewPublicKey);
   std::error_code getReserveProof(std::string& reserveProof, const std::string& address, const std::string& message, const uint64_t& amount = 0);
+  std::error_code getExportOutputs(std::string& message, const std::string& address);
 
 private:
   void refresh();

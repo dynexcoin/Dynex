@@ -117,9 +117,10 @@ private:
   std::error_code handleGetAddresses(const GetAddresses::Request& request, GetAddresses::Response& response);
   std::error_code handleValidateAddress(const ValidateAddress::Request& request, ValidateAddress::Response& response);
   std::error_code handleGetReserveProof(const GetReserveProof::Request& request, GetReserveProof::Response& response);
-
   std::error_code handleSendFusionTransaction(const SendFusionTransaction::Request& request, SendFusionTransaction::Response& response);
   std::error_code handleEstimateFusion(const EstimateFusion::Request& request, EstimateFusion::Response& response);
+  // offline signature:
+  std::error_code handleexportOutputs(const ExportOutputs::Request& request, ExportOutputs::Response& response);
 };
 
 }//namespace PaymentService

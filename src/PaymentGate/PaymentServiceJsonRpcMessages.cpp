@@ -320,6 +320,18 @@ void GetReserveProof::Response::serialize(DynexCN::ISerializer& serializer) {
   serializer(reserveProof, "reserveProof");
 }
 
+// offline-signature:
+void ExportOutputs::Request::serialize(DynexCN::ISerializer& serializer) {
+  if (!serializer(address, "address")) {
+    throw RequestSerializationError();
+  }
+}
+
+void ExportOutputs::Response::serialize(DynexCN::ISerializer& serializer) {
+  serializer(message, "message");
+}
+// --
+
 void WalletRpcOrder::serialize(DynexCN::ISerializer& serializer) {
   bool r = serializer(address, "address");
   r &= serializer(amount, "amount");

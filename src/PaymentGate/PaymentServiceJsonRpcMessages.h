@@ -399,6 +399,21 @@ struct GetReserveProof {
   };
 };
 
+// offline-signature:
+struct ExportOutputs {
+  struct Request {
+    std::string address;
+  
+    void serialize(DynexCN::ISerializer& serializer);
+  };
+
+  struct Response {
+    std::string message;
+
+    void serialize(DynexCN::ISerializer& serializer);
+  };
+};
+
 struct WalletRpcOrder {
   std::string address;
   uint64_t amount;

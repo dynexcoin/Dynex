@@ -78,6 +78,9 @@
 #include "WalletUtils.h"
 #include "DynexCNCore/TransactionExtra.h"
 
+// offline signature:
+#include <Common/Base64.h>
+
 extern "C"
 {
 #include "crypto/keccak.h"
@@ -2828,6 +2831,29 @@ bool WalletGreen::getTransactionProof(const Crypto::Hash& transactionHash, const
     Tools::Base58::encode(std::string((const char *)&sig, sizeof(Crypto::Signature)));
 
   return true;
+}
+
+// offline-signature:
+std::string WalletGreen::getSpendableOutputs(const std::string& address) {
+  throwIfNotInitialized();
+  throwIfStopped();
+
+  WalletOuts outs = pickWallet(address);
+
+  std::cout << "Exporting outputs: " << outs.outs.size() << std::endl;
+
+  std::stringstream fout;
+  for (auto& t : outs.outs) {
+    fout.write(reinterpret_cast<char*>(&t.amount), sizeof(t.amount));
+    fout.write(reinterpret_cast<char*>(&t.globalOutputIndex), sizeof(t.globalOutputIndex));
+    fout.write(reinterpret_cast<char*>(&t.outputInTransaction), sizeof(t.outputInTransaction));
+    fout.write(reinterpret_cast<char*>(&t.transactionHash), sizeof(t.transactionHash));
+    fout.write(reinterpret_cast<char*>(&t.transactionPublicKey), sizeof(t.transactionPublicKey));
+    fout.write(reinterpret_cast<char*>(&t.outputKey), sizeof(t.outputKey));
+    fout.write(reinterpret_cast<char*>(&t.requiredSignatures), sizeof(t.requiredSignatures));
+  }
+
+  return Tools::Base64::encode(fout.str());
 }
 
 std::string WalletGreen::getReserveProof(const uint64_t &reserve, const std::string& address, const std::string &message) {

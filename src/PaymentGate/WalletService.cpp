@@ -1183,6 +1183,21 @@ std::error_code WalletService::getReserveProof(std::string& reserveProof, const 
   return std::error_code();
 }
 
+// offline-signature
+std::error_code WalletService::getExportOutputs(std::string& message, const std::string& address) {
+  try {
+    System::EventLock lk(readyEvent);
+    message = wallet.getSpendableOutputs(address);
+  } catch (std::system_error& x) {
+    logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while getting outputs: " << x.what();
+    return x.code();
+  } catch (std::exception& x) {
+    logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while getting outputs: " << x.what();
+    return make_error_code(DynexCN::error::INTERNAL_WALLET_ERROR);
+  }
+  return std::error_code();
+}
+
 std::error_code WalletService::getAddresses(std::vector<std::string>& addresses) {
   try {
     System::EventLock lk(readyEvent);
