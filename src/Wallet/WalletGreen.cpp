@@ -78,9 +78,6 @@
 #include "WalletUtils.h"
 #include "DynexCNCore/TransactionExtra.h"
 
-// offline signature:
-#include <Common/Base64.h>
-
 extern "C"
 {
 #include "crypto/keccak.h"
@@ -2853,7 +2850,7 @@ std::string WalletGreen::getSpendableOutputs(const std::string& address) {
     fout.write(reinterpret_cast<char*>(&t.requiredSignatures), sizeof(t.requiredSignatures));
   }
 
-  return Tools::Base64::encode(fout.str());
+  return fout.str();
 }
 
 std::string WalletGreen::getReserveProof(const uint64_t &reserve, const std::string& address, const std::string &message) {
