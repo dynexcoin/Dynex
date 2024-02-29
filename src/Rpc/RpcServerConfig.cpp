@@ -44,7 +44,7 @@ namespace DynexCN {
 
   namespace {
 
-    const std::string DEFAULT_RPC_IP = "127.0.0.1";
+    const std::string DEFAULT_RPC_IP = "0.0.0.0";
     const uint16_t DEFAULT_RPC_PORT = RPC_DEFAULT_PORT;
 
     const command_line::arg_descriptor<std::string> arg_rpc_bind_ip = { "rpc-bind-ip", "", DEFAULT_RPC_IP };
