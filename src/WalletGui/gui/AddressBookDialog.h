@@ -38,6 +38,7 @@
 #pragma once
 
 #include <QDialog>
+#include <QSortFilterProxyModel>
 
 namespace Ui {
 class AddressBookDialog;
@@ -58,6 +59,7 @@ public:
 
 private:
   QScopedPointer<Ui::AddressBookDialog> m_ui;
+  QSortFilterProxyModel* m_proxyModel;
 };
 
 }

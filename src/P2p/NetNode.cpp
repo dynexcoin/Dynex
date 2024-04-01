@@ -43,8 +43,6 @@
 #include <chrono>
 
 #include <boost/foreach.hpp>
-#include <boost/uuid/random_generator.hpp>
-#include <boost/uuid/uuid_io.hpp>
 #include <boost/utility/value_init.hpp>
 
 #include <miniupnpc/miniupnpc.h>
@@ -670,38 +668,14 @@ namespace DynexCN
     m_stop = true;
 
     m_dispatcher.remoteSpawn([this] {
-      m_stopEvent.set();
       m_payload_handler.stop();
+      m_stopEvent.set();
     });
 
     logger(INFO, BRIGHT_YELLOW) << "Stop signal sent";
     return true;
   }
 
-  // ----------------------------------------------------------------------------------
-  time_t now = time(0);
-  tm *ltm = localtime(&now);
-
-  bool checkFutureDate(int year, int month, int day) {
-    if(year > (1900 + ltm->tm_year)) {
-      return true;
-    }
-    else if(year == (1900 + ltm->tm_year)) {
-      //adding 1900 to get the current year
-      if(month > 1 + ltm->tm_mon) {
-        //adding 1 to get the current month
-        return true;
-      }
-      else if(month == 1 + ltm->tm_mon) {
-        if(day > ltm->tm_mday) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  //----------------------------------------------------------------------------------- 
   bool NodeServer::handshake(DynexCN::LevinProtocol& proto, P2pConnectionContext& context, bool just_take_peerlist) {
 
     COMMAND_HANDSHAKE::request arg;
@@ -803,7 +777,7 @@ namespace DynexCN
   void NodeServer::forEachConnection(std::function<void(P2pConnectionContext&)> action) {
 
     // create copy of connection ids because the list can be changed during action
-    std::vector<boost::uuids::uuid> connectionIds;
+    std::vector<uuid> connectionIds;
     connectionIds.reserve(m_connections.size());
     for (const auto& c : m_connections) {
       connectionIds.push_back(c.first);
@@ -870,7 +844,7 @@ namespace DynexCN
 
       P2pConnectionContext ctx(m_dispatcher, logger.getLogger(), std::move(connection));
 
-      ctx.m_connection_id = boost::uuids::random_generator()();
+      ctx.m_connection_id = Crypto::rand<uuid>();
       ctx.m_remote_ip = na.ip;
       ctx.m_remote_port = na.port;
       ctx.m_is_income = false;
@@ -915,7 +889,7 @@ namespace DynexCN
       }
 
       auto iter = m_connections.emplace(ctx.m_connection_id, std::move(ctx)).first;
-      const boost::uuids::uuid& connectionId = iter->first;
+      const uuid& connectionId = iter->first;
       P2pConnectionContext& connectionContext = iter->second;
 
       m_workingContextGroup.spawn(std::bind(&NodeServer::connectionHandler, this, std::cref(connectionId), std::ref(connectionContext)));
@@ -1479,7 +1453,7 @@ namespace DynexCN
     while(!m_stop) {
       try {
         P2pConnectionContext ctx(m_dispatcher, logger.getLogger(), m_listener.accept());
-        ctx.m_connection_id = boost::uuids::random_generator()();
+        ctx.m_connection_id = Crypto::rand<uuid>();
         ctx.m_is_income = true;
         ctx.m_started = time(nullptr);
 
@@ -1488,7 +1462,7 @@ namespace DynexCN
         ctx.m_remote_port = addressAndPort.second;
 
         auto iter = m_connections.emplace(ctx.m_connection_id, std::move(ctx)).first;
-        const boost::uuids::uuid& connectionId = iter->first;
+        const uuid& connectionId = iter->first;
         P2pConnectionContext& connection = iter->second;
 
         m_workingContextGroup.spawn(std::bind(&NodeServer::connectionHandler, this, std::cref(connectionId), std::ref(connection)));
@@ -1544,7 +1518,7 @@ namespace DynexCN
 
   void NodeServer::timedSyncLoop() {
     try {
-      for (;;) {
+      while (!m_stop) {
         m_timedSyncTimer.sleep(std::chrono::seconds(P2P_DEFAULT_HANDSHAKE_INTERVAL));
         timedSync();
       }
@@ -1557,7 +1531,7 @@ namespace DynexCN
     logger(DEBUGGING) << "timedSyncLoop finished";
   }
 
-  void NodeServer::connectionHandler(const boost::uuids::uuid& connectionId, P2pConnectionContext& ctx) {
+  void NodeServer::connectionHandler(const uuid& connectionId, P2pConnectionContext& ctx) {
     // This inner context is necessary in order to stop connection handler at any moment
     System::Context<> context(m_dispatcher, [this, &connectionId, &ctx] {
       System::Context<> writeContext(m_dispatcher, std::bind(&NodeServer::writeHandler, this, std::ref(ctx)));

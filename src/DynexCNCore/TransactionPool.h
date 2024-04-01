@@ -144,7 +144,7 @@ namespace DynexCN {
     bool getTransactionIdsByPaymentId(const Crypto::Hash& paymentId, std::vector<Crypto::Hash>& transactionIds);
     
     //non-privacy functions:
-    bool getTransactionIdsByAddress(const std::string address, std::vector<Crypto::Hash>& transactionIds);
+    bool getTransactionIdsByAddress(const std::string& address, std::vector<Crypto::Hash>& transactionIds);
 
     bool getTransactionIdsByTimestamp(uint64_t timestampBegin, uint64_t timestampEnd, uint32_t transactionsNumberLimit, std::vector<Crypto::Hash>& hashes, uint64_t& transactionsNumberWithinTimestamps);
 

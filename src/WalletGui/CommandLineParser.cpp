@@ -37,14 +37,14 @@
 
 #include <Common/Util.h>
 #include <DynexCNConfig.h>
-
+#include <Logging/ILogger.h>
 #include "CommandLineParser.h"
 
 namespace WalletGui {
 
 CommandLineParser::CommandLineParser(QObject* _parent) : QObject(_parent), m_parser(), m_helpOption(m_parser.addHelpOption()),
   m_versionOption(m_parser.addVersionOption()),
-  m_testnetOption("testnet", tr("Used to deploy test nets. Checkpoints and hardcoded seeds are ignored, network id is changed. "
+  m_testnetOption("testnet", tr("Used to deploy test nets. Hardcoded seeds are ignored, network id is changed. "
     "Use it with –data-dir flag. The wallet must be launched with –testnet flag")),
   m_p2pBindIpOption("p2p-bind-ip", tr("Interface for p2p network protocol"), tr("ip"), "0.0.0.0"),
   m_p2pBindPortOption("p2p-bind-port", tr("Port for p2p network protocol"), tr("port"), QString::number(DynexCN::P2P_DEFAULT_PORT)),
@@ -59,6 +59,8 @@ CommandLineParser::CommandLineParser(QObject* _parent) : QObject(_parent), m_par
   m_seedNodeOption("seed-node", tr("Connect to a node to retrieve peer addresses, and disconnect"), tr("node")),
   m_hideMyPortOption("hide-my-port", tr("Do not announce yourself as peerlist candidate")),
   m_dataDirOption("data-dir", tr("Specify data directory"), tr("directory"), QString::fromStdString(Tools::getDefaultDataDirectory())),
+  m_logLevel("log-level", tr("Specify log level (debug: %1, trace: %2)").arg(static_cast<quint16>(Logging::Level::DEBUGGING)).arg(static_cast<quint16>(Logging::Level::TRACE)), 
+    tr("level"), QString(static_cast<quint16>(Logging::Level::INFO))),
   m_minimized("minimized", tr("Run application in minimized mode")) {
 //m_parser.setApplicationDescription(tr("Dynex wallet"));
   m_parser.addOption(m_testnetOption);
@@ -70,9 +72,10 @@ CommandLineParser::CommandLineParser(QObject* _parent) : QObject(_parent), m_par
   m_parser.addOption(m_addPriorityNodeOption);
   m_parser.addOption(m_addExclusiveNodeOption);
   m_parser.addOption(m_seedNodeOption);
-  m_parser.addOption(m_hideMyPortOption);
+//  m_parser.addOption(m_hideMyPortOption);
   m_parser.addOption(m_dataDirOption);
   m_parser.addOption(m_minimized);
+  m_parser.addOption(m_logLevel);
 }
 
 CommandLineParser::~CommandLineParser() {
@@ -161,6 +164,11 @@ bool CommandLineParser::hasP2pBindPort() const {
 
 bool CommandLineParser::hasP2pExternalPort() const {
   return m_parser.isSet(m_p2pExternalOption);
+}
+
+quint16 CommandLineParser::getLogLevel() const {
+  auto val = m_parser.value(m_logLevel).toUShort();
+  return (val ? val : static_cast<quint16>(Logging::Level::INFO));
 }
 
 }

@@ -35,15 +35,15 @@
 // Copyright (c) 2017-2022, The CROAT.community developers
 
 
-#include "crypto/crypto.h" //for rand()
+#include "crypto/crypto.h" // for rand()
 #include "DynexCNCore/Account.h"
 #include "DynexCNCore/DynexCNFormatUtils.h"
 #include "DynexCNCore/DynexCNTools.h"
+#include "DynexCNCore/DynexCNBasicImpl.h"
+#include "DynexCNCore/TransactionExtra.h"
 
 #include "WalletLegacy/WalletTransactionSender.h"
 #include "WalletLegacy/WalletUtils.h"
-
-#include "DynexCNCore/DynexCNBasicImpl.h"
 
 #include <Logging/LoggerGroup.h>
 
@@ -95,7 +95,7 @@ void constructTx(const AccountKeys keys,
   throwIf(!r, error::INTERNAL_WALLET_ERROR);
   throwIf(getObjectBinarySize(tx) >= sizeLimit, error::TRANSACTION_SIZE_TOO_BIG);
 
-  std::cout << "Info: This transaction used " << getObjectBinarySize(tx) << " bytes " << "(maximum " << sizeLimit << ")" << std::endl;
+  //std::cout << "Info: This transaction used " << getObjectBinarySize(tx) << " bytes " << "(maximum " << sizeLimit << ")" << std::endl;
 }
 
 std::shared_ptr<WalletLegacyEvent> makeCompleteEvent(WalletUserTransactionsCache& transactionCache, size_t transactionId, std::error_code ec) {
@@ -194,20 +194,20 @@ std::shared_ptr<WalletRequest> WalletTransactionSender::makeSignRequest(Transact
     std::cout     << "extra            : " << Common::podToHex(tx.extra) << std::endl;
     std::cout     << "extra size       : " << tx.extra.size() << std::endl;
 
-    for (auto input: tx.inputs) {
+    for (const auto& input: tx.inputs) {
         DynexCN::KeyInput inp = boost::get<KeyInput>(input);
         std::cout << "input - amount   : " << inp.amount << std::endl;
         std::cout << "input - keyimage : " << Common::podToHex(inp.keyImage) << std::endl;
-        for (auto index : inp.outputIndexes) std::cout << "input outputIndex " << index << std::endl;
+        for (const auto& index : inp.outputIndexes) std::cout << "input outputIndex " << index << std::endl;
     }
-    for (auto output : tx.outputs) {
+    for (const auto& output : tx.outputs) {
         std::cout << "output - amount  : " << output.amount << std::endl;
         DynexCN::KeyOutput outt = boost::get<KeyOutput>(output.target);
         std::cout << "output - target key : " << Common::podToHex(outt) << std::endl;
     }
     for (auto signatures : tx.signatures) {
         std::cout << "signature(s)        : ";
-        for (auto signature : signatures) {
+        for (const auto& signature : signatures) {
           std::cout << Common::podToHex(signature) << " ";
         }
         std::cout << std::endl;
@@ -336,6 +336,23 @@ std::shared_ptr<WalletRequest> WalletTransactionSender::doSendTransaction(
     uint64_t totalAmount = -transaction.totalAmount;
     createChangeDestinations(m_keys.address, totalAmount, context->foundMoney, changeDts);
 
+    // add to extra
+    addFromAddressToExtraString(m_keys.address, transaction.extra);
+
+    std::string self = m_currency.accountAddressAsString(m_keys.address);
+    for (TransferId idx = transaction.firstTransferId; idx < transaction.firstTransferId + transaction.transferCount; ++idx) {
+      WalletLegacyTransfer& to = m_transactionsCache.getTransfer(idx);
+      // send to self fix
+      if (changeDts.amount && to.address == self) {
+        to.amount += changeDts.amount;
+        totalAmount += changeDts.amount;
+        transaction.totalAmount = -(int64_t)totalAmount;
+        changeDts.amount = 0;
+      }
+      // add to extra
+      addToAddressAmountToExtraString(getAccountAddressAsKeys(to.address), to.amount, transaction.extra);
+    }
+    
     std::vector<TransactionDestinationEntry> splittedDests;
     splitDestinations(transaction.firstTransferId, transaction.transferCount, changeDts, context->dustPolicy, splittedDests);
 

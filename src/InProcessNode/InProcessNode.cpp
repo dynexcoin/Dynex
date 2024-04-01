@@ -694,10 +694,11 @@ void InProcessNode::getBlock(const uint32_t blockHeight, BlockDetails &block, co
   std::vector<uint32_t> blockHeights;
   std::vector<std::vector<BlockDetails>> blocks;
   blockHeights.push_back(blockHeight);
- 
-  getBlocksAsync(blockHeights, blocks, callback);
 
-  block = blocks[0][0];
+  getBlocksAsync(blockHeights, blocks, callback);
+  if (!blocks.empty() && !blocks[0].empty()) {
+    block = blocks[0][0];
+  }
 }
 
 void InProcessNode::getBlocksAsync(const std::vector<uint32_t>& blockHeights, std::vector<std::vector<BlockDetails>>& blocks, const Callback& callback) {
@@ -755,7 +756,6 @@ std::error_code InProcessNode::doGetBlocks(const std::vector<uint32_t>& blockHei
   } catch (std::exception&) {
     return make_error_code(DynexCN::error::INTERNAL_NODE_ERROR);
   }
-
   return std::error_code();
 }
 

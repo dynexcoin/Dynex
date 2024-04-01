@@ -360,7 +360,7 @@ void serialize(ParentBlockSerializer& pbs, ISerializer& serializer) {
   size_t branchSize = Crypto::tree_depth(pbs.m_parentBlock.transactionCount);
   if (serializer.type() == ISerializer::OUTPUT) {
     if (pbs.m_parentBlock.baseTransactionBranch.size() != branchSize) {
-      throw std::runtime_error("Wrong miner transaction branch size");
+      throw std::runtime_error("Wrong coinbase transaction branch size");
     }
   } else {
     pbs.m_parentBlock.baseTransactionBranch.resize(branchSize);
@@ -372,20 +372,21 @@ void serialize(ParentBlockSerializer& pbs, ISerializer& serializer) {
     serializer(hash, "");
   }
 
-  serializer(pbs.m_parentBlock.baseTransaction, "minerTx");
+  char minerTx[] = { 'm', 'i', 'n', 'e', 'r', 'T', 'x', 0 };
+  serializer(pbs.m_parentBlock.baseTransaction, /*"minerTx"*/ minerTx);
 
-  TransactionExtraMergeMiningTag mmTag;
+  TransactionExtraMergeTag mmTag;
   if (!getMergeMiningTagFromExtra(pbs.m_parentBlock.baseTransaction.extra, mmTag)) {
-    throw std::runtime_error("Can't get extra merge mining tag");
+    throw std::runtime_error("Can't get extra merge tag");
   }
 
   if (mmTag.depth > 8 * sizeof(Crypto::Hash)) {
-    throw std::runtime_error("Wrong merge mining tag depth");
+    throw std::runtime_error("Wrong merge tag depth");
   }
 
   if (serializer.type() == ISerializer::OUTPUT) {
     if (mmTag.depth != pbs.m_parentBlock.blockchainBranch.size()) {
-      throw std::runtime_error("Blockchain branch size must be equal to merge mining tag depth");
+      throw std::runtime_error("Blockchain branch size must be equal to merge tag depth");
     }
   } else {
     pbs.m_parentBlock.blockchainBranch.resize(mmTag.depth);
@@ -429,8 +430,8 @@ void serialize(Block& block, ISerializer& serializer) {
     auto parentBlockSerializer = makeParentBlockSerializer(block, false, false);
     serializer(parentBlockSerializer, "parent_block");
   }
-
-  serializer(block.baseTransaction, "miner_tx");
+  char miner_tx[] = { 'm', 'i', 'n', 'e', 'r', '_', 't', 'x', 0 };
+  serializer(block.baseTransaction, /*"miner_tx"*/ miner_tx);
   serializer(block.transactionHashes, "tx_hashes");
 }
 
@@ -445,14 +446,14 @@ void serialize(AccountKeys& keys, ISerializer& s) {
   s(keys.viewSecretKey, "m_view_secret_key");
 }
 
-void doSerialize(TransactionExtraMergeMiningTag& tag, ISerializer& serializer) {
+void doSerialize(TransactionExtraMergeTag& tag, ISerializer& serializer) {
   uint64_t depth = static_cast<uint64_t>(tag.depth);
   serializer(depth, "depth");
   tag.depth = static_cast<size_t>(depth);
   serializer(tag.merkleRoot, "merkle_root");
 }
 
-void serialize(TransactionExtraMergeMiningTag& tag, ISerializer& serializer) {
+void serialize(TransactionExtraMergeTag& tag, ISerializer& serializer) {
   if (serializer.type() == ISerializer::OUTPUT) {
     std::string field;
     StringOutputStream os(field);

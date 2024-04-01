@@ -793,17 +793,6 @@ TransactionId WalletLegacy::sendTransaction(const WalletLegacyTransfer& transfer
 }
 
 TransactionId WalletLegacy::sendTransaction(const std::vector<WalletLegacyTransfer>& transfers, uint64_t fee, const std::string& extra, uint64_t mixIn, uint64_t unlockTimestamp) {
-
-  std::string extraString = "";
-  std::stringstream faddress;
-  faddress << getAddress();
-  addFromAddressToExtraString(faddress.str(), extraString);
-  
-  for (auto to: transfers) {
-        addToAddressAmountToExtraString(to.address, to.amount, extraString);
-    }
-  extraString += extra;
-  
   TransactionId txId = 0;
   std::shared_ptr<WalletRequest> request;
   std::deque<std::shared_ptr<WalletLegacyEvent>> events;
@@ -811,7 +800,7 @@ TransactionId WalletLegacy::sendTransaction(const std::vector<WalletLegacyTransf
 
   {
     std::unique_lock<std::mutex> lock(m_cacheMutex);
-    request = m_sender->makeSendRequest(txId, events, transfers, fee, extraString, 0, unlockTimestamp);
+    request = m_sender->makeSendRequest(txId, events, transfers, fee, extra, 0, unlockTimestamp);
   }
 
   notifyClients(events);
@@ -831,7 +820,6 @@ TransactionId WalletLegacy::signTransaction(Transaction& tx, Crypto::SecretKey t
   std::shared_ptr<WalletRequest> request;
   std::deque<std::shared_ptr<WalletLegacyEvent>> events;
   throwIfNotInitialised();
-
   {
     std::unique_lock<std::mutex> lock(m_cacheMutex);
     request = m_sender->makeSignRequest(txId, events, tx, tx_key, amount, fee);
@@ -877,7 +865,7 @@ TransactionId WalletLegacy::sendFusionTransaction(const std::list<TransactionOut
 	std::vector<WalletLegacyTransfer> transfers;
 	WalletLegacyTransfer destination;
 	destination.amount = 0;
-	for (auto& out : fusionInputs) {
+	for (const auto& out : fusionInputs) {
 		destination.amount += out.amount;
 	}
 	destination.address = getAddress();
@@ -1093,7 +1081,7 @@ bool WalletLegacy::getTxProof(Crypto::Hash& txid, DynexCN::AccountPublicAddress&
     Crypto::generate_tx_proof(txid, R, address.viewPublicKey, rA, tx_key, sig);
   }
   catch (const std::runtime_error &e) {
-    m_loggerGroup("WalletLegacy", INFO, boost::posix_time::second_clock::local_time(), "Proof generation error: " + *e.what());
+    m_loggerGroup("WalletLegacy", INFO, boost::posix_time::second_clock::local_time(), std::string("Proof generation error: ") + e.what());
     return false;
   }
 

@@ -54,9 +54,7 @@ namespace DynexCN
     bool check_block(uint32_t height, const Crypto::Hash& h, bool& is_a_checkpoint) const;
     bool is_alternative_block_allowed(uint32_t blockchain_height, uint32_t block_height) const;
     std::vector<uint32_t> getCheckpointHeights() const;
-#ifndef __ANDROID__
-	bool load_checkpoints_from_dns();
-#endif
+	bool load_checkpoints_from_remote(bool testnet);
 
   private:
     std::map<uint32_t, Crypto::Hash> m_points;

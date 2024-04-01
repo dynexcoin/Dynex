@@ -125,6 +125,8 @@ const char     MINER_CONFIG_FILE_NAME[]                      = "miner_conf.json"
 } // parameters
 
 const char     CRYPTONOTE_NAME[]                             = "DYNEX";
+const char     CRYPTONOTE_TICKER[]                           = "DNX";
+
 const uint32_t MAX_BLOCKCHAIN_DIFF                           = 0; //Max Block height difference to sync. 0 to disable and permit sync from zero.
 
 const char     GENESIS_COINBASE_TX_HEX[]                     = "013c01ff0001e2aef88a8d0b029b2e4c0281c0b02e7c53291a94d1d0cbff8883f8024f5142ee494ffbbd08807121017aaaaafc6f441e95b7311cf9b0e6a78a64d8ed87a7d7ddec07afeb098ecf4c78";
@@ -162,6 +164,15 @@ const uint32_t P2P_IDLE_CONNECTION_KILL_INTERVAL             = (5 * 60);      //
 
 const uint64_t GENESIS_TIMESTAMP                             = 1663331870;    // September 16, 2022 12:37:50 PM GMT
 
+const int      AUTH_TIMEOUT = 3; // 3 sec
+
+const std::initializer_list<const char*> AUTH_ENDPOINTS = { 
+  "https://networkv2.dynexcoin.org", 
+  "https://node.dynexcoin.org", 
+  "https://node2.dynexcoin.org", 
+  "https://network.dynexcoin.org",
+};
+
 const std::initializer_list<const char*> SEED_NODES = {
   "137.220.61.126:17336", // Chicago, USA
   "95.179.252.220:17336", // Frankfurt, Germany
@@ -170,26 +181,12 @@ const std::initializer_list<const char*> SEED_NODES = {
 };
 
 const char* const TRUSTED_NODES[] = {
-   "137.220.61.126", // Chicago, USA
+  "137.220.61.126", // Chicago, USA
   "95.179.252.220", // Frankfurt, Germany
   "65.20.79.149",   // Mumbai, India
   "66.42.42.90",    // Tokio, Japan
 };
 
-struct CheckpointData_old {
-  uint32_t height;
-  const char* blockId;
-};
-
-#ifdef __GNUC__
-__attribute__((unused))
-#endif
-
-// You may add here other checkpoints using the following format:
-// {<block height>, "<block hash>"},
-const std::initializer_list<CheckpointData_old> CHECKPOINTS_old = {
-  //{ 10000, "84b6345731e2702cdaadc6ce5e5238c4ca5ecf48e3447136b2ed829b8a95f3ad" },
-};
 } 
 
 #define ALLOW_DEBUG_COMMANDS

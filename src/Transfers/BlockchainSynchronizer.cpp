@@ -361,7 +361,7 @@ void BlockchainSynchronizer::workingProcedure() {
 }
 
 void BlockchainSynchronizer::start() {
-  m_logger(INFO, BRIGHT_WHITE) << "Starting...";
+  m_logger(DEBUGGING, BRIGHT_WHITE) << "Starting...";
 
   if (m_consumers.empty()) {
     auto message = "Failed to start: no consumers";
@@ -379,7 +379,7 @@ void BlockchainSynchronizer::start() {
 }
 
 void BlockchainSynchronizer::stop() {
-  m_logger(INFO, BRIGHT_WHITE) << "Stopping...";
+  m_logger(DEBUGGING, BRIGHT_WHITE) << "Stopping...";
   setFutureState(State::stopped);
 
   // wait for previous processing to end
@@ -388,7 +388,7 @@ void BlockchainSynchronizer::stop() {
   }
 
   workingThread.reset();
-  m_logger(INFO, BRIGHT_WHITE) << "Stopped";
+  m_logger(DEBUGGING, BRIGHT_WHITE) << "Stopped";
 }
 
 void BlockchainSynchronizer::localBlockchainUpdated(uint32_t height) {

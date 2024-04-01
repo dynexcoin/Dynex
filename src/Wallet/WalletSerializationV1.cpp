@@ -161,7 +161,7 @@ void serialize(UnlockTransactionJobDto& value, DynexCN::ISerializer& serializer)
 void serialize(WalletTransactionDto& value, DynexCN::ISerializer& serializer) {
   typedef std::underlying_type<DynexCN::WalletTransactionState>::type StateType;
 
-  StateType state = static_cast<StateType>(value.state);
+  StateType state = 0; //static_cast<StateType>(value.state);
   serializer(state, "state");
   value.state = static_cast<DynexCN::WalletTransactionState>(state);
 

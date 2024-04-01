@@ -103,9 +103,13 @@ public:
   void setRemoteNode(const QString& _remoteNode);
   QString getRemoteNode() const;
 
+  bool isGlobalAddressBookEnabled() const;
+  void setGlobalAddressBookEnabled(bool _enable);
+
+  quint16 getLogLevel() const;
+
 private:
   QJsonObject m_settings;
-  QString m_addressBookFile;
   CommandLineParser* m_cmdLineParser;
 
   Settings();

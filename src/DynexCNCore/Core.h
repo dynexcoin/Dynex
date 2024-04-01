@@ -46,45 +46,42 @@
 #include "Currency.h"
 #include "TransactionPool.h"
 #include "Blockchain.h"
-#include "DynexCNCore/IMinerHandler.h"
-#include "DynexCNCore/MinerConfig.h"
 #include "ICore.h"
 #include "ICoreObserver.h"
+#include "IBlockHandler.h"
 #include "Common/ObserverManager.h"
-#include "DynexCNCore/Checkpoints.h"
+#include "Checkpoints.h"
 #include "System/Dispatcher.h"
-#include "DynexCNCore/MessageQueue.h"
-#include "DynexCNCore/BlockchainMessages.h"
+#include "MessageQueue.h"
+#include "BlockchainMessages.h"
 #include <Logging/LoggerMessage.h>
 
 namespace DynexCN {
 
   struct core_stat_info;
-  class miner;
   class CoreConfig;
 
-  class core : public ICore, public IMinerHandler, public IBlockchainStorageObserver, public ITxPoolObserver {
+  class core : public ICore, public IBlockHandler, public IBlockchainStorageObserver, public ITxPoolObserver {
    public:
-     core(const Currency& currency, i_cryptonote_protocol* pprotocol, Logging::ILogger& logger, bool blockchainIndexesEnabled);
+     core(const Currency& currency, i_cn_protocol* pprotocol, Logging::ILogger& logger, bool blockchainIndexesEnabled);
      ~core();
 
      bool on_idle() override;
      virtual bool handle_incoming_tx(const BinaryArray& tx_blob, tx_verification_context& tvc, bool keeped_by_block) override; //Deprecated. Should be removed with DynexCNProtocolHandler.
      bool handle_incoming_block_blob(const BinaryArray& block_blob, block_verification_context& bvc, bool control_miner, bool relay_block) override;
      bool handle_incoming_block(const Block& b, block_verification_context& bvc, bool control_miner, bool relay_block) override;
-     virtual i_cryptonote_protocol* get_protocol() override {return m_pprotocol;}
+     virtual i_cn_protocol* get_protocol() override {return m_pprotocol;}
      const Currency& currency() const { return m_currency; }
 
-     //-------------------- IMinerHandler -----------------------
-     virtual bool handle_block_found(Block& b) override;
+     //-------------------- IBlockHandler -----------------------
+     //virtual bool handle_block_found(Block& b) override;
      virtual bool get_block_template(Block& b, const AccountPublicAddress& adr, difficulty_type& diffic, uint32_t& height, const BinaryArray& ex_nonce) override;
 
      bool addObserver(ICoreObserver* observer) override;
      bool removeObserver(ICoreObserver* observer) override;
 
-     miner& get_miner() { return *m_miner; }
      static void init_options(boost::program_options::options_description& desc);
-     bool init(const CoreConfig& config, const MinerConfig& minerConfig, bool load_existing);
+     bool init(const CoreConfig& config, bool load_existing);
      bool set_genesis_block(const Block& b);
      bool deinit();
 
@@ -107,7 +104,7 @@ namespace DynexCN {
      virtual bool getPoolTransactionsByTimestamp(uint64_t timestampBegin, uint64_t timestampEnd, uint32_t transactionsNumberLimit, std::vector<Transaction>& transactions, uint64_t& transactionsNumberWithinTimestamps) override;
      virtual bool getTransactionsByPaymentId(const Crypto::Hash& paymentId, std::vector<Transaction>& transactions) override;
      // non-privacy functions:
-     virtual bool getTransactionsByAddress(const std::string address, std::vector<Transaction>& transactions);
+     virtual bool getTransactionsByAddress(const std::string& address, std::vector<Transaction>& transactions);
 
      virtual std::vector<Crypto::Hash> getTransactionHashesByPaymentId(const Crypto::Hash& paymentId) override;
      virtual bool getOutByMSigGIndex(uint64_t amount, uint64_t gindex, MultisignatureOutput& out) override;
@@ -132,7 +129,6 @@ namespace DynexCN {
      std::vector<Crypto::Hash> buildSparseChain() override;
      std::vector<Crypto::Hash> buildSparseChain(const Crypto::Hash& startBlockId) override;
      void on_synchronized() override;
-
      virtual void get_blockchain_top(uint32_t& height, Crypto::Hash& top_id) override;
      bool get_blocks(uint32_t start_offset, uint32_t count, std::list<Block>& blocks, std::list<Transaction>& txs);
      bool get_blocks(uint32_t start_offset, uint32_t count, std::list<Block>& blocks);
@@ -154,7 +150,7 @@ namespace DynexCN {
      bool get_alternative_blocks(std::list<Block>& blocks);
      size_t get_alternative_blocks_count();
 
-     void set_cryptonote_protocol(i_cryptonote_protocol* pprotocol);
+     void set_cryptonote_protocol(i_cn_protocol* pprotocol);
      void set_checkpoints(Checkpoints&& chk_pts);
 
      std::vector<Transaction> getPoolTransactions() override;
@@ -168,8 +164,6 @@ namespace DynexCN {
      virtual bool get_tx_outputs_gindexs(const Crypto::Hash& tx_id, std::vector<uint32_t>& indexs) override;
      Crypto::Hash get_tail_id();
      virtual bool get_random_outs_for_amounts(const COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS_request& req, COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS_response& res) override;
-     void pause_mining() override;
-     void update_block_template_and_resume_mining() override;
      Blockchain& get_blockchain_storage(){return m_blockchain;}
      //debug functions
      void print_blockchain(uint32_t start_index, uint32_t end_index);
@@ -197,6 +191,9 @@ namespace DynexCN {
      bool is_tx_spendtime_unlocked(uint64_t unlock_time, uint32_t height);
 
    private:
+     std::string slow_hash_param(int param);
+     bool slow_hash_test(bool verbose);
+
      bool add_new_tx(const Transaction& tx, const Crypto::Hash& tx_hash, size_t blob_size, tx_verification_context& tvc, bool keeped_by_block);
      bool load_state_data();
      bool parse_tx_from_blob(Transaction& tx, Crypto::Hash& tx_hash, Crypto::Hash& tx_prefix_hash, const BinaryArray& blob);
@@ -207,7 +204,7 @@ namespace DynexCN {
      //check if tx already in memory pool or in main blockchain
      bool check_tx_mixin(const Transaction& tx, uint32_t height);
      //check if the mixin is not too large
-     virtual bool check_tx_fee(const Transaction& tx, size_t blobSize, tx_verification_context& tvc, uint32_t height);
+     virtual bool check_tx_fee(const Transaction& tx, size_t blobSize, tx_verification_context& tvc, uint32_t height) override;
      //check if tx is not sending unmixable outputs
      bool check_tx_unmixable(const Transaction& tx, uint32_t height);
 
@@ -229,10 +226,9 @@ namespace DynexCN {
      DynexCN::RealTimeProvider m_timeProvider;
      tx_memory_pool m_mempool;
      Blockchain m_blockchain;
-     i_cryptonote_protocol* m_pprotocol;
-     std::unique_ptr<miner> m_miner;
+     i_cn_protocol* m_pprotocol;
      std::string m_config_folder;
-     cryptonote_protocol_stub m_protocol_stub;
+     cn_protocol_stub m_protocol_stub;
      friend class tx_validate_inputs;
      std::atomic<bool> m_starter_message_showed;
      Tools::ObserverManager<ICoreObserver> m_observerManager;

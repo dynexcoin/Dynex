@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2023, Dynex Developers
+// Copyright (c) 2021-2024, Dynex Developers
 // 
 // All rights reserved.
 // 
@@ -46,12 +46,74 @@
 #include "oaes_lib.h"
 #include "aesb.h"
 
-#define MEMORY         (1 << 18) // 256kB scratchpad
-#define ITER           (1 << 17) // 131,072 iterations
+#define MEMORY          (1 << 18) // 256kB scratchpad
+#define ITER            (1 << 17) // 131,072 iterations
 #define AES_BLOCK_SIZE  16
 #define AES_KEY_SIZE    32
 #define INIT_SIZE_BLK   8
-#define INIT_SIZE_BYTE (INIT_SIZE_BLK * AES_BLOCK_SIZE)
+#define INIT_SIZE_BYTE  (INIT_SIZE_BLK * AES_BLOCK_SIZE)
+
+#pragma pack(push, 1)
+union cn_slow_hash_state {
+  union hash_state hs;
+  struct {
+    uint8_t k[64];
+    uint8_t init[INIT_SIZE_BYTE];
+  };
+};
+#pragma pack(pop)
+
+static void (*const extra_hashes[4])(const void *, size_t, char *) =
+{
+    hash_extra_blake, hash_extra_groestl, hash_extra_jh, hash_extra_skein
+};
+
+#if defined(_MSC_VER)
+#define THREADV __declspec(thread)
+#else
+#define THREADV __thread
+#endif
+
+THREADV uint8_t *hp_state = NULL;
+
+void slow_hash_allocate_state(void)
+{
+    if(hp_state != NULL)
+        return;
+
+    hp_state = (uint8_t *) malloc(MEMORY);
+}
+
+void slow_hash_free_state(void)
+{
+    if(hp_state == NULL)
+        return;
+
+    free(hp_state);
+    hp_state = NULL;
+}
+
+#if defined(__x86_64__) || defined(__aarch64__) || defined(_WIN64)
+static inline int force_software_aes(void)
+{
+  static int use = -1;
+
+  if (use != -1)
+    return use;
+
+  const char *env = getenv("MONERO_USE_SOFTWARE_AES");
+  if (!env) {
+    use = 0;
+  }
+  else if (!strcmp(env, "0") || !strcmp(env, "no")) {
+    use = 0;
+  }
+  else {
+    use = 1;
+  }
+  return use;
+}
+#endif
 
 #if !defined NO_AES && (defined(__x86_64__) || (defined(_MSC_VER) && defined(_WIN64)))
 // Optimised code below, uses x86-specific intrinsics, SSE2, AES-NI
@@ -63,9 +125,7 @@
 #include <intrin.h>
 #include <windows.h>
 #define STATIC
-#if !defined(INLINE)
 #define INLINE __inline
-#endif
 #if !defined(RDATA_ALIGN16)
 #define RDATA_ALIGN16 __declspec(align(16))
 #endif
@@ -117,7 +177,7 @@
 
 #define pre_aes() \
   j = state_index(a); \
-  _c = _mm_load_si128(R128(&hp_state[j])); \
+  _c = _mm_load_si128(R128(&local_hp_state[j])); \
   _a = _mm_load_si128(R128(a)); \
 
 /*
@@ -131,38 +191,16 @@
  */
 #define post_aes() \
   _mm_store_si128(R128(c), _c); \
-  _b = _mm_xor_si128(_b, _c); \
-  _mm_store_si128(R128(&hp_state[j]), _b); \
+  _mm_store_si128(R128(&local_hp_state[j]), _mm_xor_si128(_b, _c)); \
   j = state_index(c); \
-  p = U64(&hp_state[j]); \
+  p = U64(&local_hp_state[j]); \
   b[0] = p[0]; b[1] = p[1]; \
   __mul(); \
   a[0] += hi; a[1] += lo; \
-  p = U64(&hp_state[j]); \
+  p = U64(&local_hp_state[j]); \
   p[0] = a[0];  p[1] = a[1]; \
   a[0] ^= b[0]; a[1] ^= b[1]; \
   _b = _c; \
-
-#if defined(_MSC_VER)
-#define THREADV __declspec(thread)
-#else
-#define THREADV __thread
-#endif
-
-#pragma pack(push, 1)
-union cn_slow_hash_state
-{
-    union hash_state hs;
-    struct
-    {
-        uint8_t k[64];
-        uint8_t init[INIT_SIZE_BYTE];
-    };
-};
-#pragma pack(pop)
-
-THREADV uint8_t *hp_state = NULL;
-THREADV int hp_allocated = 0;
 
 #if defined(_MSC_VER)
 #define cpuid(info,x)    __cpuidex(info,x,0)
@@ -196,25 +234,6 @@ STATIC INLINE void xor_blocks(uint8_t *a, const uint8_t *b)
  * @return true if the CPU supports AES, false otherwise
  */
 
-STATIC INLINE int force_software_aes(void)
-{
-  static int use = -1;
-
-  if (use != -1)
-    return use;
-
-  const char *env = getenv("MONERO_USE_SOFTWARE_AES");
-  if (!env) {
-    use = 0;
-  }
-  else if (!strcmp(env, "0") || !strcmp(env, "no")) {
-    use = 0;
-  }
-  else {
-    use = 1;
-  }
-  return use;
-}
 
 STATIC INLINE int check_aes_hw(void)
 {
@@ -268,7 +287,7 @@ STATIC INLINE void aes_256_assist2(__m128i* t1, __m128i * t3)
  * CPU AES support.
  * For more information about these functions, see page 19 of Intel's AES instructions
  * white paper:
- * http://www.intel.com/content/dam/www/public/us/en/documents/white-papers/aes-instructions-set-white-paper.pdf
+ * https://www.intel.com/content/dam/doc/white-paper/advanced-encryption-standard-new-instructions-set-paper.pdf
  *
  * @param key the input 128 bit key
  * @param expandedKey An output buffer to hold the generated key schedule
@@ -396,107 +415,6 @@ STATIC INLINE void aes_pseudo_round_xor(const uint8_t *in, uint8_t *out,
     }
 }
 
-#if defined(_MSC_VER) || defined(__MINGW32__)
-BOOL SetLockPagesPrivilege(HANDLE hProcess, BOOL bEnable)
-{
-    struct
-    {
-        DWORD count;
-        LUID_AND_ATTRIBUTES privilege[1];
-    } info;
-
-    HANDLE token;
-    if(!OpenProcessToken(hProcess, TOKEN_ADJUST_PRIVILEGES, &token))
-        return FALSE;
-
-    info.count = 1;
-    info.privilege[0].Attributes = bEnable ? SE_PRIVILEGE_ENABLED : 0;
-
-    if(!LookupPrivilegeValue(NULL, SE_LOCK_MEMORY_NAME, &(info.privilege[0].Luid))) {
-        CloseHandle(token);
-        return FALSE;
-    }
-
-    if(!AdjustTokenPrivileges(token, FALSE, (PTOKEN_PRIVILEGES) &info, 0, NULL, NULL)) {
-        CloseHandle(token);
-        return FALSE;
-    }
-
-    if (GetLastError() != ERROR_SUCCESS) {
-        CloseHandle(token);
-        return FALSE;
-    }
-
-    CloseHandle(token);
-    return TRUE;
-}
-#endif
-
-/**
- * @brief allocate the 2MB scratch buffer using OS support for huge pages, if available
- *
- * This function tries to allocate the 2MB scratch buffer using a single
- * 2MB "huge page" (instead of the usual 4KB page sizes) to reduce TLB misses
- * during the random accesses to the scratch buffer.  This is one of the
- * important speed optimizations needed to make CryptoNight faster.
- *
- * No parameters.  Updates a thread-local pointer, hp_state, to point to
- * the allocated buffer.
- */
-
-void slow_hash_allocate_state(void)
-{
-    if(hp_state != NULL)
-        return;
-
-#if defined(_MSC_VER) || defined(__MINGW32__)
-    SetLockPagesPrivilege(GetCurrentProcess(), TRUE);
-    hp_state = (uint8_t *) VirtualAlloc(hp_state, MEMORY, MEM_LARGE_PAGES |
-                                        MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-#else
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || \
-  defined(__DragonFly__)
-    hp_state = mmap(0, MEMORY, PROT_READ | PROT_WRITE,
-                    MAP_PRIVATE | MAP_ANON, 0, 0);
-#else
-    hp_state = mmap(0, MEMORY, PROT_READ | PROT_WRITE,
-                    MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, 0, 0);
-#endif
-    if(hp_state == MAP_FAILED)
-        hp_state = NULL;
-#endif
-    hp_allocated = 1;
-    if(hp_state == NULL)
-    {
-        hp_allocated = 0;
-        hp_state = (uint8_t *) malloc(MEMORY);
-    }
-}
-
-/**
- *@brief frees the state allocated by slow_hash_allocate_state
- */
-
-void slow_hash_free_state(void)
-{
-    if(hp_state == NULL)
-        return;
-
-    if(!hp_allocated)
-        free(hp_state);
-    else
-    {
-#if defined(_MSC_VER) || defined(__MINGW32__)
-        VirtualFree(hp_state, 0, MEM_RELEASE);
-#else
-        munmap(hp_state, MEMORY);
-#endif
-    }
-
-    hp_state = NULL;
-    hp_allocated = 0;
-}
-
 /**
  * @brief the hash function implementing CryptoNight, used for the Monero proof-of-work
  *
@@ -521,17 +439,15 @@ void slow_hash_free_state(void)
  * AES support on x86 CPUs.
  *
  * A diagram of the inner loop of this function can be found at
- * http://www.cs.cmu.edu/~dga/crypto/xmr/cryptonight.png
+ * https://www.cs.cmu.edu/~dga/crypto/xmr/cryptonight.png
  *
  * @param data the data to hash
  * @param length the length in bytes of the data
  * @param hash a pointer to a buffer in which the final 256 bit hash will be stored
  */
 
-void cn_slow_hash(const void *data, size_t length, char *hash) 
+void cn_slow_hash(const void *data, size_t length, char *hash)
 {
-//printf("*** DEBUG *** slow-hash.c -> cn_slow_hash() \n"); // MAIN CRYPTONIGHT HASHING ALGO
-    
     RDATA_ALIGN16 uint8_t expandedKey[240];  /* These buffers are aligned to use later with SSE functions */
 
     uint8_t text[INIT_SIZE_BYTE];
@@ -547,20 +463,14 @@ void cn_slow_hash(const void *data, size_t length, char *hash)
     oaes_ctx *aes_ctx = NULL;
     int useAes = !force_software_aes() && check_aes_hw();
 
-    static void (*const extra_hashes[4])(const void *, size_t, char *) =
-    {
-        hash_extra_blake, hash_extra_groestl, hash_extra_jh, hash_extra_skein
-        //hash_extra_jh, hash_extra_blake, hash_extra_skein, hash_extra_groestl
-    };
-
-	// hp_state is supposed to be managed externally with respect to the 2MB scratchpad reusage logic.
-	// However, if it is not managed, it needs to be locally allocated/freed.
     int bLocalStateAllocation = (hp_state == NULL);
-	if (bLocalStateAllocation)
+    if (bLocalStateAllocation)
         slow_hash_allocate_state();
 
-    /* CryptoNight Step 1:  Use Keccak1600 to initialize the 'state' (and 'text') buffers from the data. */
+    // locals to avoid constant TLS dereferencing
+    uint8_t *local_hp_state = hp_state;
 
+    /* CryptoNight Step 1:  Use Keccak1600 to initialize the 'state' (and 'text') buffers from the data. */
     hash_process(&state.hs, data, length);
     memcpy(text, state.init, INIT_SIZE_BYTE);
 
@@ -574,7 +484,7 @@ void cn_slow_hash(const void *data, size_t length, char *hash)
         for(i = 0; i < MEMORY / INIT_SIZE_BYTE; i++)
         {
             aes_pseudo_round(text, text, expandedKey, INIT_SIZE_BLK);
-            memcpy(&hp_state[i * INIT_SIZE_BYTE], text, INIT_SIZE_BYTE);
+            memcpy(&local_hp_state[i * INIT_SIZE_BYTE], text, INIT_SIZE_BYTE);
         }
     }
     else
@@ -586,7 +496,7 @@ void cn_slow_hash(const void *data, size_t length, char *hash)
             for(j = 0; j < INIT_SIZE_BLK; j++)
                 aesb_pseudo_round(&text[AES_BLOCK_SIZE * j], &text[AES_BLOCK_SIZE * j], aes_ctx->key->exp_data);
 
-            memcpy(&hp_state[i * INIT_SIZE_BYTE], text, INIT_SIZE_BYTE);
+            memcpy(&local_hp_state[i * INIT_SIZE_BYTE], text, INIT_SIZE_BYTE);
         }
     }
 
@@ -633,7 +543,7 @@ void cn_slow_hash(const void *data, size_t length, char *hash)
         for(i = 0; i < MEMORY / INIT_SIZE_BYTE; i++)
         {
             // add the xor to the pseudo round
-            aes_pseudo_round_xor(text, text, expandedKey, &hp_state[i * INIT_SIZE_BYTE], INIT_SIZE_BLK);
+            aes_pseudo_round_xor(text, text, expandedKey, &local_hp_state[i * INIT_SIZE_BYTE], INIT_SIZE_BLK);
         }
     }
     else
@@ -643,7 +553,7 @@ void cn_slow_hash(const void *data, size_t length, char *hash)
         {
             for(j = 0; j < INIT_SIZE_BLK; j++)
             {
-                xor_blocks(&text[j * AES_BLOCK_SIZE], &hp_state[i * INIT_SIZE_BYTE + j * AES_BLOCK_SIZE]);
+                xor_blocks(&text[j * AES_BLOCK_SIZE], &local_hp_state[i * INIT_SIZE_BYTE + j * AES_BLOCK_SIZE]);
                 aesb_pseudo_round(&text[AES_BLOCK_SIZE * j], &text[AES_BLOCK_SIZE * j], aes_ctx->key->exp_data);
             }
         }
@@ -661,22 +571,11 @@ void cn_slow_hash(const void *data, size_t length, char *hash)
     hash_permutation(&state.hs);
     extra_hashes[state.hs.b[0] & 3](&state, 200, hash);
 
-	if (bLocalStateAllocation)
-		slow_hash_free_state();
+    if (bLocalStateAllocation)
+        slow_hash_free_state();
 }
 
 #elif !defined NO_AES && (defined(__arm__) || defined(__aarch64__))
-void slow_hash_allocate_state(void)
-{
-  // Do nothing, this is just to maintain compatibility with the upgraded slow-hash.c
-  return;
-}
-
-void slow_hash_free_state(void)
-{
-  // As above
-  return;
-}
 
 #if defined(__GNUC__)
 #define RDATA_ALIGN16 __attribute__ ((aligned(16)))
@@ -690,19 +589,8 @@ void slow_hash_free_state(void)
 
 #define U64(x) ((uint64_t *) (x))
 
-#pragma pack(push, 1)
-union cn_slow_hash_state
-{
-    union hash_state hs;
-    struct
-    {
-        uint8_t k[64];
-        uint8_t init[INIT_SIZE_BYTE];
-    };
-};
-#pragma pack(pop)
-
 #if defined(__aarch64__) && defined(__ARM_FEATURE_CRYPTO)
+#pragma message("USING ARM_FEATURE_CRYPTO")
 
 /* ARMv8-A optimized with NEON and AES instructions.
  * Copied from the x86-64 AES-NI implementation. It has much the same
@@ -710,37 +598,55 @@ union cn_slow_hash_state
  * and moving between vector and regular registers stalls the pipeline.
  */
 #include <arm_neon.h>
+#ifndef __APPLE__
+#include <sys/auxv.h>
+#include <asm/hwcap.h>
+#endif
+
+STATIC INLINE int check_aes_hw(void)
+{
+#ifdef __APPLE__
+    return 1;
+#else
+    static int supported = -1;
+
+    if(supported < 0)
+        supported = (getauxval(AT_HWCAP) & HWCAP_AES) != 0;
+    return supported;
+#endif
+}
 
 #define TOTALBLOCKS (MEMORY / AES_BLOCK_SIZE)
 
 #define state_index(x) (((*((uint64_t *)x) >> 4) & (TOTALBLOCKS - 1)) << 4)
-#define __mul() __asm__("mul %0, %1, %2\n\t" : "=r"(lo) : "r"(c[0]), "r"(b[0]) ); \
+
+#define __mul() \
+  __asm__("mul %0, %1, %2\n\t" : "=r"(lo) : "r"(c[0]), "r"(b[0]) ); \
   __asm__("umulh %0, %1, %2\n\t" : "=r"(hi) : "r"(c[0]), "r"(b[0]) );
 
 #define pre_aes() \
   j = state_index(a); \
-  _c = vld1q_u8(&hp_state[j]); \
+  _c = vld1q_u8(&local_hp_state[j]); \
   _a = vld1q_u8((const uint8_t *)a); \
 
 #define post_aes() \
   vst1q_u8((uint8_t *)c, _c); \
-  _b = veorq_u8(_b, _c); \
-  vst1q_u8(&hp_state[j], _b); \
+  vst1q_u8(&local_hp_state[j], veorq_u8(_b, _c)); \
   j = state_index(c); \
-  p = U64(&hp_state[j]); \
+  p = U64(&local_hp_state[j]); \
   b[0] = p[0]; b[1] = p[1]; \
   __mul(); \
   a[0] += hi; a[1] += lo; \
-  p = U64(&hp_state[j]); \
+  p = U64(&local_hp_state[j]); \
   p[0] = a[0];  p[1] = a[1]; \
   a[0] ^= b[0]; a[1] ^= b[1]; \
   _b = _c; \
-
 
 /* Note: this was based on a standard 256bit key schedule but
  * it's been shortened since Cryptonight doesn't use the full
  * key schedule. Don't try to use this for vanilla AES.
 */
+
 static void aes_expand_key(const uint8_t *key, uint8_t *expandedKey) {
 static const int rcon[] = {
 	0x01,0x01,0x01,0x01,
@@ -785,7 +691,7 @@ __asm__(
 "	eor	v4.16b,v4.16b,v6.16b\n"
 "	b	1b\n"
 "\n"
-"2:\n" : : "r"(key), "r"(expandedKey), "r"(rcon));
+"2:\n" : : "r"(key), "r"(expandedKey), "r"(rcon) : "v0", "v1", "v2", "v3", "v4", "v5", "v6", "cc");
 }
 
 /* An ordinary AES round is a sequence of SubBytes, ShiftRows, MixColumns, AddRoundKey. There
@@ -799,7 +705,6 @@ __asm__(
 STATIC INLINE void aes_pseudo_round(const uint8_t *in, uint8_t *out, const uint8_t *expandedKey, int nblocks)
 {
 	const uint8x16_t *k = (const uint8x16_t *)expandedKey, zero = {0};
-	uint8x16_t tmp;
 	int i;
 
 	for (i=0; i<nblocks; i++)
@@ -834,7 +739,6 @@ STATIC INLINE void aes_pseudo_round_xor(const uint8_t *in, uint8_t *out, const u
 {
 	const uint8x16_t *k = (const uint8x16_t *)expandedKey;
 	const uint8x16_t *x = (const uint8x16_t *)xor;
-	uint8x16_t tmp;
 	int i;
 
 	for (i=0; i<nblocks; i++)
@@ -865,10 +769,15 @@ STATIC INLINE void aes_pseudo_round_xor(const uint8_t *in, uint8_t *out, const u
 	}
 }
 
+STATIC INLINE void xor_blocks(uint8_t* a, const uint8_t* b)
+{
+  U64(a)[0] ^= U64(b)[0];
+  U64(a)[1] ^= U64(b)[1];
+}
+
 void cn_slow_hash(const void *data, size_t length, char *hash)
 {
     RDATA_ALIGN16 uint8_t expandedKey[240];
-    RDATA_ALIGN16 uint8_t hp_state[MEMORY];
 
     uint8_t text[INIT_SIZE_BYTE];
     RDATA_ALIGN16 uint64_t a[2];
@@ -880,13 +789,17 @@ void cn_slow_hash(const void *data, size_t length, char *hash)
 
     size_t i, j;
     uint64_t *p = NULL;
+    oaes_ctx *aes_ctx = NULL;
+    int useAes = !force_software_aes() && check_aes_hw();
 
-    static void (*const extra_hashes[4])(const void *, size_t, char *) =
-    {
-        hash_extra_blake, hash_extra_groestl, hash_extra_jh, hash_extra_skein
-        //hash_extra_jh, hash_extra_blake, hash_extra_skein, hash_extra_groestl
-    };
+    int bLocalStateAllocation = (hp_state == NULL);
+    if (bLocalStateAllocation)
+        slow_hash_allocate_state();
 
+    // locals to avoid constant TLS dereferencing
+    uint8_t *local_hp_state = hp_state;
+
+    // locals to avoid constant TLS dereferencing
     /* CryptoNight Step 1:  Use Keccak1600 to initialize the 'state' (and 'text') buffers from the data. */
 
     hash_process(&state.hs, data, length);
@@ -896,11 +809,26 @@ void cn_slow_hash(const void *data, size_t length, char *hash)
      * the 2MB large random access buffer.
      */
 
-    aes_expand_key(state.hs.b, expandedKey);
-    for(i = 0; i < MEMORY / INIT_SIZE_BYTE; i++)
+    if(useAes)
     {
-        aes_pseudo_round(text, text, expandedKey, INIT_SIZE_BLK);
-        memcpy(&hp_state[i * INIT_SIZE_BYTE], text, INIT_SIZE_BYTE);
+        aes_expand_key(state.hs.b, expandedKey);
+        for(i = 0; i < MEMORY / INIT_SIZE_BYTE; i++)
+        {
+            aes_pseudo_round(text, text, expandedKey, INIT_SIZE_BLK);
+            memcpy(&local_hp_state[i * INIT_SIZE_BYTE], text, INIT_SIZE_BYTE);
+        }
+    }
+    else
+    {
+        aes_ctx = (oaes_ctx *) oaes_alloc();
+        oaes_key_import_data(aes_ctx, state.hs.b, AES_KEY_SIZE);
+        for(i = 0; i < MEMORY / INIT_SIZE_BYTE; i++)
+        {
+            for(j = 0; j < INIT_SIZE_BLK; j++)
+                aesb_pseudo_round(&text[AES_BLOCK_SIZE * j], &text[AES_BLOCK_SIZE * j], aes_ctx->key->exp_data);
+
+            memcpy(&local_hp_state[i * INIT_SIZE_BYTE], text, INIT_SIZE_BYTE);
+        }
     }
 
     U64(a)[0] = U64(&state.k[0])[0] ^ U64(&state.k[32])[0];
@@ -915,14 +843,26 @@ void cn_slow_hash(const void *data, size_t length, char *hash)
 
     _b = vld1q_u8((const uint8_t *)b);
 
-
-    for(i = 0; i < ITER / 2; i++)
+    if(useAes)
     {
-        pre_aes();
-        _c = vaeseq_u8(_c, zero);
-        _c = vaesmcq_u8(_c);
-        _c = veorq_u8(_c, _a);
-        post_aes();
+        for(i = 0; i < ITER / 2; i++)
+        {
+            pre_aes();
+            _c = vaeseq_u8(_c, zero);
+            _c = vaesmcq_u8(_c);
+            _c = veorq_u8(_c, _a);
+            post_aes();
+        }
+    }
+    else
+    {
+        for(i = 0; i < ITER / 2; i++)
+        {
+            pre_aes();
+            aesb_single_round((uint8_t *) &_c, (uint8_t *) &_c, (uint8_t *) &_a);
+            post_aes();
+        }
+
     }
 
     /* CryptoNight Step 4:  Sequentially pass through the mixing buffer and use 10 rounds
@@ -931,11 +871,28 @@ void cn_slow_hash(const void *data, size_t length, char *hash)
 
     memcpy(text, state.init, INIT_SIZE_BYTE);
 
-    aes_expand_key(&state.hs.b[32], expandedKey);
-    for(i = 0; i < MEMORY / INIT_SIZE_BYTE; i++)
+    if(useAes)
     {
-        // add the xor to the pseudo round
-        aes_pseudo_round_xor(text, text, expandedKey, &hp_state[i * INIT_SIZE_BYTE], INIT_SIZE_BLK);
+        aes_expand_key(&state.hs.b[32], expandedKey);
+
+        for(i = 0; i < MEMORY / INIT_SIZE_BYTE; i++)
+        {
+            // add the xor to the pseudo round
+            aes_pseudo_round_xor(text, text, expandedKey, &local_hp_state[i * INIT_SIZE_BYTE], INIT_SIZE_BLK);
+        }
+    }
+    else
+    {
+        oaes_key_import_data(aes_ctx, &state.hs.b[32], AES_KEY_SIZE);
+        for(i = 0; i < MEMORY / INIT_SIZE_BYTE; i++)
+        {
+            for(j = 0; j < INIT_SIZE_BLK; j++)
+            {
+                xor_blocks(&text[j * AES_BLOCK_SIZE], &local_hp_state[i * INIT_SIZE_BYTE + j * AES_BLOCK_SIZE]);
+                aesb_pseudo_round(&text[AES_BLOCK_SIZE * j], &text[AES_BLOCK_SIZE * j], aes_ctx->key->exp_data);
+            }
+        }
+        oaes_free((OAES_CTX **) &aes_ctx);
     }
 
     /* CryptoNight Step 5:  Apply Keccak to the state again, and then
@@ -948,9 +905,11 @@ void cn_slow_hash(const void *data, size_t length, char *hash)
     memcpy(state.init, text, INIT_SIZE_BYTE);
     hash_permutation(&state.hs);
     extra_hashes[state.hs.b[0] & 3](&state, 200, hash);
+
+    if(bLocalStateAllocation)
+        slow_hash_free_state();
 }
 #else /* aarch64 && crypto */
-
 // ND: Some minor optimizations for ARMv7 (raspberrry pi 2), effect seems to be ~40-50% faster.
 //     Needs more work.
 
@@ -1066,7 +1025,6 @@ void cn_slow_hash(const void *data, size_t length, char *hash)
     uint8_t a[AES_BLOCK_SIZE];
     uint8_t b[AES_BLOCK_SIZE];
     uint8_t d[AES_BLOCK_SIZE];
-    uint8_t aes_key[AES_KEY_SIZE];
     RDATA_ALIGN16 uint8_t expandedKey[256];
 
     union cn_slow_hash_state state;
@@ -1074,13 +1032,13 @@ void cn_slow_hash(const void *data, size_t length, char *hash)
     size_t i, j;
     uint8_t *p = NULL;
     oaes_ctx *aes_ctx;
-    static void (*const extra_hashes[4])(const void *, size_t, char *) =
-    {
-        hash_extra_blake, hash_extra_groestl, hash_extra_jh, hash_extra_skein
-        //hash_extra_jh, hash_extra_blake, hash_extra_skein, hash_extra_groestl
-    };
 
-    uint8_t *long_state = (uint8_t*)malloc(MEMORY);
+    int bLocalStateAllocation = (hp_state == NULL);
+    if (bLocalStateAllocation)
+        slow_hash_allocate_state();
+
+    // locals to avoid constant TLS dereferencing
+    uint8_t *long_state = hp_state;
 
     hash_process(&state.hs, data, length);
     memcpy(text, state.init, INIT_SIZE_BYTE);
@@ -1142,31 +1100,15 @@ void cn_slow_hash(const void *data, size_t length, char *hash)
     hash_permutation(&state.hs);
     extra_hashes[state.hs.b[0] & 3](&state, 200, hash);
 
-	free(long_state);
+    if (bLocalStateAllocation)
+        slow_hash_free_state();
 }
 #endif /* !aarch64 || !crypto */
 
 #else
 // Portable implementation as a fallback
 
-void slow_hash_allocate_state(void)
-{
-  // Do nothing, this is just to maintain compatibility with the upgraded slow-hash.c
-  return;
-}
-
-void slow_hash_free_state(void)
-{
-  // As above
-  return;
-}
-
-static void (*const extra_hashes[4])(const void *, size_t, char *) = {
-  hash_extra_blake, hash_extra_groestl, hash_extra_jh, hash_extra_skein
-  //hash_extra_jh, hash_extra_blake, hash_extra_skein, hash_extra_groestl
-};
-
-static size_t e2i(const uint8_t* a, size_t count) { return (*((uint64_t*)a) / AES_BLOCK_SIZE) & (count - 1); }
+static size_t e2i(const uint8_t* a, size_t count) { return (SWAP64LE(*((uint64_t*)a)) / AES_BLOCK_SIZE) & (count - 1); }
 
 static void mul(const uint8_t* a, const uint8_t* b, uint8_t* res) {
   uint64_t a0, b0;
@@ -1214,18 +1156,7 @@ static void xor_blocks(uint8_t* a, const uint8_t* b) {
   }
 }
 
-#pragma pack(push, 1)
-union cn_slow_hash_state {
-  union hash_state hs;
-  struct {
-    uint8_t k[64];
-    uint8_t init[INIT_SIZE_BYTE];
-  };
-};
-#pragma pack(pop)
-
 void cn_slow_hash(const void *data, size_t length, char *hash) {
-  uint8_t* long_state = (uint8_t*)malloc(MEMORY);
   union cn_slow_hash_state state;
   uint8_t text[INIT_SIZE_BYTE];
   uint8_t a[AES_BLOCK_SIZE];
@@ -1235,6 +1166,13 @@ void cn_slow_hash(const void *data, size_t length, char *hash) {
   size_t i, j;
   uint8_t aes_key[AES_KEY_SIZE];
   oaes_ctx *aes_ctx;
+
+  int bLocalStateAllocation = (hp_state == NULL);
+  if (bLocalStateAllocation)
+      slow_hash_allocate_state();
+
+  // locals to avoid constant TLS dereferencing
+  uint8_t *long_state = hp_state;
 
   hash_process(&state.hs, data, length);
   memcpy(text, state.init, INIT_SIZE_BYTE);
@@ -1249,9 +1187,9 @@ void cn_slow_hash(const void *data, size_t length, char *hash) {
     memcpy(&long_state[i * INIT_SIZE_BYTE], text, INIT_SIZE_BYTE);
   }
 
-  for (i = 0; i < 16; i++) {
-    a[i] = state.k[     i] ^ state.k[32 + i];
-    b[i] = state.k[16 + i] ^ state.k[48 + i];
+  for (i = 0; i < AES_BLOCK_SIZE; i++) {
+    a[i] = state.k[                 i] ^ state.k[AES_BLOCK_SIZE * 2 + i];
+    b[i] = state.k[AES_BLOCK_SIZE + i] ^ state.k[AES_BLOCK_SIZE * 3 + i];
   }
 
   for (i = 0; i < ITER / 2; i++) {
@@ -1293,7 +1231,9 @@ void cn_slow_hash(const void *data, size_t length, char *hash) {
   /*memcpy(hash, &state, 32);*/
   extra_hashes[state.hs.b[0] & 3](&state, 200, hash);
   oaes_free((OAES_CTX **) &aes_ctx);
-  free(long_state);
+
+  if (bLocalStateAllocation)
+      slow_hash_free_state();
 }
 
 #endif

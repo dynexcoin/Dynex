@@ -203,6 +203,7 @@ namespace DynexCN
     std::string m_import_new;
     std::string m_restore_new;
     std::string m_track_new;
+    std::string m_mnemonic_new;
     std::string m_import_path;
     std::string m_daemon_address;
     std::string m_daemon_host;

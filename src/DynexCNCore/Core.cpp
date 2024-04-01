@@ -53,7 +53,6 @@
 #include "DynexCNFormatUtils.h"
 #include "DynexCNTools.h"
 #include "DynexCNStatInfo.h"
-#include "Miner.h"
 #include "TransactionExtra.h"
 #include "IBlock.h"
 
@@ -91,12 +90,11 @@ private:
   friend class core;
 };
 
-core::core(const Currency& currency, i_cryptonote_protocol* pprotocol, Logging::ILogger& logger, bool blockchainIndexesEnabled) :
+core::core(const Currency& currency, i_cn_protocol* pprotocol, Logging::ILogger& logger, bool blockchainIndexesEnabled) :
 m_currency(currency),
 logger(logger, "core"),
 m_mempool(currency, m_blockchain, *this, m_timeProvider, logger, blockchainIndexesEnabled),
 m_blockchain(currency, m_mempool, logger, blockchainIndexesEnabled),
-m_miner(new miner(currency, *this, logger)),
 m_starter_message_showed(false),
 m_checkpoints(logger) {
   set_cryptonote_protocol(pprotocol);
@@ -109,7 +107,7 @@ core::~core() {
   m_blockchain.removeObserver(this);
 }
 
-void core::set_cryptonote_protocol(i_cryptonote_protocol* pprotocol) {
+void core::set_cryptonote_protocol(i_cn_protocol* pprotocol) {
   if (pprotocol) {
     m_pprotocol = pprotocol;
     m_pprotocol->add_observer(&m_blockchain);
@@ -173,17 +171,50 @@ std::time_t core::getStartTime() const {
   return start_time;
 }
 
-  //-----------------------------------------------------------------------------------------------
-bool core::init(const CoreConfig& config, const MinerConfig& minerConfig, bool load_existing) {
+std::string core::slow_hash_param(int param) {
+  uint8_t data[76];
+  uint8_t hash[32];
+  for (size_t i = 0; i < sizeof(data); ++i) {
+    data[i] = static_cast<uint8_t>(i + param);
+  }
+  Crypto::cn_slow_hash(data, sizeof(data), (char*)hash);
+  return toHex(hash, sizeof(hash));
+}
+
+bool core::slow_hash_test(bool verbose) {
+  const std::vector<std::pair<int, std::string>> test({
+    {6, "fa5b657c2347cdd9e511cad5bdb21ab98085460e19a7d86caa80ddb740b6339c"}, // blake
+    {2, "6a2c4ac8ae1d3982089ce80534b013962d3625fee8ceaccddac5643e8c4aa7a6"}, // groestl
+    {0, "28b8d06c0219ca5f1cf912488619242fea94d1493e47e9a64367b7d0f2bfbecf"}, // jh
+    {3, "bb627afe6ce1015adbbd89971f040f3b076cb458ba005a552eeeb051cf1d4910"}, // skein
+  });
+
+  int errors = 0;
+  for (size_t i = 0; i < test.size(); ++i) {
+    std::string result(slow_hash_param(test[i].first));
+    if (result == test[i].second) {
+      if (verbose) logger(INFO) << "Slow hash test " << i << " passed: " << result;
+    } else {
+      errors++;
+      if (verbose) logger(ERROR, BRIGHT_RED) << "Slow hash test " << i << " failed: " << result;
+    }
+  }
+  return (errors == 0);
+}
+
+//-----------------------------------------------------------------------------------------------
+bool core::init(const CoreConfig& config, bool load_existing) {
+  if (!(slow_hash_test(false))) {
+    slow_hash_test(true);
+    return false;
+  }
+
   m_config_folder = config.configFolder;
   bool r = m_mempool.init(m_config_folder);
   if (!(r)) { logger(ERROR, BRIGHT_RED) << "Failed to initialize memory pool"; return false; }
 
   r = m_blockchain.init(m_config_folder, load_existing);
   if (!(r)) { logger(ERROR, BRIGHT_RED) << "Failed to initialize blockchain storage"; return false; }
-
-  r = m_miner->init(minerConfig);
-  if (!(r)) { logger(ERROR, BRIGHT_RED) << "Failed to initialize miner"; return false; }
 
   start_time = std::time(nullptr);
 
@@ -200,7 +231,6 @@ bool core::load_state_data() {
 }
 
 bool core::deinit() {
-  m_miner->stop();
   m_mempool.deinit();
   m_blockchain.deinit();
   return true;
@@ -273,7 +303,6 @@ bool core::handle_incoming_tx(const BinaryArray& tx_blob, tx_verification_contex
 }
 
 bool core::get_stat_info(core_stat_info& st_inf) {
-  st_inf.mining_speed = m_miner->get_speed();
   st_inf.alternative_blocks = m_blockchain.getAlternativeBlocksCount();
   st_inf.blockchain_height = m_blockchain.getCurrentBlockchainHeight();
   st_inf.tx_pool_size = m_mempool.get_transactions_count();
@@ -502,10 +531,10 @@ bool core::get_block_template(Block& b, const AccountPublicAddress& adr, difficu
       b.parentBlock.majorVersion = BLOCK_MAJOR_VERSION_1;
       b.parentBlock.majorVersion = BLOCK_MINOR_VERSION_0;
       b.parentBlock.transactionCount = 1;
-      TransactionExtraMergeMiningTag mm_tag = boost::value_initialized<decltype(mm_tag)>();
+      TransactionExtraMergeTag mm_tag = boost::value_initialized<decltype(mm_tag)>();
 
       if (!appendMergeMiningTagToExtra(b.parentBlock.baseTransaction.extra, mm_tag)) {
-        logger(ERROR, BRIGHT_RED) << "Failed to append merge mining tag to extra of the parent block miner transaction";
+        logger(ERROR, BRIGHT_RED) << "Failed to append merge tag to extra of the parent block coinbase transaction";
         return false;
       }
     } else if (b.majorVersion >= BLOCK_MAJOR_VERSION_4) {
@@ -547,7 +576,7 @@ bool core::get_block_template(Block& b, const AccountPublicAddress& adr, difficu
   //make blocks coin-base tx looks close to real coinbase tx to get truthful blob size
   bool r = m_currency.constructMinerTx(b.majorVersion, height, median_size, already_generated_coins, txs_size, fee, adr, b.baseTransaction, ex_nonce, 14);
   if (!r) { 
-    logger(ERROR, BRIGHT_RED) << "Failed to construct miner tx, first chance"; 
+    logger(ERROR, BRIGHT_RED) << "Failed to construct coinbase tx, first chance"; 
     return false; 
   }
 
@@ -555,7 +584,7 @@ bool core::get_block_template(Block& b, const AccountPublicAddress& adr, difficu
   for (size_t try_count = 0; try_count != 10; ++try_count) {
     r = m_currency.constructMinerTx(b.majorVersion, height, median_size, already_generated_coins, cumulative_size, fee, adr, b.baseTransaction, ex_nonce, 14);
 
-    if (!(r)) { logger(ERROR, BRIGHT_RED) << "Failed to construct miner tx, second chance"; return false; }
+    if (!(r)) { logger(ERROR, BRIGHT_RED) << "Failed to construct coinbase tx, second chance"; return false; }
     size_t coinbase_blob_size = getObjectBinarySize(b.baseTransaction);
     if (coinbase_blob_size > cumulative_size - txs_size) {
       cumulative_size = txs_size + coinbase_blob_size;
@@ -572,7 +601,7 @@ bool core::get_block_template(Block& b, const AccountPublicAddress& adr, difficu
         if (cumulative_size != txs_size + getObjectBinarySize(b.baseTransaction)) {
           //fuck, not lucky, -1 makes varint-counter size smaller, in that case we continue to grow with cumulative_size
           logger(TRACE, BRIGHT_RED) <<
-            "Miner tx creation have no luck with delta_extra size = " << delta << " and " << delta - 1;
+            "Coinbase tx creation have no luck with delta_extra size = " << delta << " and " << delta - 1;
           cumulative_size += delta - 1;
           continue;
         }
@@ -623,28 +652,7 @@ bool core::getOutByMSigGIndex(uint64_t amount, uint64_t gindex, MultisignatureOu
   return m_blockchain.get_out_by_msig_gindex(amount, gindex, out);
 }
 
-void core::pause_mining() {
-  m_miner->pause();
-}
-
-void core::update_block_template_and_resume_mining() {
-  update_miner_block_template();
-  m_miner->resume();
-}
-
-bool core::handle_block_found(Block& b) {
-  block_verification_context bvc = boost::value_initialized<block_verification_context>();
-  handle_incoming_block(b, bvc, true, true);
-
-  if (bvc.m_verification_failed) {
-    logger(ERROR) << "mined block failed verification";
-  }
-
-  return bvc.m_added_to_main_chain;
-}
-
 void core::on_synchronized() {
-  m_miner->on_synchronized();
 }
 
 bool core::getPoolChanges(const Crypto::Hash& tailBlockId, const std::vector<Crypto::Hash>& knownTxsIds,
@@ -697,15 +705,8 @@ bool core::handle_incoming_block_blob(const BinaryArray& block_blob, block_verif
 }
 
 bool core::handle_incoming_block(const Block& b, block_verification_context& bvc, bool control_miner, bool relay_block) {
-  if (control_miner) {
-    pause_mining();
-  }
 
   m_blockchain.addNewBlock(b, bvc);
-
-  if (control_miner) {
-    update_block_template_and_resume_mining();
-  }
 
   if (relay_block && bvc.m_added_to_main_chain) {
     std::list<Crypto::Hash> missed_txs;
@@ -815,11 +816,6 @@ std::string core::print_pool(bool short_format) {
   return m_mempool.print_pool(short_format);
 }
 
-bool core::update_miner_block_template() {
-  m_miner->on_block_chain_update();
-  return true;
-}
-
 bool core::on_idle() {
   if (!m_starter_message_showed) {
     logger(INFO) << ENDL << "**********************************************************************" << ENDL
@@ -834,7 +830,6 @@ bool core::on_idle() {
     m_starter_message_showed = true;
   }
 
-  m_miner->on_idle();
   m_mempool.on_idle();
   return true;
 }
@@ -1139,7 +1134,7 @@ bool core::getTransactionsByPaymentId(const Crypto::Hash& paymentId, std::vector
 }
 
 // new functions:
-bool core::getTransactionsByAddress(const std::string address, std::vector<Transaction>& transactions) {
+bool core::getTransactionsByAddress(const std::string& address, std::vector<Transaction>& transactions) {
 
   std::vector<Crypto::Hash> blockchainTransactionHashes;
   m_blockchain.getTransactionIdsByAddress(address, blockchainTransactionHashes); // Blockchain.cpp

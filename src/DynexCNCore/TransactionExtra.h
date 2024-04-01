@@ -72,7 +72,7 @@ struct TransactionExtraNonce {
   std::vector<uint8_t> nonce;
 };
 
-struct TransactionExtraMergeMiningTag {
+struct TransactionExtraMergeTag {
   size_t depth;
   Crypto::Hash merkleRoot;
 };
@@ -98,7 +98,7 @@ struct TransactionExtraTxkey {
 //   varint tag;
 //   varint size;
 //   varint data[];
-typedef boost::variant<TransactionExtraPadding, TransactionExtraPublicKey, TransactionExtraNonce, TransactionExtraMergeMiningTag, TransactionExtraFromAddress, TransactionExtraToAddress, TransactionExtraAmount, TransactionExtraTxkey> TransactionExtraField;
+typedef boost::variant<TransactionExtraPadding, TransactionExtraPublicKey, TransactionExtraNonce, TransactionExtraMergeTag, TransactionExtraFromAddress, TransactionExtraToAddress, TransactionExtraAmount, TransactionExtraTxkey> TransactionExtraField;
 
 template<typename T>
 bool findTransactionExtraFieldByType(const std::vector<TransactionExtraField>& tx_extra_fields, T& field) {
@@ -112,6 +112,8 @@ bool findTransactionExtraFieldByType(const std::vector<TransactionExtraField>& t
   return true;
 }
 
+bool parseTransactionExtra(const uint8_t* data, size_t size, std::vector<TransactionExtraField>& tx_extra_fields);
+bool parseTransactionExtra(const std::string& tx_extra, std::vector<TransactionExtraField>& tx_extra_fields);
 bool parseTransactionExtra(const std::vector<uint8_t>& tx_extra, std::vector<TransactionExtraField>& tx_extra_fields);
 bool writeTransactionExtra(std::vector<uint8_t>& tx_extra, const std::vector<TransactionExtraField>& tx_extra_fields);
 Crypto::PublicKey getTransactionPublicKeyFromExtra(const std::vector<uint8_t>& tx_extra);
@@ -119,21 +121,22 @@ bool addTransactionPublicKeyToExtra(std::vector<uint8_t>& tx_extra, const Crypto
 bool addExtraNonceToTransactionExtra(std::vector<uint8_t>& tx_extra, const BinaryArray& extra_nonce);
 void setPaymentIdToTransactionExtraNonce(BinaryArray& extra_nonce, const Crypto::Hash& payment_id);
 bool getPaymentIdFromTransactionExtraNonce(const BinaryArray& extra_nonce, Crypto::Hash& payment_id);
-bool appendMergeMiningTagToExtra(std::vector<uint8_t>& tx_extra, const TransactionExtraMergeMiningTag& mm_tag);
-bool getMergeMiningTagFromExtra(const std::vector<uint8_t>& tx_extra, TransactionExtraMergeMiningTag& mm_tag);
+bool appendMergeMiningTagToExtra(std::vector<uint8_t>& tx_extra, const TransactionExtraMergeTag& mm_tag);
+bool getMergeMiningTagFromExtra(const std::vector<uint8_t>& tx_extra, TransactionExtraMergeTag& mm_tag);
 bool createTxExtraWithPaymentId(const std::string& paymentIdString, std::vector<uint8_t>& extra);
 bool getPaymentIdFromTxExtra(const std::vector<uint8_t>& extra, Crypto::Hash& paymentId);
 bool parsePaymentId(const std::string& paymentIdString, Crypto::Hash& paymentId);
 // non-privacy functions:
 bool addFromAddressToExtra(std::vector<uint8_t>& tx_extra, const TransactionExtraFromAddress& address);
-bool addFromAddressToExtraString(const std::string address, std::string& extraString);
+bool addFromAddressToExtraString(const AccountPublicAddress& acc, std::string& extraString);
 bool addToAddressToExtra(std::vector<uint8_t>& tx_extra, const TransactionExtraToAddress& address); 
 bool addAmountToExtra(std::vector<uint8_t>& tx_extra, const BinaryArray& amount); 
 bool addTxkeyToExtra(std::vector<uint8_t>& tx_extra, const Crypto::SecretKey& tx_key);
 bool addTxkeyToExtraString(const Crypto::SecretKey& tx_key, std::string& extraString);
-bool addToAddressAmountToExtraString(const std::string address, const int64_t amount, std::string& extraString);
-std::string getAccountAddressAsStr(const AccountPublicAddress address);
-AccountPublicAddress getAccountAddressAsKeys(const std::string address_str);
-int64_t getAmountInt64(const std::vector<uint8_t> amount);
-int64_t getStringAmountInt64(const std::string amount);
+bool addToAddressAmountToExtraString(const AccountPublicAddress& acc, const int64_t amount, std::string& extraString);
+std::string getAccountAddressAsStr(const AccountPublicAddress& address);
+AccountPublicAddress getAccountAddressAsKeys(const std::string& address_str);
+int64_t getAmountInt64(const std::vector<uint8_t>& amount);
+int64_t getStringAmountInt64(const std::string& amount);
+BinaryArray getBinaryAmount(int64_t amount);
 }

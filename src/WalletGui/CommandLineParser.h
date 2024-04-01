@@ -70,6 +70,7 @@ public:
   bool hasP2pBindIp() const;
   bool hasP2pBindPort() const;
   bool hasP2pExternalPort() const;
+  quint16 getLogLevel() const;
 
 private:
   QCommandLineParser m_parser;
@@ -87,6 +88,7 @@ private:
   QCommandLineOption m_hideMyPortOption;
   QCommandLineOption m_dataDirOption;
   QCommandLineOption m_minimized;
+  QCommandLineOption m_logLevel;
 };
 
 }

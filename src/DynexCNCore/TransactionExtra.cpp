@@ -51,25 +51,9 @@ using namespace Common;
 
 namespace DynexCN {
 
-bool validateAddress(std::vector<uint8_t> address) {
-    AccountPublicAddress acc = boost::value_initialized<AccountPublicAddress>();
-    std::stringstream adr;
-    for (auto c: address) adr << c;
-    uint64_t prefix;
-    bool r = parseAccountAddressString(prefix, acc, adr.str());
-    return r;
-}
-
-bool parseTransactionExtra(const std::vector<uint8_t> &transactionExtra, 
-                           std::vector<TransactionExtraField> &transactionExtraFields) {
-  
-  transactionExtraFields.clear();
-
-  if (transactionExtra.empty())
-    return true;
-
+bool parseTransactionExtra(const uint8_t* _data, size_t _size, std::vector<TransactionExtraField> &transactionExtraFields) {
   try {
-    MemoryInputStream iss(transactionExtra.data(), transactionExtra.size());
+    MemoryInputStream iss(_data, _size);
     BinaryInputStreamSerializer ar(iss);
 
     int c = 0;
@@ -77,88 +61,104 @@ bool parseTransactionExtra(const std::vector<uint8_t> &transactionExtra,
     while (!iss.endOfStream()) {
       c = read<uint8_t>(iss);
       switch (c) {
-        case TX_EXTRA_TAG_PADDING: {
-          size_t size = 1;
-          for (; !iss.endOfStream() && size <= TX_EXTRA_PADDING_MAX_COUNT; ++size) {
-            if (read<uint8_t>(iss) != 0) {
-              return false; // all bytes should be zero
-            }
+      case TX_EXTRA_TAG_PADDING: {
+        size_t size = 1;
+        for (; !iss.endOfStream() && size <= TX_EXTRA_PADDING_MAX_COUNT; ++size) {
+          if (read<uint8_t>(iss) != 0) {
+            return false; // all bytes should be zero
           }
-
-          if (size > TX_EXTRA_PADDING_MAX_COUNT) {
-            return false;
-          }
-
-          transactionExtraFields.push_back(TransactionExtraPadding{ size });
-          break;
         }
 
-        case TX_EXTRA_TAG_PUBKEY: {
-          TransactionExtraPublicKey extraPk;
-          ar(extraPk.publicKey, "public_key");
-          transactionExtraFields.push_back(extraPk);
-          break;
+        if (size > TX_EXTRA_PADDING_MAX_COUNT) {
+          return false;
         }
 
-        case TX_EXTRA_NONCE: {
-          TransactionExtraNonce extraNonce;
-          uint8_t size = read<uint8_t>(iss);
-          if (size > 0) {
-            extraNonce.nonce.resize(size);
-            read(iss, extraNonce.nonce.data(), extraNonce.nonce.size());
-          }
-          transactionExtraFields.push_back(extraNonce);
-          break;
-        }
-
-        case TX_EXTRA_MERGE_MINING_TAG: {
-          TransactionExtraMergeMiningTag mmTag;
-          ar(mmTag, "mm_tag");
-          transactionExtraFields.push_back(mmTag);
-          break;
-        }
-
-        case TX_EXTRA_FROM_ADDRESS: {
-          TransactionExtraFromAddress address;
-          read(iss, address.address.spendPublicKey.data, 32);
-          read(iss, address.address.viewPublicKey.data, 32);
-          transactionExtraFields.push_back(address);
-          break;
-        }
-
-        case TX_EXTRA_TO_ADDRESS: {
-          TransactionExtraToAddress address;
-          read(iss, address.address.spendPublicKey.data, 32);
-          read(iss, address.address.viewPublicKey.data, 32);
-          transactionExtraFields.push_back(address);
-          break;
-        }
-
-        case TX_EXTRA_AMOUNT: {
-          TransactionExtraAmount amount;
-          amount.amount.resize(8);
-          read(iss, amount.amount.data(), 8);
-          transactionExtraFields.push_back(amount);
-          break;
-        }
-
-        case TX_EXTRA_TXKEY: {
-          TransactionExtraTxkey tx_key;
-          read(iss, tx_key.tx_key.data, 32);
-          transactionExtraFields.push_back(tx_key);
-          break;
-        }
-      
-
+        transactionExtraFields.push_back(TransactionExtraPadding{ size });
+        break;
       }
+
+      case TX_EXTRA_TAG_PUBKEY: {
+        TransactionExtraPublicKey extraPk;
+        ar(extraPk.publicKey, "public_key");
+        transactionExtraFields.push_back(extraPk);
+        break;
+      }
+
+      case TX_EXTRA_NONCE: {
+        TransactionExtraNonce extraNonce;
+        uint8_t size = read<uint8_t>(iss);
+
+        if (size + iss.getPosition() > _size) {
+          return false;
+        }
+
+        if (size > 0) {
+          extraNonce.nonce.resize(size);
+          read(iss, extraNonce.nonce.data(), extraNonce.nonce.size());
+        }
+
+        transactionExtraFields.push_back(extraNonce);
+        break;
+      }
+
+      case TX_EXTRA_MERGE_MINING_TAG: {
+        TransactionExtraMergeTag mmTag;
+        ar(mmTag, "mm_tag");
+        transactionExtraFields.push_back(mmTag);
+        break;
+      }
+
+      case TX_EXTRA_FROM_ADDRESS: {
+        TransactionExtraFromAddress address;
+        read(iss, address.address.spendPublicKey.data, 32);
+        read(iss, address.address.viewPublicKey.data, 32);
+        transactionExtraFields.push_back(address);
+        break;
+      }
+
+      case TX_EXTRA_TO_ADDRESS: {
+        TransactionExtraToAddress address;
+        read(iss, address.address.spendPublicKey.data, 32);
+        read(iss, address.address.viewPublicKey.data, 32);
+        transactionExtraFields.push_back(address);
+        break;
+      }
+
+      case TX_EXTRA_AMOUNT: {
+        TransactionExtraAmount amount;
+        amount.amount.resize(8);
+        read(iss, amount.amount.data(), 8);
+        transactionExtraFields.push_back(amount);
+        break;
+      }
+
+      case TX_EXTRA_TXKEY: {
+        TransactionExtraTxkey tx_key;
+        read(iss, tx_key.tx_key.data, 32);
+        transactionExtraFields.push_back(tx_key);
+        break;
+      }
+    }
     }
   } catch (std::exception &) {
     return false;
   }
 
-  
-  
   return true;
+}
+
+bool parseTransactionExtra(const std::vector<uint8_t> &transactionExtra, std::vector<TransactionExtraField> &transactionExtraFields) {
+  transactionExtraFields.clear();
+  if (transactionExtra.empty())
+    return true;
+  return parseTransactionExtra(transactionExtra.data(), transactionExtra.size(), transactionExtraFields);
+}
+
+bool parseTransactionExtra(const std::string &transactionExtra, std::vector<TransactionExtraField> &transactionExtraFields) {
+  transactionExtraFields.clear();
+  if (transactionExtra.empty())
+    return true;
+  return parseTransactionExtra(reinterpret_cast<const uint8_t*>(transactionExtra.data()), transactionExtra.size(), transactionExtraFields);
 }
 
 struct ExtraSerializerVisitor : public boost::static_visitor<bool> {
@@ -183,7 +183,7 @@ struct ExtraSerializerVisitor : public boost::static_visitor<bool> {
     return addExtraNonceToTransactionExtra(extra, t.nonce);
   }
 
-  bool operator()(const TransactionExtraMergeMiningTag& t) {
+  bool operator()(const TransactionExtraMergeTag& t) {
     return appendMergeMiningTagToExtra(extra, t);
   }
 
@@ -265,20 +265,12 @@ bool addTxkeyToExtraString(const Crypto::SecretKey& tx_key, std::string& extraSt
   return true;
 }
 
-bool addFromAddressToExtraString(const std::string address, std::string& extraString) {
-  // convert address string to spend/view public keys:
-  AccountPublicAddress acc = boost::value_initialized<AccountPublicAddress>();
-  uint64_t prefix;
-  if (!parseAccountAddressString(prefix, acc, address)) {
-    return false;
-  }
-  
+bool addFromAddressToExtraString(const AccountPublicAddress& acc, std::string& extraString) {
   extraString.append(sizeof(char), TX_EXTRA_FROM_ADDRESS);  
   for (int i=0; i<32; i++)
     extraString.append(sizeof(char), acc.spendPublicKey.data[i]);  
   for (int i=0; i<32; i++)
     extraString.append(sizeof(char), acc.viewPublicKey.data[i]);  
-  
   return true;
 }
 
@@ -294,21 +286,19 @@ bool addToAddressToExtra(std::vector<uint8_t>& tx_extra, const TransactionExtraT
   return true;
 }
 
-std::string getAccountAddressAsStr(const AccountPublicAddress address) {
+std::string getAccountAddressAsStr(const AccountPublicAddress& address) {
   uint64_t prefix = 0xb9;
-  std::string address_str;
-  address_str = getAccountAddressAsStr(prefix, address);
-  return address_str;
+  return getAccountAddressAsStr(prefix, address);
 }
 
-AccountPublicAddress getAccountAddressAsKeys(const std::string address_str) {
+AccountPublicAddress getAccountAddressAsKeys(const std::string& address_str) {
   AccountPublicAddress acc = boost::value_initialized<AccountPublicAddress>();
   uint64_t prefix;
   parseAccountAddressString(prefix, acc, address_str);
   return acc;
 }
 
-int64_t getAmountInt64(const std::vector<uint8_t> amount) {
+int64_t getAmountInt64(const std::vector<uint8_t>& amount) {
   return
         (int64_t(amount[7]) << 8*7) |
         (int64_t(amount[6]) << 8*6) |
@@ -320,26 +310,8 @@ int64_t getAmountInt64(const std::vector<uint8_t> amount) {
         (int64_t(amount[0]) << 8*0);
 }
 
-int64_t getStringAmountInt64(const std::string amount) {
-  int64_t amt = std::stol(amount, nullptr, 16);
-  return amt;
-}
-
-bool addToAddressAmountToExtraString(const std::string address, const int64_t amount, std::string& extraString) {
-  
-  AccountPublicAddress acc = boost::value_initialized<AccountPublicAddress>();
-  uint64_t prefix;
-  if (!parseAccountAddressString(prefix, acc, address)) {
-    return false;
-  }
-  
-  extraString.append(sizeof(char), TX_EXTRA_TO_ADDRESS);  
-  for (int i=0; i<32; i++)
-    extraString.append(sizeof(char), acc.spendPublicKey.data[i]);  
-  for (int i=0; i<32; i++)
-    extraString.append(sizeof(char), acc.viewPublicKey.data[i]);  
-  
-  uint8_t amt[8];
+BinaryArray getBinaryAmount(int64_t amount) {
+  BinaryArray amt(8);
   amt[7] = uint8_t(amount >> 8*7);
   amt[6] = uint8_t(amount >> 8*6);
   amt[5] = uint8_t(amount >> 8*5);
@@ -348,6 +320,22 @@ bool addToAddressAmountToExtraString(const std::string address, const int64_t am
   amt[2] = uint8_t(amount >> 8*2);
   amt[1] = uint8_t(amount >> 8*1);
   amt[0] = uint8_t(amount >> 8*0);
+  return amt;
+}
+
+int64_t getStringAmountInt64(const std::string& amount) {
+  int64_t amt = std::stol(amount, nullptr, 16);
+  return amt;
+}
+
+bool addToAddressAmountToExtraString(const AccountPublicAddress& acc, const int64_t amount, std::string& extraString) {
+  extraString.append(sizeof(char), TX_EXTRA_TO_ADDRESS);  
+  for (int i=0; i<32; i++)
+    extraString.append(sizeof(char), acc.spendPublicKey.data[i]);  
+  for (int i=0; i<32; i++)
+    extraString.append(sizeof(char), acc.viewPublicKey.data[i]);  
+
+  BinaryArray amt(getBinaryAmount(amount));
   extraString.append(sizeof(char), TX_EXTRA_AMOUNT);
   for (int i=0; i<8; i++)
     extraString.append(sizeof(char), amt[i]);  
@@ -356,6 +344,9 @@ bool addToAddressAmountToExtraString(const std::string address, const int64_t am
 }
 
 bool addAmountToExtra(std::vector<uint8_t>& tx_extra, const BinaryArray& amount) {
+  if (amount.size() != 8) {
+    return false;
+  }
   size_t start_pos = tx_extra.size();
   tx_extra.resize(tx_extra.size() + 1 + 8);
   // write tag
@@ -384,7 +375,7 @@ bool addExtraNonceToTransactionExtra(std::vector<uint8_t>& tx_extra, const Binar
   return true;
 }
 
-bool appendMergeMiningTagToExtra(std::vector<uint8_t>& tx_extra, const TransactionExtraMergeMiningTag& mm_tag) {
+bool appendMergeMiningTagToExtra(std::vector<uint8_t>& tx_extra, const TransactionExtraMergeTag& mm_tag) {
   BinaryArray blob;
   if (!toBinaryArray(mm_tag, blob)) {
     return false;
@@ -395,7 +386,7 @@ bool appendMergeMiningTagToExtra(std::vector<uint8_t>& tx_extra, const Transacti
   return true;
 }
 
-bool getMergeMiningTagFromExtra(const std::vector<uint8_t>& tx_extra, TransactionExtraMergeMiningTag& mm_tag) {
+bool getMergeMiningTagFromExtra(const std::vector<uint8_t>& tx_extra, TransactionExtraMergeTag& mm_tag) {
   std::vector<TransactionExtraField> tx_extra_fields;
   parseTransactionExtra(tx_extra, tx_extra_fields);
 

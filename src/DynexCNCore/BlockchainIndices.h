@@ -53,10 +53,10 @@ class ISerializer;
 class AddressIndex {
 public:
   AddressIndex(bool enabled);
-  bool add(const Transaction& transaction);
-  bool remove(const Transaction& transaction);
-  bool find(const std::string address, std::vector<Crypto::Hash>& transactionHashes);
-  std::vector<Crypto::Hash> find(const std::string address);
+  bool add(const Transaction& transaction, const Crypto::Hash& transactionHash);
+  bool remove(const Transaction& transaction, const Crypto::Hash& transactionHash);
+  bool find(const std::string& address, std::vector<Crypto::Hash>& transactionHashes);
+  std::vector<Crypto::Hash> find(const std::string& address);
   void clear();
   void serialize(ISerializer& s);
 
@@ -79,8 +79,8 @@ class PaymentIdIndex {
 public:
   PaymentIdIndex(bool enabled);
 
-  bool add(const Transaction& transaction);
-  bool remove(const Transaction& transaction);
+  bool add(const Transaction& transaction, const Crypto::Hash& transactionHash);
+  bool remove(const Transaction& transaction, const Crypto::Hash& transactionHash);
   bool find(const Crypto::Hash& paymentId, std::vector<Crypto::Hash>& transactionHashes);
   std::vector<Crypto::Hash> find(const Crypto::Hash& paymentId);
   void clear();

@@ -50,8 +50,7 @@
 namespace WalletGui {
 
 enum class TransactionType : quint8 {MINED, INPUT, OUTPUT, INOUT, FUSION};
-
-enum class TransactionState : quint8 {ACTIVE, DELETED, SENDING, CANCELLED, FAILED};
+//enum class TransactionState : quint8 {ACTIVE, DELETED, SENDING, CANCELLED, FAILED};
 
 namespace {
 
@@ -149,17 +148,6 @@ QVariant TransactionsModel::data(const QModelIndex& _index, int _role) const {
     return QVariant();
   }
 
-  DynexCN::WalletLegacyTransaction transaction;
-  DynexCN::WalletLegacyTransfer transfer;
-  DynexCN::TransactionId transactionId = m_transfers.value(_index.row()).first;
-  DynexCN::TransferId transferId = m_transfers.value(_index.row()).second;
-
-  if(!WalletAdapter::instance().getTransaction(transactionId, transaction) ||
-    (m_transfers.value(_index.row()).second != DynexCN::WALLET_LEGACY_INVALID_TRANSFER_ID &&
-    !WalletAdapter::instance().getTransfer(transferId, transfer))) {
-    return QVariant();
-  }
-
   switch(_role) {
   case Qt::DisplayRole:
   case Qt::EditRole:
@@ -171,8 +159,172 @@ QVariant TransactionsModel::data(const QModelIndex& _index, int _role) const {
   case Qt::TextAlignmentRole:
     return getAlignmentRole(_index);
 
-  default:
-    return getUserRole(_index, _role, transactionId, transaction, transferId, transfer);
+  case ROLE_COLUMN:
+    return headerData(_index.column(), Qt::Horizontal, ROLE_COLUMN);
+
+  case ROLE_ROW:
+    return _index.row();
+
+  case ROLE_TRANSACTION_ID:
+    return QVariant::fromValue(m_transfers.value(_index.row()).first);
+  
+  case ROLE_ICON:
+    return getTransactionIcon(static_cast<TransactionType>(_index.data(ROLE_TYPE).value<quint8>()));
+  }
+  
+  if (_role < Qt::UserRole) return QVariant();
+
+  DynexCN::WalletLegacyTransaction transaction;
+  DynexCN::WalletLegacyTransfer transfer;
+  DynexCN::TransactionId transactionId = m_transfers.value(_index.row()).first;
+  DynexCN::TransferId transferId = m_transfers.value(_index.row()).second;
+
+  if(!WalletAdapter::instance().getTransaction(transactionId, transaction) ||
+    (transferId != DynexCN::WALLET_LEGACY_INVALID_TRANSFER_ID &&
+    !WalletAdapter::instance().getTransfer(transferId, transfer))) {
+    return QVariant();
+  }
+
+  return getUserRole(_index, _role, transactionId, transaction, transferId, transfer);
+}
+
+#define DATA(role) getUserRole(_index, role, _transactionId, _transaction, _transferId, _transfer)
+
+QVariant TransactionsModel::getUserRole(const QModelIndex& _index, int _role, DynexCN::TransactionId _transactionId,
+  DynexCN::WalletLegacyTransaction& _transaction, DynexCN::TransferId _transferId, DynexCN::WalletLegacyTransfer& _transfer) const {
+
+  switch(_role) {
+
+  case ROLE_TIMESTAMP:
+    return static_cast<quint64>(_transaction.timestamp ? _transaction.timestamp : _transaction.sentTime);
+
+  case ROLE_STATE:
+    return static_cast<quint8>(_transaction.state);
+
+  case ROLE_COINBASE:
+    return _transaction.isCoinbase;
+    
+  case ROLE_DATE:
+    return (_transaction.timestamp ? QDateTime::fromSecsSinceEpoch(_transaction.timestamp) : _transaction.sentTime ? QDateTime::fromSecsSinceEpoch(_transaction.sentTime) : QDateTime());
+
+  case ROLE_HASH:
+    return QByteArray(reinterpret_cast<char*>(&_transaction.hash), sizeof(_transaction.hash)).toHex().toUpper();
+
+  case ROLE_AMOUNT:
+    return static_cast<qint64>(_transferId == DynexCN::WALLET_LEGACY_INVALID_TRANSFER_ID ? _transaction.totalAmount : -_transfer.amount);
+
+  case ROLE_HEIGHT:
+    return static_cast<quint64>(_transaction.blockHeight);
+
+  case ROLE_FEE:
+    return static_cast<quint64>(_transaction.fee);
+
+  case ROLE_NUMBER_OF_CONFIRMATIONS:
+    if (_transaction.state != DynexCN::WalletLegacyTransactionState::Active && _transaction.state != DynexCN::WalletLegacyTransactionState::Sending) {
+      return static_cast<qint64>(-1);
+    }
+    return static_cast<qint64>(_transaction.blockHeight == DynexCN::WALLET_LEGACY_UNCONFIRMED_TRANSACTION_HEIGHT ? 0 :
+      NodeAdapter::instance().getLastKnownBlockHeight() - _transaction.blockHeight + 1);
+
+  case ROLE_TYPE: {
+    if(_transaction.isCoinbase) {
+      return static_cast<quint8>(TransactionType::MINED);
+    } else if (WalletAdapter::instance().isFusionTransaction(_transaction)) {
+      return static_cast<quint8>(TransactionType::FUSION);
+    } else if (_transaction.totalAmount < 0) {
+      //if (!m_myAddress.compare(_index.data(ROLE_ADDRESS).toString())) {
+      if (!m_myAddress.compare(DATA(ROLE_ADDRESS).toString())) {
+        return static_cast<quint8>(TransactionType::INOUT);
+      }
+      return static_cast<quint8>(TransactionType::OUTPUT);
+    }
+
+    return static_cast<quint8>(TransactionType::INPUT);
+  }
+
+  case ROLE_PAYMENT_ID: {
+    std::vector<DynexCN::TransactionExtraField> fields;
+    NodeAdapter::instance().extractExtra(_transaction.extra, fields);
+    return NodeAdapter::instance().extractPaymentId(fields).toLower();
+  }
+
+  case ROLE_ADDRESS: {
+    if (_transaction.totalAmount < 0 && _transaction.transferCount > 1 && !_transfer.address.empty()) {
+      return QString::fromStdString(_transfer.address);
+    }
+
+    std::vector<DynexCN::TransactionExtraField> fields;
+    NodeAdapter::instance().extractExtra(_transaction.extra, fields);
+
+    if (_transaction.totalAmount < 0) {
+      auto to_address = NodeAdapter::instance().extractToAddress(fields);
+      if (to_address.size() == 1) {
+	    return QString::fromStdString(to_address[0].first);
+      }
+      if (to_address.size() > 1) {
+        return tr("[%1 recipients]").arg(to_address.size());
+      }
+    } else {
+      return NodeAdapter::instance().extractFromAddress(fields);
+    }
+
+    return QVariant();
+  }
+
+  case ROLE_RECIPIENTS: {
+    if (_transaction.transferCount > 1 || _transaction.totalAmount >= 0) {
+      return QVariant();
+    }
+
+    QString recipients;
+    std::vector<DynexCN::TransactionExtraField> fields;
+    NodeAdapter::instance().extractExtra(_transaction.extra, fields);
+
+    auto to_address = NodeAdapter::instance().extractToAddress(fields);
+    if (to_address.size() == 1) {
+      return QVariant();
+    }
+
+    QString currency = CurrencyAdapter::instance().getCurrencyTicker().toUpper();
+    for(const auto& address : to_address) {
+      recipients += QString("<br>%1: <b>%2</b> %3").arg(QString::fromStdString(address.first)).arg(CurrencyAdapter::instance().formatAmount(qAbs(address.second))).arg(currency);
+    }
+
+    return recipients;
+  }
+
+  case ROLE_FROM: {
+    if (_transaction.totalAmount < 0) {
+      return m_myAddress;
+    }
+    std::vector<DynexCN::TransactionExtraField> fields;
+    NodeAdapter::instance().extractExtra(_transaction.extra, fields);
+    return NodeAdapter::instance().extractFromAddress(fields);
+  }
+
+  case ROLE_TO: {
+    if (_transaction.totalAmount < 0 && _transaction.transferCount > 1 && !_transfer.address.empty()) {
+      return QString::fromStdString(_transfer.address);
+    }
+
+    std::vector<DynexCN::TransactionExtraField> fields;
+    NodeAdapter::instance().extractExtra(_transaction.extra, fields);
+
+    if (_transaction.totalAmount < 0) {
+      auto to_address = NodeAdapter::instance().extractToAddress(fields);
+      if (to_address.size() == 1) {
+	    return QString::fromStdString(to_address[0].first);
+      }
+      if (to_address.size() > 1) {
+        return tr("[%1 recipients]").arg(to_address.size());
+      }
+    } else {
+      return m_myAddress;
+    }
+
+    return QVariant();
+  }
+
   }
 
   return QVariant();
@@ -220,19 +372,18 @@ QVariant TransactionsModel::getDisplayRole(const QModelIndex& _index) const {
 
   case COLUMN_ADDRESS: {
     TransactionType transactionType = static_cast<TransactionType>(_index.data(ROLE_TYPE).value<quint8>());
-    if (transactionType == TransactionType::INPUT || transactionType == TransactionType::MINED ||
-        transactionType == TransactionType::INOUT || transactionType == TransactionType::FUSION) {
-      return QString(tr("me (%1)").arg(WalletAdapter::instance().getAddress()));
+    if (transactionType == TransactionType::MINED || transactionType == TransactionType::INOUT || transactionType == TransactionType::FUSION) {
+      return tr("[me] %1").arg(m_myAddress);
     } 
 
     QString transactionAddress = _index.data(ROLE_ADDRESS).toString();
     if (transactionAddress.isEmpty()) {
-      return tr("(n/a)");
+      return tr("[n/a]");
     }
 
     QString label = AddressBookModel::instance().getAddressLabel(transactionAddress, _index.data(ROLE_PAYMENT_ID).toString(), false);
     if (!label.isEmpty()) {
-      return QString("%1 (%2)").arg(label).arg(transactionAddress);
+      return tr("[%1] %2").arg(label).arg(transactionAddress);
     }
 
     return transactionAddress;
@@ -263,28 +414,34 @@ QVariant TransactionsModel::getDisplayRole(const QModelIndex& _index) const {
 }
 
 QVariant TransactionsModel::getDecorationRole(const QModelIndex& _index) const {
+  QString file;
+  QPixmap pixmap;
+
   if(_index.column() == COLUMN_STATE) {
-    quint64 numberOfConfirmations = _index.data(ROLE_NUMBER_OF_CONFIRMATIONS).value<quint64>();
-    TransactionState transactionState = static_cast<TransactionState>(_index.data(ROLE_STATE).value<quint8>());
-    QString file;
-    if (transactionState != TransactionState::ACTIVE && transactionState != TransactionState::SENDING) {
+    int64_t numberOfConfirmations = _index.data(ROLE_NUMBER_OF_CONFIRMATIONS).toLongLong();
+    if (numberOfConfirmations < 0) {
       file = QString(":icons/cancelled");
+    } else if (numberOfConfirmations > static_cast<int64_t>(DynexCN::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW)) {
+      file = QString(":icons/transaction");
     } else if (numberOfConfirmations == 0) {
       file = QString(":icons/unconfirmed");
-    } else if(numberOfConfirmations < 2) {
-      file = QString(":icons/clock1");
-    } else if(numberOfConfirmations < 4) {
-      file = QString(":icons/clock2");
-    } else if(numberOfConfirmations < 6) {
-      file = QString(":icons/clock3");
-    } else if(numberOfConfirmations < 8) {
-      file = QString(":icons/clock4");
-    } else if(numberOfConfirmations < 10) {
-      file = QString(":icons/clock5");
     } else {
-      file = QString(":icons/transaction");
+      const uint32_t step = (_index.data(ROLE_COINBASE).value<bool>()) ? DynexCN::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW / 6 : DynexCN::parameters::CRYPTONOTE_TX_SPENDABLE_AGE / 6;
+      if (numberOfConfirmations < 2 * step) {
+        file = QString(":icons/clock1");
+      } else if (numberOfConfirmations < 3 * step) {
+        file = QString(":icons/clock2");
+      } else if (numberOfConfirmations < 4 * step) {
+        file = QString(":icons/clock3");
+      } else if (numberOfConfirmations < 5 * step) {
+        file = QString(":icons/clock4");
+      } else if (numberOfConfirmations < 6 * step) {
+        file = QString(":icons/clock5");
+      } else {
+        file = QString(":icons/transaction");
+      }
     }
-    QPixmap pixmap;
+
     if (!QPixmapCache::find(file, &pixmap)) {
       pixmap.load(file);
       QPixmapCache::insert(file, pixmap);
@@ -292,7 +449,23 @@ QVariant TransactionsModel::getDecorationRole(const QModelIndex& _index) const {
     return pixmap;
 
   } else if (_index.column() == COLUMN_ADDRESS) {
-    return _index.data(ROLE_ICON).value<QPixmap>().scaled(20, 20, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    TransactionType transactionType = static_cast<TransactionType>(_index.data(ROLE_TYPE).value<quint8>());
+    QString file;
+    if (transactionType == TransactionType::INPUT) {
+      file = QString(":icons/tx-input");
+    } else if (transactionType == TransactionType::OUTPUT) {
+      file = QString(":icons/tx-output");
+    } else if (transactionType == TransactionType::MINED) {
+      file = QString(":icons/tx-mined");
+    } else { //if (transactionType == TransactionType::INOUT || transactionType == TransactionType::FUSION) {
+      file = QString(":icons/tx-inout");
+    }
+    if (!QPixmapCache::find(file, &pixmap)) {
+      pixmap.load(file);
+      pixmap = pixmap.scaled(20, 20, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+      QPixmapCache::insert(file, pixmap);
+    }
+    return pixmap;
   }
 
   return QVariant();
@@ -302,72 +475,9 @@ QVariant TransactionsModel::getAlignmentRole(const QModelIndex& _index) const {
   return headerData(_index.column(), Qt::Horizontal, Qt::TextAlignmentRole);
 }
 
-QVariant TransactionsModel::getUserRole(const QModelIndex& _index, int _role, DynexCN::TransactionId _transactionId,
-  DynexCN::WalletLegacyTransaction& _transaction, DynexCN::TransferId _transferId, DynexCN::WalletLegacyTransfer& _transfer) const {
-  switch(_role) {
-
-  case ROLE_STATE:
-    return static_cast<quint8>(_transaction.state);
-      
-  case ROLE_DATE:
-    return (_transaction.timestamp > 0 ? QDateTime::fromTime_t(_transaction.timestamp) : QDateTime());
-
-  case ROLE_TYPE: {
-    QString transactionAddress = _index.data(ROLE_ADDRESS).toString();
-    if(_transaction.isCoinbase) {
-      return static_cast<quint8>(TransactionType::MINED);
-    } else if (WalletAdapter::instance().isFusionTransaction(_transaction)) {
-      return static_cast<quint8>(TransactionType::FUSION);
-    } else if (!transactionAddress.compare(WalletAdapter::instance().getAddress())) {
-      return static_cast<quint8>(TransactionType::INOUT);
-    } else if(_transaction.totalAmount < 0) {
-      return static_cast<quint8>(TransactionType::OUTPUT);
-    }
-
-    return static_cast<quint8>(TransactionType::INPUT);
-  }
-
-  case ROLE_HASH:
-    return QByteArray(reinterpret_cast<char*>(&_transaction.hash), sizeof(_transaction.hash)).toHex().toUpper();
-
-  case ROLE_ADDRESS:
-    return QString::fromStdString(_transfer.address);
-
-  case ROLE_AMOUNT:
-    return static_cast<qint64>(_transferId == DynexCN::WALLET_LEGACY_INVALID_TRANSFER_ID ? _transaction.totalAmount : -_transfer.amount);
-
-  case ROLE_PAYMENT_ID:
-    return NodeAdapter::instance().extractPaymentId(_transaction.extra).toLower();
-
-  case ROLE_ICON: {
-    TransactionType transactionType = static_cast<TransactionType>(_index.data(ROLE_TYPE).value<quint8>());
-    return getTransactionIcon(transactionType);
-  }
-
-  case ROLE_TRANSACTION_ID:
-    return QVariant::fromValue(_transactionId);
-
-  case ROLE_HEIGHT:
-    return static_cast<quint64>(_transaction.blockHeight);
-
-  case ROLE_FEE:
-    return static_cast<quint64>(_transaction.fee);
-
-  case ROLE_NUMBER_OF_CONFIRMATIONS:
-    return (_transaction.blockHeight == DynexCN::WALLET_LEGACY_UNCONFIRMED_TRANSACTION_HEIGHT ? 0 :
-      NodeAdapter::instance().getLastKnownBlockHeight() - _transaction.blockHeight + 1);
-
-  case ROLE_COLUMN:
-    return headerData(_index.column(), Qt::Horizontal, ROLE_COLUMN);
-
-  case ROLE_ROW:
-    return _index.row();
-  }
-
-  return QVariant();
-}
-
 void TransactionsModel::reloadWalletTransactions() {
+  m_myAddress = WalletAdapter::instance().getAddress();
+
   beginResetModel();
   m_transfers.clear();
   m_transactionRow.clear();
@@ -422,8 +532,9 @@ void TransactionsModel::appendTransaction(DynexCN::TransactionId _transactionId)
 }
 
 void TransactionsModel::updateWalletTransaction(DynexCN::TransactionId _id) {
-  quint32 firstRow = m_transactionRow.value(_id).first;
-  quint32 lastRow = firstRow + m_transactionRow.value(_id).second - 1;
+  const auto row = m_transactionRow.value(_id);
+  quint32 firstRow = row.first;
+  quint32 lastRow = firstRow + row.second - 1;
   Q_EMIT dataChanged(index(firstRow, COLUMN_DATE), index(lastRow, COLUMN_DATE));
 }
 

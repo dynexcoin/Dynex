@@ -127,7 +127,7 @@ namespace Common {
 
 		map<ns_type, function<void(const ns_rr &rr)>> callbacks;
 
-		callbacks[ns_t_txt] = [&nsMsg, &records](const ns_rr &rr) -> void {
+		callbacks[ns_t_txt] = [&records](const ns_rr &rr) -> void {
 			int txt_len = *(unsigned char *) ns_rr_rdata(rr);
 			char txt[256];
 			memset(txt, 0, 256);

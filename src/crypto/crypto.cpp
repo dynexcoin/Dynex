@@ -50,6 +50,8 @@
 #include "crypto.h"
 #include "hash.h"
 
+#include <Common/StringTools.h>
+
 namespace Crypto {
 
   using std::abort;
@@ -652,5 +654,20 @@ namespace Crypto {
     hash_to_scalar(buf, rs_comm_size(pubs_count), h);
     sc_sub(reinterpret_cast<unsigned char*>(&h), reinterpret_cast<unsigned char*>(&h), reinterpret_cast<unsigned char*>(&sum));
     return sc_isnonzero(reinterpret_cast<unsigned char*>(&h)) == 0;
+  }
+
+  std::string uuidToString(const Crypto::Uuid& id) {
+    // 3caeb5c3-f3ee-e02f-d2c3-ee1a3c4e0bfa
+    std::string str;
+    Common::toHex(&id.data[0], 4, str);
+    str.append("-");
+    Common::toHex(&id.data[4], 2, str);
+    str.append("-");
+    Common::toHex(&id.data[6], 2, str);
+    str.append("-");
+    Common::toHex(&id.data[8], 2, str);
+    str.append("-");
+    Common::toHex(&id.data[10], 6, str);
+    return str;
   }
 }

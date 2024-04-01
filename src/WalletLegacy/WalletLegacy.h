@@ -102,8 +102,8 @@ public:
   virtual size_t getTransferCount() override;
   virtual size_t getUnlockedOutputsCount() override;
   // offline-signature:
-  virtual std::vector<TransactionOutputInformation> getUnlockedOutputs();
-  virtual TransactionId signTransaction(Transaction& tx, Crypto::SecretKey tx_key, uint64_t amount, uint64_t fee);
+  virtual std::vector<TransactionOutputInformation> getUnlockedOutputs() override;
+  virtual TransactionId signTransaction(Transaction& tx, Crypto::SecretKey tx_key, uint64_t amount, uint64_t fee) override;
 
   virtual TransactionId findTransactionByTransferId(TransferId transferId) override;
 

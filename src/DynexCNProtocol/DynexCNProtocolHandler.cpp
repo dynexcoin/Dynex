@@ -39,7 +39,6 @@
 
 #include <future>
 #include <boost/scope_exit.hpp>
-#include <boost/uuid/uuid_io.hpp>
 #include <System/Dispatcher.h>
 
 #include "DynexCNCore/DynexCNBasicImpl.h"
@@ -473,8 +472,6 @@ int DynexCNProtocolHandler::handle_response_get_objects(int command, NOTIFY_RESP
   uint32_t height;
   Crypto::Hash top;
   {
-    m_core.pause_mining();
-
     // we lock all the rest to avoid having multiple connections redo a lot
     // of the same work, and one of them doing it for nothing: subsequent
     // connections will wait until the current one's added its blocks, then
@@ -496,8 +493,6 @@ int DynexCNProtocolHandler::handle_response_get_objects(int command, NOTIFY_RESP
       }
       ++dismiss;
     }
-
-    BOOST_SCOPE_EXIT_ALL(this) { m_core.update_block_template_and_resume_mining(); };
 
     int result = processObjects(context, parsed_blocks);
     if (result != 0) {

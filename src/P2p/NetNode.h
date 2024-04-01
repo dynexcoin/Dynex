@@ -40,8 +40,6 @@
 #include <functional>
 #include <unordered_map>
 
-#include <boost/functional/hash.hpp>
-
 #include <System/Context.h>
 #include <System/ContextGroup.h>
 #include <System/Dispatcher.h>
@@ -240,12 +238,12 @@ namespace DynexCN
     //debug functions
     std::string print_connections_container();
 
-    typedef std::unordered_map<boost::uuids::uuid, P2pConnectionContext, boost::hash<boost::uuids::uuid>> ConnectionContainer;
+    typedef std::unordered_map<uuid, P2pConnectionContext> ConnectionContainer;
     typedef ConnectionContainer::iterator ConnectionIterator;
     ConnectionContainer m_connections;
 
     void acceptLoop();
-    void connectionHandler(const boost::uuids::uuid& connectionId, P2pConnectionContext& connection);
+    void connectionHandler(const uuid& connectionId, P2pConnectionContext& connection);
     void writeHandler(P2pConnectionContext& ctx);
     void onIdle();
     void timedSyncLoop();
@@ -301,7 +299,7 @@ namespace DynexCN
     std::vector<NetworkAddress> m_seed_nodes;
     std::list<PeerlistEntry> m_command_line_peers;
     uint64_t m_peer_livetime;
-    boost::uuids::uuid m_network_id;
+    uuid m_network_id;
     std::map<uint32_t, time_t> m_blocked_hosts;
     std::map<uint32_t, uint64_t> m_host_fails_score;
 

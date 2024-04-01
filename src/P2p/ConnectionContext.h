@@ -41,7 +41,6 @@
 #include <ostream>
 #include <unordered_set>
 
-#include <boost/uuid/uuid.hpp>
 #include "Common/StringTools.h"
 #include "crypto/hash.h"
 
@@ -49,7 +48,7 @@ namespace DynexCN {
 
 struct DynexCNConnectionContext {
   uint8_t version;
-  boost::uuids::uuid m_connection_id;
+  uuid m_connection_id;
   uint32_t m_remote_ip = 0;
   uint32_t m_remote_port = 0;
   bool m_is_income = false;

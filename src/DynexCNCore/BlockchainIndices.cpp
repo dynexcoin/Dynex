@@ -53,35 +53,33 @@ namespace {
 AddressIndex::AddressIndex(bool _enabled) : enabled(_enabled) {
 }
 
-bool AddressIndex::add(const Transaction& transaction) {
+bool AddressIndex::add(const Transaction& transaction, const Crypto::Hash& transactionHash) {
   if (!enabled) {
     return false;
   }
 
   std::vector<std::string> addresses;
-  Crypto::Hash transactionHash = getObjectHash(transaction);
   if (!BlockchainExplorerDataBuilder::getAddresses(transaction, addresses)) {
     return false;
   }
 
-  for (auto address: addresses)
+  for (const auto& address : addresses)
   	index.insert(std::make_pair(address, transactionHash));
 
   return true;
 }
 
-bool AddressIndex::remove(const Transaction& transaction) {
+bool AddressIndex::remove(const Transaction& transaction, const Crypto::Hash& transactionHash) {
   if (!enabled) {
     return false;
   }
 
   std::vector<std::string> addresses;
-  Crypto::Hash transactionHash = getObjectHash(transaction);
   if (!BlockchainExplorerDataBuilder::getAddresses(transaction, addresses)) {
     return false;
   }
 
-  for (auto address: addresses) {
+  for (const auto& address : addresses) {
 	  auto range = index.equal_range(address);
 	  for (auto iter = range.first; iter != range.second; ++iter){
 	    if (iter->second == transactionHash) {
@@ -94,7 +92,7 @@ bool AddressIndex::remove(const Transaction& transaction) {
   return false;
 }
 
-bool AddressIndex::find(const std::string address, std::vector<Crypto::Hash>& transactionHashes) {
+bool AddressIndex::find(const std::string& address, std::vector<Crypto::Hash>& transactionHashes) {
   if (!enabled) {
     throw std::runtime_error("Address index disabled.");
   }
@@ -108,7 +106,7 @@ bool AddressIndex::find(const std::string address, std::vector<Crypto::Hash>& tr
   return found;
 }
 
-std::vector<Crypto::Hash> AddressIndex::find(const std::string address) {
+std::vector<Crypto::Hash> AddressIndex::find(const std::string& address) {
 	if (!enabled) {
 		throw std::runtime_error("Address index disabled.");
 	}
@@ -141,30 +139,27 @@ void AddressIndex::serialize(ISerializer& s) {
 PaymentIdIndex::PaymentIdIndex(bool _enabled) : enabled(_enabled), index(DEFAULT_BUCKET_COUNT, paymentIdHash) {
 }
 
-bool PaymentIdIndex::add(const Transaction& transaction) {
+bool PaymentIdIndex::add(const Transaction& transaction, const Crypto::Hash& transactionHash) {
   if (!enabled) {
     return false;
   }
 
   Crypto::Hash paymentId;
-  Crypto::Hash transactionHash = getObjectHash(transaction);
   if (!BlockchainExplorerDataBuilder::getPaymentId(transaction, paymentId)) {
     return false;
   }
 
-  //index.emplace(paymentId, transactionHash);
   index.insert(std::make_pair(paymentId, transactionHash));
 
   return true;
 }
 
-bool PaymentIdIndex::remove(const Transaction& transaction) {
+bool PaymentIdIndex::remove(const Transaction& transaction, const Crypto::Hash& transactionHash) {
   if (!enabled) {
     return false;
   }
 
   Crypto::Hash paymentId;
-  Crypto::Hash transactionHash = getObjectHash(transaction);
   if (!BlockchainExplorerDataBuilder::getPaymentId(transaction, paymentId)) {
     return false;
   }
@@ -400,7 +395,9 @@ bool GeneratedTransactionsIndex::remove(const Block& block) {
 
 bool GeneratedTransactionsIndex::find(uint32_t height, uint64_t& generatedTransactions) {
   if (!enabled) {
-    throw std::runtime_error("Generated transactions index disabled.");
+    //throw std::runtime_error("Generated transactions index disabled.");
+    assert(enabled);
+    return false;
   }
 
   if (height > std::numeric_limits<uint32_t>::max()) {
@@ -464,7 +461,9 @@ bool OrphanBlocksIndex::remove(const Block& block) {
 
 bool OrphanBlocksIndex::find(uint32_t height, std::vector<Crypto::Hash>& blockHashes) {
   if (!enabled) {
-    throw std::runtime_error("Orphan blocks index disabled.");
+    //throw std::runtime_error("Orphan blocks index disabled.");
+    assert(enabled);
+    return false;
   }
 
   if (height > std::numeric_limits<uint32_t>::max()) {

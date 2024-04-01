@@ -88,9 +88,9 @@ size_t P2pNodeConfig::getWhiteListConnectionsPercent() const {
   return whiteListConnectionsPercent;
 }
 
-boost::uuids::uuid P2pNodeConfig::getNetworkId() const {
+uuid P2pNodeConfig::getNetworkId() const {
   if (getTestnet()) {
-    boost::uuids::uuid copy = networkId;
+    uuid copy = networkId;
     copy.data[0] += 1;
     return copy;
   }
@@ -135,7 +135,7 @@ void P2pNodeConfig::setWhiteListConnectionsPercent(size_t percent) {
   whiteListConnectionsPercent = percent;
 }
 
-void P2pNodeConfig::setNetworkId(const boost::uuids::uuid& id) {
+void P2pNodeConfig::setNetworkId(const uuid& id) {
   networkId = id;
 }
 

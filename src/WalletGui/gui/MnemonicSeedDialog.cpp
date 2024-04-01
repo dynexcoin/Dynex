@@ -56,8 +56,6 @@ MnemonicSeedDialog::~MnemonicSeedDialog() {
 }
 
 void MnemonicSeedDialog::walletOpened() {
-  DynexCN::AccountKeys keys;
-  WalletAdapter::instance().getAccountKeys(keys);
   QString mnemonicSeed = WalletAdapter::instance().getMnemonicSeed(m_ui->m_languageCombo->currentText());
   m_ui->m_mnemonicSeedEdit->setText(mnemonicSeed);
 }

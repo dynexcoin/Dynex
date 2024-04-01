@@ -65,7 +65,7 @@ namespace DynexCN
   class Currency;
 
   class DynexCNProtocolHandler : 
-    public i_cryptonote_protocol, 
+    public i_cn_protocol, 
     public IDynexCNProtocolQuery
   {
   public:
@@ -117,7 +117,7 @@ namespace DynexCN
     int handle_response_chain_entry(int command, NOTIFY_RESPONSE_CHAIN_ENTRY::request& arg, DynexCNConnectionContext& context);
     int handleRequestTxPool(int command, NOTIFY_REQUEST_TX_POOL::request& arg, DynexCNConnectionContext& context);
 
-    //----------------- i_cryptonote_protocol ----------------------------------
+    //----------------- i_cn_protocol ----------------------------------
     virtual void relay_block(NOTIFY_NEW_BLOCK::request& arg) override;
     virtual void relay_transactions(NOTIFY_NEW_TRANSACTIONS::request& arg) override;
     virtual void add_observer(IDynexCNProtocolObserver* observer) override;

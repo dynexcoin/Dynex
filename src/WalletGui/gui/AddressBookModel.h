@@ -65,6 +65,7 @@ public:
   void removeAddress(const QString& _label);
   const QString getAddressLabel(const QString& _address, const QString& _paymentId, bool _strict_match);
   QModelIndex getAddressIndex(const QString& _label);
+  void reload();
 
 private:
   QJsonArray m_addressBook;

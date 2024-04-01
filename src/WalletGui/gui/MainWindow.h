@@ -42,8 +42,8 @@
 #include <QSystemTrayIcon>
 #include <QTimer>
 #include <QObject>
-
-class QActionGroup;
+#include <QActionGroup>
+#include <QProgressBar>
 
 namespace Ui {
 class MainWindow;
@@ -71,9 +71,11 @@ private:
   QLabel* m_synchronizationStateIconLabel;
   QSystemTrayIcon* m_trayIcon;
   QActionGroup* m_tabActionGroup;
+  QProgressBar* m_syncProgressBar;
   bool m_isAboutToQuit;
   QList<QAction*> recentFileActionList;
   static MainWindow* m_instance;
+  QString m_statusBarText;
 
   MainWindow();
   ~MainWindow();
@@ -87,7 +89,7 @@ private:
   void askForWalletPassword(bool _error);
   void encryptedFlagChanged(bool _encrypted);
   void peerCountUpdated(quint64 _peer_count);
-  void walletSynchronizationInProgress();
+  void walletSynchronizationInProgress(uint32_t _current, uint32_t _total);
   void walletSynchronized(int _error, const QString& _error_text);
   void walletOpened(bool _error, const QString& _error_text);
   void walletClosed();
@@ -104,6 +106,7 @@ private:
   Q_SLOT void setStartOnLogin(bool _on);
   Q_SLOT void setMinimizeToTray(bool _on);
   Q_SLOT void setCloseToTray(bool _on);
+  Q_SLOT void setGlobalAddressBook(bool _on);
   Q_SLOT void restoreCheckboxes();
   Q_SLOT void createNonDeterministicWallet();
   Q_SLOT void closeWallet();
@@ -116,6 +119,7 @@ private:
   Q_SLOT void showMnemonicSeed();
   Q_SLOT void restoreFromMnemonicSeed();
   Q_SLOT void openConnectionSettings();
+  Q_SLOT void balanceProof();
 
 #ifdef Q_OS_MAC
 public:

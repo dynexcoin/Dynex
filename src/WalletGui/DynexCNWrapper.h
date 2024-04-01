@@ -42,6 +42,8 @@
 #include <string>
 #include <system_error>
 
+#include <DynexCNCore/TransactionExtra.h>
+
 namespace DynexCN {
 
 class INode;
@@ -64,12 +66,16 @@ public:
   virtual void init(const std::function<void(std::error_code)>& callback) = 0;
   virtual void deinit() = 0;
   
-  virtual std::string convertPaymentId(const std::string& paymentIdString) = 0;
-  virtual std::string extractPaymentId(const std::string& extra) = 0;
-  virtual uint64_t getLastKnownBlockHeight() const = 0;
-  virtual uint64_t getLastLocalBlockHeight() const = 0;
+  virtual std::string convertPaymentId(const std::string& paymentIdString) const = 0;
+  virtual bool extractExtra(const std::string& extra, std::vector<DynexCN::TransactionExtraField>& extraFields) const = 0;
+  virtual std::string extractPaymentId(const std::vector<DynexCN::TransactionExtraField>& extraFields) const = 0;
+  virtual std::string extractFromAddress(const std::vector<DynexCN::TransactionExtraField>& extraFields) const = 0;
+  virtual std::vector<std::pair<std::string, int64_t>> extractToAddress(const std::vector<DynexCN::TransactionExtraField>& extraFields) const = 0;
+
+  virtual uint32_t getLastKnownBlockHeight() const = 0;
+  virtual uint32_t getLastLocalBlockHeight() const = 0;
   virtual uint64_t getLastLocalBlockTimestamp() const = 0;
-  virtual uint64_t getPeerCount() const = 0;
+  virtual size_t getPeerCount() const = 0;
   virtual uint64_t getMinimalFee() const = 0;
 
   virtual DynexCN::IWalletLegacy* createWallet() = 0;
@@ -78,8 +84,8 @@ public:
 class INodeCallback {
 public:
   virtual void peerCountUpdated(Node& node, size_t count) = 0;
-  virtual void localBlockchainUpdated(Node& node, uint64_t height) = 0;
-  virtual void lastKnownBlockHeightUpdated(Node& node, uint64_t height) = 0;
+  virtual void localBlockchainUpdated(Node& node, uint32_t height) = 0;
+  virtual void lastKnownBlockHeightUpdated(Node& node, uint32_t height) = 0;
 };
 
 Node* createRpcNode(const DynexCN::Currency& currency, INodeCallback& callback, const std::string& nodeHost, unsigned short nodePort);

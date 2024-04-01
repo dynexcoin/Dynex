@@ -32,10 +32,6 @@
   <property name="windowTitle">
    <string>Mnemonic seed</string>
   </property>
-  <property name="windowIcon">
-   <iconset resource="../../resources.qrc">
-    <normaloff>:/images/cryptonote</normaloff>:/images/cryptonote</iconset>
-  </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <widget class="QTextEdit" name="m_mnemonicSeedEdit">
@@ -134,7 +130,7 @@
   </connection>
   <connection>
    <sender>m_languageCombo</sender>
-   <signal>currentIndexChanged(QString)</signal>
+   <signal>currentIndexChanged(int)</signal>
    <receiver>MnemonicSeedDialog</receiver>
    <slot>languageChanged()</slot>
    <hints>
@@ -149,4 +145,7 @@
    </hints>
   </connection>
  </connections>
+ <slots>
+  <slot>languageChanged()</slot>
+ </slots>
 </ui>

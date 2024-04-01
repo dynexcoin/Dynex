@@ -40,6 +40,8 @@
 #include <QDir>
 #include <QTimer>
 #include <QUrl>
+#include <QtConcurrent/QtConcurrent>
+#include <QFuture>
 
 #include <DynexCNCore/CoreConfig.h>
 #include <P2p/NetNodeConfig.h>
@@ -89,9 +91,9 @@ public:
   ~InProcessNodeInitializer() {
   }
 
-  void start(Node** _node, const DynexCN::Currency* currency,  INodeCallback* _callback, Logging::LoggerManager* _loggerManager,
-    const DynexCN::CoreConfig& _coreConfig, const DynexCN::NetNodeConfig& _netNodeConfig) {
-    (*_node) = createInprocessNode(*currency, *_loggerManager, _coreConfig, _netNodeConfig, *_callback);
+  void start(Node** _node, INodeCallback* _callback, const DynexCN::CoreConfig& _coreConfig, const DynexCN::NetNodeConfig& _netNodeConfig) {
+    (*_node) = createInprocessNode(CurrencyAdapter::instance().getCurrency(), LoggerAdapter::instance().getLoggerManager(),
+      _coreConfig, _netNodeConfig, *_callback);
     try {
       (*_node)->init([this](std::error_code _err) {
           if (_err) {
@@ -103,7 +105,7 @@ public:
           Q_EMIT nodeInitCompletedSignal();
           QCoreApplication::processEvents();
         });
-    } catch (std::runtime_error& err) {
+    } catch (std::runtime_error&) {
       Q_EMIT nodeInitFailedSignal(DynexCN::error::INTERNAL_WALLET_ERROR);
       QCoreApplication::processEvents();
       return;
@@ -148,14 +150,32 @@ std::string NodeAdapter::convertPaymentId(const QString& _paymentIdString) const
   Q_CHECK_PTR(m_node);
   try {
     return m_node->convertPaymentId(_paymentIdString.toStdString());
-  } catch (std::runtime_error& err) {
+  } catch (std::runtime_error&) {
   }
   return std::string();
 }
 
-QString NodeAdapter::extractPaymentId(const std::string& _extra) const {
+bool NodeAdapter::extractExtra(const std::string& _extra, std::vector<DynexCN::TransactionExtraField>& _fields) const {
   Q_CHECK_PTR(m_node);
-  return QString::fromStdString(m_node->extractPaymentId(_extra));
+  return m_node->extractExtra(_extra, _fields);
+}
+
+QString NodeAdapter::extractPaymentId(const std::vector<DynexCN::TransactionExtraField>& _fields) const {
+  Q_CHECK_PTR(m_node);
+  if (!_fields.size()) return {};
+  return QString::fromStdString(m_node->extractPaymentId(_fields));
+}
+
+QString NodeAdapter::extractFromAddress(const std::vector<DynexCN::TransactionExtraField>& _fields) const {
+  Q_CHECK_PTR(m_node);
+  if (!_fields.size()) return {};
+  return QString::fromStdString(m_node->extractFromAddress(_fields));
+}
+
+std::vector<std::pair<std::string, int64_t>> NodeAdapter::extractToAddress(const std::vector<DynexCN::TransactionExtraField>& _fields) const {
+  Q_CHECK_PTR(m_node);
+  if (!_fields.size()) return {};
+  return m_node->extractToAddress(_fields);
 }
 
 DynexCN::IWalletLegacy* NodeAdapter::createWallet() const {
@@ -189,12 +209,13 @@ bool NodeAdapter::init() {
   } else {
 	
     bool try_local = true;
+    QString localurl = QString("127.0.0.1:%1").arg(DynexCN::RPC_DEFAULT_PORT);
 
     CURL *curl = curl_easy_init();
     if (curl) {
 	  std::string readBuffer;
       long http_code = 0;
-      QString url = QString("http://127.0.0.1:%1/getinfo").arg(Settings::instance().getLocalDaemonPort());
+      QString url = QString("http://%1/%2").arg(localurl).arg("getinfo");
 
       curl_easy_setopt(curl, CURLOPT_URL, qPrintable(url));
       curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 1);
@@ -205,12 +226,21 @@ bool NodeAdapter::init() {
 
       if (res != CURLE_OK || curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code) != CURLE_OK || http_code != 200) {
         try_local = false;
+        // try with custom port
+        if (Settings::instance().getLocalDaemonPort() != DynexCN::RPC_DEFAULT_PORT) {
+          localurl = QString("127.0.0.1:%1").arg(Settings::instance().getLocalDaemonPort());
+          curl_easy_setopt(curl, CURLOPT_URL, qPrintable(url));
+          res = curl_easy_perform(curl);
+          if (res == CURLE_OK && curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code) == CURLE_OK && http_code == 200) {
+            try_local = true;
+          }
+        }
       }
       curl_easy_cleanup(curl);
    	}
 
     if (try_local) {
-      QUrl localNodeUrl = QUrl::fromUserInput(QString("127.0.0.1:%1").arg(Settings::instance().getLocalDaemonPort()));
+      QUrl localNodeUrl = QUrl::fromUserInput(localurl);
       LoggerAdapter::instance().log("Connecting to local node...");
       if (initRPCNode(localNodeUrl)) return true;
     }
@@ -231,7 +261,7 @@ bool NodeAdapter::initRPCNode(QUrl nodeUrl) {
   initTimer.setInterval(3000);
   initTimer.setSingleShot(true);
   initTimer.start();
-  m_node->init([this](std::error_code _err) {
+  m_node->init([](std::error_code _err) {
       Q_UNUSED(_err);
     });
   QEventLoop waitLoop;
@@ -250,19 +280,19 @@ bool NodeAdapter::initRPCNode(QUrl nodeUrl) {
   return false;
 }
 
-quint64 NodeAdapter::getLastKnownBlockHeight() const {
+quint32 NodeAdapter::getLastKnownBlockHeight() const {
   Q_CHECK_PTR(m_node);
   return m_node->getLastKnownBlockHeight();
 }
 
-quint64 NodeAdapter::getLastLocalBlockHeight() const {
+quint32 NodeAdapter::getLastLocalBlockHeight() const {
   Q_CHECK_PTR(m_node);
   return m_node->getLastLocalBlockHeight();
 }
 
 QDateTime NodeAdapter::getLastLocalBlockTimestamp() const {
   Q_CHECK_PTR(m_node);
-  return QDateTime::fromTime_t(m_node->getLastLocalBlockTimestamp(), Qt::UTC);
+  return QDateTime::fromSecsSinceEpoch(m_node->getLastLocalBlockTimestamp(), Qt::UTC);
 }
 
 quint64 NodeAdapter::getMinimalFee() const {
@@ -275,12 +305,12 @@ void NodeAdapter::peerCountUpdated(Node& _node, size_t _count) {
   Q_EMIT peerCountUpdatedSignal(_count);
 }
 
-void NodeAdapter::localBlockchainUpdated(Node& _node, uint64_t _height) {
+void NodeAdapter::localBlockchainUpdated(Node& _node, uint32_t _height) {
   Q_UNUSED(_node);
   Q_EMIT localBlockchainUpdatedSignal(_height);
 }
 
-void NodeAdapter::lastKnownBlockHeightUpdated(Node& _node, uint64_t _height) {
+void NodeAdapter::lastKnownBlockHeightUpdated(Node& _node, uint32_t _height) {
   Q_UNUSED(_node);
   Q_EMIT lastKnownBlockHeightUpdatedSignal(_height);
 }
@@ -290,7 +320,7 @@ bool NodeAdapter::initInProcessNode() {
   m_nodeInitializerThread.start();
   DynexCN::CoreConfig coreConfig = makeCoreConfig();
   DynexCN::NetNodeConfig netNodeConfig = makeNetNodeConfig();
-  Q_EMIT initNodeSignal(&m_node, &CurrencyAdapter::instance().getCurrency(), this, &LoggerAdapter::instance().getLoggerManager(), coreConfig, netNodeConfig);
+  Q_EMIT initNodeSignal(&m_node, this, coreConfig, netNodeConfig);
   QEventLoop waitLoop;
   connect(m_nodeInitializer, &InProcessNodeInitializer::nodeInitCompletedSignal, &waitLoop, &QEventLoop::quit);
   connect(m_nodeInitializer, &InProcessNodeInitializer::nodeInitFailedSignal, &waitLoop, &QEventLoop::exit);
@@ -313,7 +343,12 @@ void NodeAdapter::deinit() {
       m_nodeInitializerThread.quit();
       m_nodeInitializerThread.wait();
     } else {
-      delete m_node;
+      //delete m_node;
+      QFuture<void> f = QtConcurrent::run([=] { delete m_node; });
+      while (f.isRunning()) {
+        QCoreApplication::processEvents();
+        QThread::msleep(30);
+      }
       m_node = nullptr;
     }
   }

@@ -60,9 +60,7 @@ public:
 
 private:
   QScopedPointer<Ui::ConnectionSettingsDialog> m_ui;
-
   Q_SLOT void onAccept();
-
 };
 
 }

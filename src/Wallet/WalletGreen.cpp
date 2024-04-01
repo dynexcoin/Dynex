@@ -78,6 +78,9 @@
 #include "WalletUtils.h"
 #include "DynexCNCore/TransactionExtra.h"
 
+// offline signature:
+#include <Common/Base64.h>
+
 extern "C"
 {
 #include "crypto/keccak.h"
@@ -1623,6 +1626,21 @@ void WalletGreen::prepareTransaction(std::vector<WalletOuts>&& wallets,
   uint64_t donationAmount = pushDonationTransferIfPossible(donation, foundMoney - preparedTransaction.neededMoney, m_currency.defaultDustThreshold(), preparedTransaction.destinations);
   preparedTransaction.changeAmount = foundMoney - preparedTransaction.neededMoney - donationAmount;
 
+  std::string extraString(extra);
+  // add to extra
+  addFromAddressToExtraString(changeDestination, extraString);
+  std::string self = m_currency.accountAddressAsString(changeDestination);
+  for (auto& to : preparedTransaction.destinations) {
+    // send to self fix
+    if (preparedTransaction.changeAmount && to.address == self) {
+      to.amount += preparedTransaction.changeAmount;
+      preparedTransaction.neededMoney += preparedTransaction.changeAmount;
+      preparedTransaction.changeAmount = 0;
+    }
+    // add to extra
+    addToAddressAmountToExtraString(getAccountAddressAsKeys(to.address), to.amount, extraString);
+  }
+
   std::vector<ReceiverAmounts> decomposedOutputs = splitDestinations(preparedTransaction.destinations, 0, m_currency);
   if (preparedTransaction.changeAmount != 0) {
     WalletTransfer changeTransfer;
@@ -1635,7 +1653,7 @@ void WalletGreen::prepareTransaction(std::vector<WalletOuts>&& wallets,
     decomposedOutputs.emplace_back(std::move(splittedChange));
   }
 
-  preparedTransaction.transaction = makeTransaction(decomposedOutputs, keysInfo, extra, unlockTimestamp, txSecretKey);
+  preparedTransaction.transaction = makeTransaction(decomposedOutputs, keysInfo, extraString, unlockTimestamp, txSecretKey);
 }
 
 void WalletGreen::validateSourceAddresses(const std::vector<std::string>& sourceAddresses) const {
@@ -1834,19 +1852,12 @@ size_t WalletGreen::doTransfer(const TransactionParameters& transactionParameter
     wallets = pickWalletsWithMoney();
   }
 
-  std::string extraString = "";
-  addFromAddressToExtraString(m_currency.accountAddressAsString(changeDestination), extraString);
-  for (auto to: transactionParameters.destinations) {
-    addToAddressAmountToExtraString(to.address, to.amount, extraString);
-    }
-  extraString += transactionParameters.extra; 
-
   PreparedTransaction preparedTransaction;
   prepareTransaction(std::move(wallets),
     transactionParameters.destinations,
     transactionParameters.fee,
     0, // transactionParameters.mixIn,
-    extraString, // transactionParameters.extra,
+    transactionParameters.extra,
     transactionParameters.unlockTimestamp,
     transactionParameters.donation,
     changeDestination,
@@ -2035,7 +2046,7 @@ bool WalletGreen::updateWalletTransactionInfo(size_t transactionId, const DynexC
   auto it = std::next(txIdIndex.begin(), transactionId);
 
   bool updated = false;
-  bool r = txIdIndex.modify(it, [this, transactionId, &info, totalAmount, &updated](WalletTransaction& transaction) {
+  bool r = txIdIndex.modify(it, [&info, totalAmount, &updated](WalletTransaction& transaction) {
     if (transaction.blockHeight != info.blockHeight) {
       transaction.blockHeight = info.blockHeight;
       updated = true;
@@ -2308,7 +2319,7 @@ bool WalletGreen::eraseTransfersByAddress(size_t transactionId, size_t firstTran
 bool WalletGreen::eraseForeignTransfers(size_t transactionId, size_t firstTransferIdx, const std::unordered_set<std::string>& knownAddresses,
   bool eraseOutputTransfers) {
 
-  return eraseTransfers(transactionId, firstTransferIdx, [this, &knownAddresses, eraseOutputTransfers](bool isOutput, const std::string& transferAddress) {
+  return eraseTransfers(transactionId, firstTransferIdx, [&knownAddresses, eraseOutputTransfers](bool isOutput, const std::string& transferAddress) {
     return eraseOutputTransfers == isOutput && knownAddresses.count(transferAddress) == 0;
   });
 }
@@ -2658,6 +2669,7 @@ void WalletGreen::prepareInputs(
 
     //Important! outputs in selectedTransfers and in keysInfo must have the same order!
     InputInfo inputInfo;
+    inputInfo.ephKeys = {0};
     inputInfo.keyInfo = std::move(keyInfo);
     inputInfo.walletRecord = input.wallet;
     keysInfo.push_back(std::move(inputInfo));
@@ -2850,7 +2862,7 @@ std::string WalletGreen::getSpendableOutputs(const std::string& address) {
     fout.write(reinterpret_cast<char*>(&t.requiredSignatures), sizeof(t.requiredSignatures));
   }
 
-  return fout.str();
+  return Tools::Base64::encode(fout.str());
 }
 
 std::string WalletGreen::getReserveProof(const uint64_t &reserve, const std::string& address, const std::string &message) {
@@ -3263,7 +3275,7 @@ void WalletGreen::transactionDeleted(ITransfersSubscription* object, const Hash&
   deleteUnlockTransactionJob(transactionHash);
 
   bool updated = false;
-  m_transactions.get<TransactionIndex>().modify(it, [this, &transactionHash, &updated](DynexCN::WalletTransaction& tx) {
+  m_transactions.get<TransactionIndex>().modify(it, [&updated](DynexCN::WalletTransaction& tx) {
     if (tx.state == WalletTransactionState::CREATED || tx.state == WalletTransactionState::SUCCEEDED) {
       tx.state = WalletTransactionState::CANCELLED;
       updated = true;
@@ -3937,7 +3949,7 @@ void WalletGreen::deleteFromUncommitedTransactions(const std::vector<size_t>& de
    stops. After some investigation, it appears that we need to run this
    archaic line of code to run other code on the dispatcher? */
 void WalletGreen::updateInternalCache() {
-    System::RemoteContext<void> updateInternalBC(m_dispatcher, [this] () {});
+    System::RemoteContext<void> updateInternalBC(m_dispatcher, [] () {});
     updateInternalBC.get();
 }
 

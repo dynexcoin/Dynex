@@ -316,6 +316,5 @@
   <slot>clearAllClicked()</slot>
   <slot>optimizeClicked()</slot>
   <slot>addRecipientClicked()</slot>
-  <slot>mixinValueChanged(int)</slot>
  </slots>
 </ui>

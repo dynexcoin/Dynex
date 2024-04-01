@@ -41,6 +41,10 @@
 
 namespace Crypto {
 
+struct Uuid {
+  uint8_t data[16];
+};
+
 struct Hash {
   uint8_t data[32];
 };

@@ -49,7 +49,7 @@
 using std::bad_alloc;
 
 namespace Crypto {
-
+/*
   enum {
     MAP_SIZE = SLOW_HASH_CONTEXT_SIZE + ((-SLOW_HASH_CONTEXT_SIZE) & 0xfff)
   };
@@ -85,11 +85,14 @@ namespace Crypto {
 
   cn_context::~cn_context() {
     if (munmap(data, MAP_SIZE) != 0) {
-    //  throw bad_alloc();
 		std::terminate();
     }
   }
-
 #endif
+*/
+    cn_context::cn_context() {
+    }
 
+    cn_context::~cn_context() {
+    }
 }

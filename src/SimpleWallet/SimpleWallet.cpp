@@ -896,7 +896,8 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
     std::cout << "O - open wallet\n";
     std::cout << "G - generate new wallet\n";
     std::cout << "I - import wallet from keys\n";
-    std::cout << "R - restore backup/paperwallet\n";
+    std::cout << "M - restore wallet from mnemonic seed\n";
+    std::cout << "R - restore wallet from private key\n";
     std::cout << "T - import tracking wallet\n";
     std::cout << "E - exit\n";
 
@@ -906,7 +907,7 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
       std::string answer;
       std::getline(std::cin, answer);
       c = answer[0];
-      if (!(c == 'O' || c == 'G' || c == 'E' || c == 'I' || c == 'R' || c == 'T' || c == 'o' || c == 'g' || c == 'e' || c == 'i' || c == 'r' || c == 't'))
+      if (!(c == 'O' || c == 'G' || c == 'E' || c == 'I' || c == 'R' || c == 'T' || c == 'o' || c == 'g' || c == 'e' || c == 'i' || c == 'r' || c == 't' || c == 'M' || c == 'm'))
         std::cout << "Unknown command: " << c << std::endl;
       else
         break;
@@ -948,6 +949,8 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
       m_import_new = userInput;
     else if (c == 'r' || c == 'R')
       m_restore_new = userInput;
+    else if (c == 'm' || c == 'M')
+      m_mnemonic_new = userInput;
     else if (c == 'g' || c == 'G')
       m_generate_new = userInput;
     else if (c == 't' || c == 'T')
@@ -966,8 +969,8 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
 		return false;
 	}
 
-  std::string walletFileName;
-	if (!m_generate_new.empty() || !m_import_new.empty() || !m_restore_new.empty() || !m_track_new.empty())
+	std::string walletFileName;
+	if (!m_generate_new.empty() || !m_import_new.empty() || !m_restore_new.empty() || !m_track_new.empty() || !m_mnemonic_new.empty())
 	{
 		std::string ignoredString;
 		if (!m_generate_new.empty())
@@ -978,6 +981,8 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
 			WalletHelper::prepareFileNames(m_restore_new, ignoredString, walletFileName);
 		else if (!m_track_new.empty())
 			WalletHelper::prepareFileNames(m_track_new, ignoredString, walletFileName);
+		else if (!(m_mnemonic_new.empty()))
+			WalletHelper::prepareFileNames(m_mnemonic_new, ignoredString, walletFileName);
 
 		boost::system::error_code ignore;
 		if (boost::filesystem::exists(walletFileName, ignore))
@@ -1012,7 +1017,7 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
 	{
 		pwd_container.password(command_line::get_arg(vm, arg_password));
 	}
-	else if (!pwd_container.read_password(!m_generate_new.empty() || !m_import_new.empty() || !m_restore_new.empty() || !m_track_new.empty()))
+	else if (!pwd_container.read_password(!m_generate_new.empty() || !m_import_new.empty() || !m_restore_new.empty() || !m_track_new.empty() || !m_mnemonic_new.empty()))
 	{
 		fail_msg_writer() << "failed to read wallet password";
 		return false;
@@ -1208,7 +1213,6 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
 		}
 
 		std::string private_key_string;
-      
 		do
 		{
 			std::cout << "Private Key: ";
@@ -1221,17 +1225,14 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
 		uint64_t addressPrefix;
 		std::string data;
 
-		if (private_key_string.length() != 183)
-		{
-			logger(ERROR, BRIGHT_RED) << "Wrong Private key.";
-			return false;
-		}
-
 		if (Tools::Base58::decode_addr(private_key_string, addressPrefix, data) 
 			&& addressPrefix == parameters::CRYPTONOTE_PUBLIC_ADDRESS_BASE58_PREFIX 
 			&& data.size() == sizeof(keys))
 		{
 			std::memcpy(&keys, data.data(), sizeof(keys));
+		} else {
+			logger(ERROR, BRIGHT_RED) << "Wrong Private key.";
+			return false;
 		}
 
 		if (!new_wallet(walletFileName, pwd_container.password(), keys))
@@ -1318,6 +1319,43 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
 			logger(WARNING, BRIGHT_RED) << "Couldn't write wallet address file: " + walletAddressFile;
 		}
 	}
+	else if (!m_mnemonic_new.empty())
+	{
+		std::string walletAddressFile = prepareWalletAddressFilename(m_import_new);
+		boost::system::error_code ignore;
+		if (boost::filesystem::exists(walletAddressFile, ignore))
+		{
+			logger(ERROR, BRIGHT_RED) << "Address file already exists: " + walletAddressFile;
+			return false;
+		}
+
+		std::string mnemonic_seed;
+		do
+		{
+            std::cout << "Specify mnemonic seed: ";
+            std::getline(std::cin, mnemonic_seed);
+			boost::algorithm::trim(mnemonic_seed);
+		}
+		while (mnemonic_seed.empty());
+
+        Crypto::SecretKey recoveryKey;
+        std::string languageName;
+        if (!Crypto::ElectrumWords::words_to_bytes(mnemonic_seed, recoveryKey, languageName)) {
+          fail_msg_writer() << "Electrum-style word list failed verification";
+          return false;
+        }
+
+		if (!new_wallet(walletFileName, pwd_container.password(), recoveryKey))
+		{
+			logger(ERROR, BRIGHT_RED) << "account creation failed";
+			return false;
+		}
+
+		if (!writeAddressFile(walletAddressFile, m_wallet->getAddress()))
+		{
+			logger(WARNING, BRIGHT_RED) << "Couldn't write wallet address file: " + walletAddressFile;
+		}
+    }
 	else
 	{
 		m_wallet.reset(new WalletLegacy(m_currency, *m_node, m_logManager));
@@ -1483,7 +1521,7 @@ bool simple_wallet::new_wallet(const std::string &wallet_file, const std::string
 		{
 			DynexCN::WalletHelper::storeWallet(*m_wallet, m_wallet_file);
 			//create wallet backup file
-			boost::filesystem::copy_file(m_wallet_file, boost::filesystem::change_extension(m_wallet_file, ".walletbak"));
+			boost::filesystem::copy_file(m_wallet_file, m_wallet_file + ".backup");
 		}
 		catch (std::exception& e)
 		{
@@ -2071,7 +2109,7 @@ bool simple_wallet::export_to_offline(const std::vector<std::string> &args) {
 
   std::ofstream fout(filename);
   if (fout.is_open()) {
-    int num_outs = outputs.size();
+    int num_outs = (int)outputs.size();
     fout.write(reinterpret_cast<char*>(&num_outs), sizeof(num_outs));
     for (auto& t : outputs) {
           //fout.write(reinterpret_cast<char*>(&t.type), sizeof(t.type));
@@ -2624,12 +2662,11 @@ void simple_wallet::printConnectionError() const {
   fail_msg_writer() << "wallet failed to connect to daemon (" << m_daemon_address << ").";
 }
 
-
 int main(int argc, char* argv[]) {
 #ifdef WIN32
    setlocale(LC_ALL, "");
-   SetConsoleCP(1251);
-   SetConsoleOutputCP(1251);
+   //SetConsoleCP(1251);
+   //SetConsoleOutputCP(1251);
   _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 
@@ -2810,7 +2847,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
 
-    Tools::SignalHandler::install([&wrpc, &wallet] {
+    Tools::SignalHandler::install([&wrpc] {
       wrpc.send_stop_signal();
     });
 

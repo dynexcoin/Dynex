@@ -44,7 +44,7 @@
 #include <vector>
 
 #include <CryptoTypes.h>
-
+#include <ostream>
 #include "generic-ops.h"
 #include "hash.h"
 
@@ -301,8 +301,16 @@ struct EllipticCurveScalar {
     return check_ring_signature(prefix_hash, image, pubs.data(), pubs.size(), sig);
   }
 
+  std::string uuidToString(const Crypto::Uuid& id);
 }
 
+namespace std {
+  inline std::ostream& operator << (std::ostream& s, const Crypto::Uuid& id) {
+    return s << Crypto::uuidToString(id);
+  }
+}
+
+CRYPTO_MAKE_HASHABLE(Uuid)
 CRYPTO_MAKE_HASHABLE(PublicKey)
 CRYPTO_MAKE_HASHABLE(KeyImage)
 CRYPTO_MAKE_COMPARABLE(Signature)

@@ -40,6 +40,8 @@
 #include <QDateTime>
 #include <QLocale>
 #include <QVector>
+#include <QtConcurrent/QtConcurrent>
+#include <QFuture>
 
 #include <Common/Util.h>
 #include <Wallet/WalletErrors.h>
@@ -105,14 +107,16 @@ WalletAdapter::~WalletAdapter() {
 }
 
 QString WalletAdapter::getAddress() const {
+  if (!m_opened) return {};
   try {
     return m_wallet == nullptr ? QString() : QString::fromStdString(m_wallet->getAddress());
   } catch (std::system_error&) {
-    return QString();
+    return {};
   }
 }
 
 quint64 WalletAdapter::getActualBalance() const {
+  if (!m_opened) return 0;
   try {
     return m_wallet == nullptr ? 0 : m_wallet->actualBalance();
   } catch (std::system_error&) {
@@ -121,6 +125,7 @@ quint64 WalletAdapter::getActualBalance() const {
 }
 
 quint64 WalletAdapter::getPendingBalance() const {
+  if (!m_opened) return 0;
   try {
     return m_wallet == nullptr ? 0 : m_wallet->pendingBalance();
   } catch (std::system_error&) {
@@ -132,12 +137,13 @@ void WalletAdapter::open(const QString& _password) {
   Q_ASSERT(m_wallet == nullptr);
   Settings::instance().setEncrypted(!_password.isEmpty());
   QString wallet = Settings::instance().getWalletFile();
-  QString msg = "Opening wallet " + wallet;
+  QString msg = tr("Opening wallet %1").arg(wallet);
   Q_EMIT walletStateChangedSignal(msg);
 
   m_wallet = NodeAdapter::instance().createWallet();
   m_wallet->addObserver(this);
-
+  m_opened = true;
+  
   if (QFile::exists(wallet)) {
     if (Settings::instance().getWalletFile().endsWith(".keys")) {
       if(!importLegacyWallet(_password)) {
@@ -150,12 +156,15 @@ void WalletAdapter::open(const QString& _password) {
         m_wallet->initAndLoad(m_file, _password.toStdString());
       } catch (std::system_error&) {
         closeFile();
+        m_opened = false;
         delete m_wallet;
         m_wallet = nullptr;
       }
     }
   } else {
-    QMessageBox::critical(nullptr, tr("Wallet file not found"), wallet, QMessageBox::Ok);
+    QString msg = tr("%1 not found!").arg(wallet);
+    QMessageBox::critical(nullptr, tr("Warning"), msg, QMessageBox::Ok);
+    Q_EMIT walletStateChangedSignal(msg);
   }
 }
 
@@ -165,12 +174,14 @@ void WalletAdapter::createWallet() {
   Q_EMIT walletStateChangedSignal(tr("Creating wallet"));
   m_wallet = NodeAdapter::instance().createWallet();
   m_wallet->addObserver(this);
+  m_opened = true;
 
   try {
     m_wallet->initAndGenerateDeterministic("");
     VerifyMnemonicSeedDialog dlg(nullptr);
     dlg.exec();
   } catch (std::system_error&) {
+    m_opened = false;
     delete m_wallet;
     m_wallet = nullptr;
   }
@@ -179,10 +190,12 @@ void WalletAdapter::createWallet() {
 void WalletAdapter::createNonDeterministic() {
   m_wallet = NodeAdapter::instance().createWallet();
   m_wallet->addObserver(this);
+  m_opened = true;
   Settings::instance().setEncrypted(false);
   try {
     m_wallet->initAndGenerate("");
   } catch (std::system_error&) {
+    m_opened = false;
     delete m_wallet;
     m_wallet = nullptr;
   }
@@ -191,6 +204,7 @@ void WalletAdapter::createNonDeterministic() {
 void WalletAdapter::createWithKeys(const DynexCN::AccountKeys& _keys) {
   m_wallet = NodeAdapter::instance().createWallet();
   m_wallet->addObserver(this);
+  m_opened = true;
   Settings::instance().setEncrypted(false);
   Q_EMIT walletStateChangedSignal(tr("Creating wallet"));
   m_wallet->initWithKeys(_keys, "");
@@ -199,6 +213,7 @@ void WalletAdapter::createWithKeys(const DynexCN::AccountKeys& _keys) {
 void WalletAdapter::createWithKeys(const DynexCN::AccountKeys& _keys, const quint32 _sync_heigth) {
   m_wallet = NodeAdapter::instance().createWallet();
   m_wallet->addObserver(this);
+  m_opened = true;
   Settings::instance().setEncrypted(false);
   Q_EMIT walletStateChangedSignal(tr("Creating wallet"));
   m_wallet->initWithKeys(_keys, "", _sync_heigth);
@@ -208,12 +223,13 @@ bool WalletAdapter::isOpen() const {
   return m_wallet != nullptr;
 }
 
-bool WalletAdapter::importLegacyWallet(const QString &_password) {
+bool WalletAdapter::importLegacyWallet(const QString& _password) {
   QString fileName = Settings::instance().getWalletFile();
   Settings::instance().setEncrypted(!_password.isEmpty());
   try {
     fileName.replace(fileName.lastIndexOf(".keys"), 5, ".wallet");
     if (!openFile(fileName, false)) {
+      m_opened = false;
       delete m_wallet;
       m_wallet = nullptr;
       return false;
@@ -229,10 +245,11 @@ bool WalletAdapter::importLegacyWallet(const QString &_password) {
       Settings::instance().setEncrypted(true);
       Q_EMIT openWalletWithPasswordSignal(!_password.isEmpty());
     }
-  } catch (std::runtime_error& _err) {
+  } catch (std::runtime_error&) {
     closeFile();
   }
 
+  m_opened = false;
   delete m_wallet;
   m_wallet = nullptr;
   return false;
@@ -241,15 +258,25 @@ bool WalletAdapter::importLegacyWallet(const QString &_password) {
 void WalletAdapter::close() {
   Q_CHECK_PTR(m_wallet);
   save(true, true);
-  lock();
+  //lock();
+  while (!m_mutex.tryLock(30)) {
+    QCoreApplication::processEvents(); // process events while waiting for save to complete
+  }
   m_wallet->removeObserver(this);
   m_isSynchronized = false;
   m_newTransactionsNotificationTimer.stop();
   m_statusTimer.stop();
+  QCoreApplication::processEvents(); // process all pending events
   m_lastWalletTransactionId = std::numeric_limits<quint64>::max();
+  m_opened = false;
   Q_EMIT walletCloseCompletedSignal();
   QCoreApplication::processEvents();
-  delete m_wallet;
+  //delete m_wallet;
+  QFuture<void> f = QtConcurrent::run([=] { delete m_wallet; });
+  while (f.isRunning()) {
+      QCoreApplication::processEvents();
+      QThread::msleep(30);
+  }
   m_wallet = nullptr;
   unlock();
 }
@@ -272,7 +299,6 @@ bool WalletAdapter::save(const QString& _file, bool _details, bool _cache) {
   } else {
     return false;
   }
-
   return true;
 }
 
@@ -301,6 +327,7 @@ void WalletAdapter::reset() {
   m_isSynchronized = false;
   m_newTransactionsNotificationTimer.stop();
   m_lastWalletTransactionId = std::numeric_limits<quint64>::max();
+  m_opened = false;
   Q_EMIT walletCloseCompletedSignal();
   QCoreApplication::processEvents();
   delete m_wallet;
@@ -311,6 +338,7 @@ void WalletAdapter::reset() {
 
 quint64 WalletAdapter::getTransactionCount() const {
   Q_CHECK_PTR(m_wallet);
+  if (!m_opened) return 0;
   try {
     return m_wallet->getTransactionCount();
   } catch (std::system_error&) {
@@ -321,6 +349,7 @@ quint64 WalletAdapter::getTransactionCount() const {
 
 quint64 WalletAdapter::getTransferCount() const {
   Q_CHECK_PTR(m_wallet);
+  if (!m_opened) return 0;
   try {
     return m_wallet->getTransferCount();
   } catch (std::system_error&) {
@@ -331,6 +360,7 @@ quint64 WalletAdapter::getTransferCount() const {
 
 bool WalletAdapter::getTransaction(DynexCN::TransactionId& _id, DynexCN::WalletLegacyTransaction& _transaction) {
   Q_CHECK_PTR(m_wallet);
+  if (!m_opened) return false;
   try {
     return m_wallet->getTransaction(_id, _transaction);
   } catch (std::system_error&) {
@@ -341,6 +371,7 @@ bool WalletAdapter::getTransaction(DynexCN::TransactionId& _id, DynexCN::WalletL
 
 bool WalletAdapter::getTransfer(DynexCN::TransferId& _id, DynexCN::WalletLegacyTransfer& _transfer) {
   Q_CHECK_PTR(m_wallet);
+  if (!m_opened) return false;
   try {
     return m_wallet->getTransfer(_id, _transfer);
   } catch (std::system_error&) {
@@ -351,6 +382,7 @@ bool WalletAdapter::getTransfer(DynexCN::TransferId& _id, DynexCN::WalletLegacyT
 
 bool WalletAdapter::getAccountKeys(DynexCN::AccountKeys& _keys) {
   Q_CHECK_PTR(m_wallet);
+  if (!m_opened) return false;
   try {
     m_wallet->getAccountKeys(_keys);
     return true;
@@ -365,7 +397,8 @@ void WalletAdapter::sendTransaction(const QVector<DynexCN::WalletLegacyTransfer>
   if (!m_isSynchronized) {
     QMessageBox::warning(nullptr, tr("Warning"), tr("Wallet is not synchronized!"), QMessageBox::Ok);
     return;
-  }  
+  }
+  if (!m_opened) return;
   try {
     lock();
     std::vector<DynexCN::WalletLegacyTransfer> vec(_transfers.begin(), _transfers.end());
@@ -378,6 +411,7 @@ void WalletAdapter::sendTransaction(const QVector<DynexCN::WalletLegacyTransfer>
 
 bool WalletAdapter::changePassword(const QString& _oldPassword, const QString& _newPassword) {
   Q_CHECK_PTR(m_wallet);
+  if (!m_opened) return false;
   try {
     if (m_wallet->changePassword(_oldPassword.toStdString(), _newPassword.toStdString()).value() == DynexCN::error::WRONG_PASSWORD) {
       return false;
@@ -421,10 +455,12 @@ void WalletAdapter::onWalletInitCompleted(int _error, const QString& _errorText)
   case DynexCN::error::WRONG_PASSWORD:
     Q_EMIT openWalletWithPasswordSignal(Settings::instance().isEncrypted());
     Settings::instance().setEncrypted(true);
+    m_opened = false;
     delete m_wallet;
     m_wallet = nullptr;
     break;
   default: {
+    m_opened = false;
     delete m_wallet;
     m_wallet = nullptr;
     break;
@@ -458,7 +494,6 @@ void WalletAdapter::synchronizationProgressUpdated(uint32_t _current, uint32_t _
 void WalletAdapter::synchronizationCompleted(std::error_code _error) {
   if (!_error) {
     m_isSynchronized = true;
-    //Q_EMIT updateBlockStatusTextSignal();
     Q_EMIT updateBlockStatusTextWithDelaySignal();
     Q_EMIT walletSynchronizationCompletedSignal(_error.value(), QString::fromStdString(_error.message()));
   }
@@ -533,10 +568,15 @@ void WalletAdapter::closeFile() {
 }
 
 void WalletAdapter::notifyAboutLastTransaction() {
+  if (m_wallet == nullptr || !m_opened) {
+    return;
+  }
   if (m_lastWalletTransactionId != std::numeric_limits<quint64>::max()) {
     Q_EMIT walletTransactionCreatedSignal(m_lastWalletTransactionId);
     m_lastWalletTransactionId = std::numeric_limits<quint64>::max();
   }
+  Q_EMIT walletActualBalanceUpdatedSignal(m_wallet->actualBalance());
+  Q_EMIT walletPendingBalanceUpdatedSignal(m_wallet->pendingBalance());
 }
 
 void WalletAdapter::renameFile(const QString& _oldName, const QString& _newName) {
@@ -546,7 +586,7 @@ void WalletAdapter::renameFile(const QString& _oldName, const QString& _newName)
 }
 
 void WalletAdapter::updateBlockStatusText() {
-  if (m_wallet == nullptr) {
+  if (m_wallet == nullptr || !m_opened) {
     return;
   }
 
@@ -555,11 +595,15 @@ void WalletAdapter::updateBlockStatusText() {
   quint64 blockAge = blockTime.msecsTo(currentTime);
   const QString warningString = blockTime.msecsTo(currentTime) < LAST_BLOCK_INFO_WARNING_INTERVAL ? "" :
     QString("  Warning: last block was received %1 hours %2 minutes ago").arg(blockAge / MSECS_IN_HOUR).arg(blockAge % MSECS_IN_HOUR / MSECS_IN_MINUTE);
-  Q_EMIT walletStateChangedSignal(QString(tr("Wallet synchronized. Height: %1  |  Time (UTC): %2%3")).
+  const QString syncedString = QString(m_isSynchronized ? tr("Wallet synchronized") : tr("Wallet not synchronized"));
+  Q_EMIT walletStateChangedSignal(QString(tr("%1. Height: %2  |  Time: %3%4")).
+    arg(syncedString).
     arg(NodeAdapter::instance().getLastLocalBlockHeight()).
-    arg(QLocale(QLocale::English).toString(blockTime, "dd MMM yyyy, HH:mm:ss")).
-    arg(warningString));
-
+    //arg(QLocale(QLocale::English).toString(blockTime, "dd MMM yyyy, HH:mm:ss")).
+    //arg(blockTime.toLocalTime().toString(Qt::SystemLocaleLongDate)).
+    arg(QLocale(QLocale::English).toString(blockTime.toLocalTime(), "dd MMM yyyy, HH:mm:ss")).
+    arg(warningString)
+  );
   Q_EMIT updateBlockStatusTextWithDelay();
 }
 
@@ -648,6 +692,7 @@ bool WalletAdapter::isFusionTransaction(const DynexCN::WalletLegacyTransaction& 
 
 void WalletAdapter::optimize(const quint64 mixin) {
   if (!isOpen() || !m_isSynchronized) return;
+
   uint64_t fusionThreshold = getActualBalance();
   //size_t fusionReadyCount = estimateFusion(fusionThreshold);
   const size_t MAX_FUSION_OUTPUT_COUNT = 4;
@@ -661,8 +706,22 @@ void WalletAdapter::optimize(const quint64 mixin) {
     QMessageBox::warning(nullptr, tr("Optimize"), tr("Nothing to do!"), QMessageBox::Ok);
     return;
   }
+
   if (QMessageBox::warning(nullptr, tr("Optimize"), tr("Send fusion transaction?"), QMessageBox::Ok, QMessageBox::Cancel) == QMessageBox::Ok) {
     sendFusionTransaction(fusionInputs, mixin);
+  }
+}
+
+QString WalletAdapter::getReserveProof(const quint64 _reserve) {
+  Q_CHECK_PTR(m_wallet);
+  try {
+    uint64_t amount = (_reserve ? _reserve : m_wallet->actualBalance());
+    if (!amount) return {};
+    return QString::fromStdString(m_wallet->getReserveProof(amount, ""));
+  } catch (std::system_error&) {
+    return tr("Failed to get reserve proof");
+  } catch (std::runtime_error& err) {
+    return tr(err.what());
   }
 }
 

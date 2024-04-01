@@ -61,6 +61,7 @@ AddressBookFrame::AddressBookFrame(QWidget* _parent) : QFrame(_parent), m_ui(new
   m_ui->m_addressBookView->setSortingEnabled(true);
   m_ui->m_addressBookView->sortByColumn(0, Qt::AscendingOrder);
   m_ui->m_addressBookView->setRootIsDecorated(false);
+  m_ui->m_addressBookView->setTextElideMode(Qt::ElideMiddle);
 
   connect(m_ui->m_addressBookView->selectionModel(), &QItemSelectionModel::currentChanged, this, &AddressBookFrame::currentAddressChanged);
 

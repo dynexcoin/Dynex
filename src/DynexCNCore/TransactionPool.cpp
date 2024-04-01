@@ -228,8 +228,8 @@ namespace DynexCN {
         logger(ERROR, BRIGHT_RED) << "transaction already exists at inserting in memory pool";
         return false;
       }
-      m_paymentIdIndex.add(tx);
-      m_addressindex.add(tx);
+      m_paymentIdIndex.add(tx, id);
+      m_addressindex.add(tx, id);
       m_timestampIndex.add(txd.receiveTime, txd.id);
     }
 
@@ -601,8 +601,8 @@ namespace DynexCN {
 
   tx_memory_pool::tx_container_t::iterator tx_memory_pool::removeTransaction(tx_memory_pool::tx_container_t::iterator i) {
     removeTransactionInputs(i->id, i->tx, i->keptByBlock);
-    m_paymentIdIndex.remove(i->tx);
-    m_addressindex.remove(i->tx);
+    m_paymentIdIndex.remove(i->tx, i->id);
+    m_addressindex.remove(i->tx, i->id);
     m_timestampIndex.remove(i->receiveTime, i->id);
     if (m_validated_transactions.find(i->id) != m_validated_transactions.end()) {
       m_validated_transactions.erase(i->id);
@@ -705,8 +705,8 @@ namespace DynexCN {
   void tx_memory_pool::buildIndices() {
     std::lock_guard<std::recursive_mutex> lock(m_transactions_lock);
     for (auto it = m_transactions.begin(); it != m_transactions.end(); it++) {
-      m_paymentIdIndex.add(it->tx);
-      m_addressindex.add(it->tx);
+      m_paymentIdIndex.add(it->tx, it->id);
+      m_addressindex.add(it->tx, it->id);
       m_timestampIndex.add(it->receiveTime, it->id);
     }
   }
@@ -718,7 +718,7 @@ namespace DynexCN {
   }
 
   // additional functions:
-  bool tx_memory_pool::getTransactionIdsByAddress(const std::string address, std::vector<Crypto::Hash>& transactionIds) {
+  bool tx_memory_pool::getTransactionIdsByAddress(const std::string& address, std::vector<Crypto::Hash>& transactionIds) {
     std::lock_guard<std::recursive_mutex> lock(m_transactions_lock);
     transactionIds = m_addressindex.find(address);
   return true;

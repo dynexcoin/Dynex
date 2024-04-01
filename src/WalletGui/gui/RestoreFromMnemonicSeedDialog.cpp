@@ -87,7 +87,7 @@ void RestoreFromMnemonicSeedDialog::selectPathClicked() {
 }
 
 void RestoreFromMnemonicSeedDialog::onTextChanged() {
-  wordCount = m_ui->m_seedEdit->toPlainText().split(QRegExp("(\\s|\\n|\\r)+"), Qt::SkipEmptyParts).count();
+  wordCount = m_ui->m_seedEdit->toPlainText().split(QRegularExpression("(\\s|\\n|\\r)+"), Qt::SkipEmptyParts).count();
   if(wordCount == 25) {
     m_ui->m_okButton->setEnabled(true);
     m_ui->m_errorLabel->setText("OK");

@@ -328,7 +328,7 @@ std::string ipAddressToString(uint32_t ip) {
   bytes[3] = (ip >> 24) & 0xFF;
 
   char buf[16];
-  sprintf(buf, "%d.%d.%d.%d", bytes[0], bytes[1], bytes[2], bytes[3]);
+  snprintf(buf, sizeof(buf), "%d.%d.%d.%d", bytes[0], bytes[1], bytes[2], bytes[3]);
 
   return std::string(buf);
 }

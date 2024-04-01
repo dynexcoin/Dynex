@@ -379,4 +379,7 @@
    </hints>
   </connection>
  </connections>
+ <slots>
+  <slot>onAccept()</slot>
+ </slots>
 </ui>

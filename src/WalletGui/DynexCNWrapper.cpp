@@ -83,15 +83,11 @@ std::string convertPaymentId(const std::string& paymentIdString) {
   return std::string(extra.begin(), extra.end());
 }
 
-std::string extractPaymentId(const std::string& extra) {
-  std::vector<DynexCN::TransactionExtraField> extraFields;
-  std::vector<uint8_t> extraVector;
-  std::copy(extra.begin(), extra.end(), std::back_inserter(extraVector));
+bool extractExtra(const std::string& extra, std::vector<DynexCN::TransactionExtraField>& extraFields) {
+  return DynexCN::parseTransactionExtra(extra, extraFields);
+}
 
-  if (!DynexCN::parseTransactionExtra(extraVector, extraFields)) {
-    throw std::runtime_error("Can't parse extra");
-  }
-
+std::string extractPaymentId(const std::vector<DynexCN::TransactionExtraField>& extraFields) {
   std::string result;
   DynexCN::TransactionExtraNonce extraNonce;
   if (DynexCN::findTransactionExtraFieldByType(extraFields, extraNonce)) {
@@ -104,10 +100,30 @@ std::string extractPaymentId(const std::string& extra) {
       }
     }
   }
-
   return result;
 }
 
+std::string extractFromAddress(const std::vector<DynexCN::TransactionExtraField>& extraFields) {
+  DynexCN::TransactionExtraFromAddress value;
+  if (DynexCN::findTransactionExtraFieldByType(extraFields, value)) {
+    return DynexCN::getAccountAddressAsStr(value.address);
+  }
+  return {};
+}
+
+std::vector<std::pair<std::string, int64_t>> extractToAddress(const std::vector<DynexCN::TransactionExtraField>& extraFields) {
+  std::vector<std::pair<std::string, int64_t>> result;
+  std::string to_address;
+
+  for (const DynexCN::TransactionExtraField& field : extraFields) {
+    if (typeid(DynexCN::TransactionExtraToAddress) == field.type()) {
+      to_address = DynexCN::getAccountAddressAsStr(boost::get<DynexCN::TransactionExtraToAddress>(field).address);
+    } else if (typeid(DynexCN::TransactionExtraAmount) == field.type()) {
+      result.push_back(std::make_pair(to_address, DynexCN::getAmountInt64(boost::get<DynexCN::TransactionExtraAmount>(field).amount)));
+    }
+  }
+  return result;
+}
 
 }
 
@@ -131,21 +147,34 @@ public:
   }
 
   void deinit() override {
+    m_node.removeObserver(this);
   }
 
-  std::string convertPaymentId(const std::string& paymentIdString) override {
+  std::string convertPaymentId(const std::string& paymentIdString) const override {
     return WalletGui::convertPaymentId(paymentIdString);
   }
 
-  std::string extractPaymentId(const std::string& extra) override {
-    return WalletGui::extractPaymentId(extra);
+  bool extractExtra(const std::string& extra, std::vector<DynexCN::TransactionExtraField>& extraFields) const override {
+    return WalletGui::extractExtra(extra, extraFields);
   }
 
-  uint64_t getLastKnownBlockHeight() const override {
+  std::string extractPaymentId(const std::vector<DynexCN::TransactionExtraField>& extraFields) const override {
+    return WalletGui::extractPaymentId(extraFields);
+  }
+
+  std::string extractFromAddress(const std::vector<DynexCN::TransactionExtraField>& extraFields) const override {
+    return WalletGui::extractFromAddress(extraFields);
+  }
+
+  std::vector<std::pair<std::string, int64_t>> extractToAddress(const std::vector<DynexCN::TransactionExtraField>& extraFields) const override {
+    return WalletGui::extractToAddress(extraFields);
+  }
+
+  uint32_t getLastKnownBlockHeight() const override {
     return m_node.getLastKnownBlockHeight();
   }
 
-  uint64_t getLastLocalBlockHeight() const override {
+  uint32_t getLastLocalBlockHeight() const override {
     return m_node.getLastLocalBlockHeight();
   }
 
@@ -153,7 +182,7 @@ public:
     return m_node.getLastLocalBlockTimestamp();
   }
 
-  uint64_t getPeerCount() const override {
+  size_t getPeerCount() const override {
     return m_node.getPeerCount();
   }
 
@@ -170,15 +199,15 @@ private:
   const DynexCN::Currency& m_currency;
   DynexCN::NodeRpcProxy m_node;
 
-  void peerCountUpdated(size_t count) {
+  void peerCountUpdated(size_t count) override {
     m_callback.peerCountUpdated(*this, count);
   }
 
-  void localBlockchainUpdated(uint64_t height) {
+  void localBlockchainUpdated(uint32_t height) override {
     m_callback.localBlockchainUpdated(*this, height);
   }
 
-  void lastKnownBlockHeightUpdated(uint64_t height) {
+  void lastKnownBlockHeightUpdated(uint32_t height) override {
     m_callback.lastKnownBlockHeightUpdated(*this, height);
   }
 };
@@ -199,11 +228,14 @@ public:
     m_node(m_core, m_protocolHandler) {
     m_core.set_cryptonote_protocol(&m_protocolHandler);
     m_protocolHandler.set_p2p_endpoint(&m_nodeServer);
+
     DynexCN::Checkpoints checkpoints(logManager);
-    checkpoints.load_checkpoints_from_dns(); // nevermind, this will return always true, function is noted anyway
-    for (const DynexCN::CheckpointData& checkpoint : DynexCN::CHECKPOINTS) {
-      checkpoints.add_checkpoint(checkpoint.height, checkpoint.blockId);
+    if (!netNodeConfig.getTestnet()) {
+      for (const auto& cp : DynexCN::CHECKPOINTS) {
+        checkpoints.add_checkpoint(cp.height, cp.blockId);
+      }
     }
+    checkpoints.load_checkpoints_from_remote(netNodeConfig.getTestnet());
     m_core.set_checkpoints(std::move(checkpoints));
   }
 
@@ -213,7 +245,7 @@ public:
 
   void init(const std::function<void(std::error_code)>& callback) override {
     try {
-      if (!m_core.init(m_coreConfig, DynexCN::MinerConfig(), true)) {
+      if (!m_core.init(m_coreConfig, true)) {
         callback(make_error_code(DynexCN::error::NOT_INITIALIZED));
         return;
       }
@@ -222,7 +254,7 @@ public:
         callback(make_error_code(DynexCN::error::NOT_INITIALIZED));
         return;
       }
-    } catch (std::runtime_error& _err) {
+    } catch (std::runtime_error&) {
       callback(make_error_code(DynexCN::error::NOT_INITIALIZED));
       return;
     }
@@ -235,31 +267,43 @@ public:
     m_nodeServer.run();
 
     //deinitialize components
-    LoggerAdapter::instance().log("Deinitializing core...");
+    LoggerAdapter::instance().log("Shutting down...");
+    m_node.shutdown();
     m_core.deinit();
     m_nodeServer.deinit();
     m_core.set_cryptonote_protocol(NULL);
     m_protocolHandler.set_p2p_endpoint(NULL);
-    m_node.shutdown();  
   }
 
   void deinit() override {
     m_nodeServer.sendStopSignal();
   }
 
-  std::string convertPaymentId(const std::string& paymentIdString) override {
+  std::string convertPaymentId(const std::string& paymentIdString) const override {
     return WalletGui::convertPaymentId(paymentIdString);
   }
 
-  std::string extractPaymentId(const std::string& extra) override {
-    return WalletGui::extractPaymentId(extra);
+  bool extractExtra(const std::string& extra, std::vector<DynexCN::TransactionExtraField>& extraFields) const override {
+    return WalletGui::extractExtra(extra, extraFields);
   }
 
-  uint64_t getLastKnownBlockHeight() const override {
+  std::string extractPaymentId(const std::vector<DynexCN::TransactionExtraField>& extraFields) const override {
+    return WalletGui::extractPaymentId(extraFields);
+  }
+
+  std::string extractFromAddress(const std::vector<DynexCN::TransactionExtraField>& extraFields) const override {
+    return WalletGui::extractFromAddress(extraFields);
+  }
+
+  std::vector<std::pair<std::string, int64_t>> extractToAddress(const std::vector<DynexCN::TransactionExtraField>& extraFields) const override {
+    return WalletGui::extractToAddress(extraFields);
+  }
+
+  uint32_t getLastKnownBlockHeight() const override {
     return m_node.getLastKnownBlockHeight();
   }
 
-  uint64_t getLastLocalBlockHeight() const override {
+  uint32_t getLastLocalBlockHeight() const override {
     return m_node.getLastLocalBlockHeight();
   }
 
@@ -267,7 +311,7 @@ public:
     return m_node.getLastLocalBlockTimestamp();
   }
 
-  uint64_t getPeerCount() const override {
+  size_t getPeerCount() const override {
     return m_node.getPeerCount();
   }
 
@@ -292,15 +336,15 @@ private:
   std::future<bool> m_nodeServerFuture;
   Logging::LoggerManager& m_logManager;
 
-  void peerCountUpdated(size_t count) {
+  void peerCountUpdated(size_t count) override {
     m_callback.peerCountUpdated(*this, count);
   }
 
-  void localBlockchainUpdated(uint64_t height) {
+  void localBlockchainUpdated(uint32_t height) override {
     m_callback.localBlockchainUpdated(*this, height);
   }
 
-  void lastKnownBlockHeightUpdated(uint64_t height) {
+  void lastKnownBlockHeightUpdated(uint32_t height) override {
     m_callback.lastKnownBlockHeightUpdated(*this, height);
   }
 };

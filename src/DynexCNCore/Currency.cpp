@@ -225,19 +225,9 @@ namespace DynexCN {
 		}
 
 		// non-privacy fields
-		std::string extraString = "";
-		if (!addToAddressAmountToExtraString(Currency::accountAddressAsString(minerAddress), blockReward, extraString)) {
-			logger(ERROR, BRIGHT_RED) << "while adding miner address to transaction";
-			return false;
-		}
 		addTxkeyToExtra(tx.extra, txkey.secretKey);
-		
-		std::stringstream ex;
-        for (auto c : tx.extra) ex << c;
-        extraString += ex.str();
-        tx.extra.clear();
-        std::copy(extraString.begin(), extraString.end(), std::back_inserter(tx.extra));
-        // ---
+		addToAddressToExtra(tx.extra, { minerAddress }); 
+		addAmountToExtra(tx.extra, getBinaryAmount(blockReward)); 
 
 		std::vector<uint64_t> outAmounts;
 		decompose_amount_into_digits(blockReward, UINT64_C(0),
@@ -284,7 +274,7 @@ namespace DynexCN {
 		}
 
 		if (!(summaryAmounts == blockReward)) {
-			logger(ERROR, BRIGHT_RED) << "Failed to construct miner tx, summaryAmounts = " << summaryAmounts << " not equal blockReward = " << blockReward;
+			logger(ERROR, BRIGHT_RED) << "Failed to construct coinbase tx, summaryAmounts = " << summaryAmounts << " not equal blockReward = " << blockReward;
 			return false;
 		}
 
@@ -715,9 +705,9 @@ bool Currency::checkProofOfWorkV2(Crypto::cn_context& context, const Block& bloc
 			return false;
 		}
 
-		TransactionExtraMergeMiningTag mmTag;
+		TransactionExtraMergeTag mmTag;
 		if (!getMergeMiningTagFromExtra(block.parentBlock.baseTransaction.extra, mmTag)) {
-			logger(ERROR) << "merge mining tag wasn't found in extra of the parent block miner transaction";
+			logger(ERROR) << "merge tag wasn't found in extra of the parent block coinbase transaction";
 			return false;
 		}
 

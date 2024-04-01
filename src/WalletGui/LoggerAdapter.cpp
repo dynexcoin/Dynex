@@ -50,12 +50,12 @@ LoggerAdapter& LoggerAdapter::instance() {
 
 void LoggerAdapter::init() {
   Common::JsonValue loggerConfiguration(Common::JsonValue::OBJECT);
-  loggerConfiguration.insert("globalLevel", static_cast<int64_t>(Logging::INFO));
+  loggerConfiguration.insert("globalLevel", static_cast<int64_t>(Settings::instance().getLogLevel()));
   Common::JsonValue& cfgLoggers = loggerConfiguration.insert("loggers", Common::JsonValue::ARRAY);
   Common::JsonValue& fileLogger = cfgLoggers.pushBack(Common::JsonValue::OBJECT);
   fileLogger.insert("type", "file");
   fileLogger.insert("filename", Settings::instance().getDataDir().absoluteFilePath(QCoreApplication::applicationName() + ".log").toStdString());
-  fileLogger.insert("level", static_cast<int64_t>(Logging::INFO));
+  fileLogger.insert("level", static_cast<int64_t>(Settings::instance().getLogLevel()));
   m_logManager.configure(loggerConfiguration);
 }
 
@@ -69,7 +69,7 @@ Logging::LoggerManager& LoggerAdapter::getLoggerManager() {
   return m_logManager;
 }
 
-void LoggerAdapter::log(std::string message) {
+void LoggerAdapter::log(const std::string& message) {
   Logging::LoggerRef logger(m_logManager, "Wallet");
   logger(Logging::INFO) << message;
 }

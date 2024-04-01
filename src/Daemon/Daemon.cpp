@@ -57,7 +57,6 @@
 #include "DynexCNCore/Core.h"
 #include "DynexCNCore/CoreConfig.h"
 #include "DynexCNCore/Currency.h"
-#include "DynexCNCore/MinerConfig.h"
 #include "DynexCNProtocol/DynexCNProtocolHandler.h"
 #include "DynexCNProtocol/IDynexCNProtocolQuery.h"
 #include "P2p/NetNode.h"
@@ -178,7 +177,6 @@ int main(int argc, char* argv[])
     RpcServerConfig::initOptions(desc_cmd_sett);
     CoreConfig::initOptions(desc_cmd_sett);
     NetNodeConfig::initOptions(desc_cmd_sett);
-    MinerConfig::initOptions(desc_cmd_sett);
 
     po::options_description desc_options("Allowed options");
     desc_options.add(desc_cmd_only).add(desc_cmd_sett);
@@ -458,41 +456,33 @@ int main(int argc, char* argv[])
     DynexCN::core ccore(currency, nullptr, logManager, command_line::get_arg(vm, arg_enable_blockchain_indexes));
 
 	bool disable_checkpoints = command_line::get_arg(vm, arg_disable_checkpoints);
-	if (!disable_checkpoints) {
+    if (!disable_checkpoints) {
+        DynexCN::Checkpoints checkpoints(logManager);
+        if (!testnet_mode) {
+            for (const auto& cp : DynexCN::CHECKPOINTS) {
+                checkpoints.add_checkpoint(cp.height, cp.blockId);
+            }
+        }
 
-		DynexCN::Checkpoints checkpoints(logManager);
-		for (const auto& cp : DynexCN::CHECKPOINTS) {
-			checkpoints.add_checkpoint(cp.height, cp.blockId);
-		}
+        checkpoints.load_checkpoints_from_remote(testnet_mode);
 
-#ifndef __ANDROID__
-		checkpoints.load_checkpoints_from_dns();
-#endif
-
-		bool manual_checkpoints = !command_line::get_arg(vm, arg_load_checkpoints).empty();
-
-		if (manual_checkpoints && !testnet_mode) {
-			logger(INFO) << "Loading checkpoints from file...";
-			std::string checkpoints_file = command_line::get_arg(vm, arg_load_checkpoints);
-			bool results = checkpoints.load_checkpoints_from_file(checkpoints_file);
-			if (!results) {
-				throw std::runtime_error("Failed to load checkpoints");
-			}
-		}
-
-		if (!testnet_mode) {
-			ccore.set_checkpoints(std::move(checkpoints));
-		}
-
-	}
+        bool manual_checkpoints = !command_line::get_arg(vm, arg_load_checkpoints).empty();
+        if (manual_checkpoints) {
+            logger(INFO) << "Loading checkpoints from file...";
+            std::string checkpoints_file = command_line::get_arg(vm, arg_load_checkpoints);
+            bool results = checkpoints.load_checkpoints_from_file(checkpoints_file);
+            if (!results) {
+                throw std::runtime_error("Failed to load checkpoints");
+            }
+        }
+        ccore.set_checkpoints(std::move(checkpoints));
+    }
 
     CoreConfig coreConfig;
     coreConfig.init(vm);
     NetNodeConfig netNodeConfig;
     netNodeConfig.init(vm);
     netNodeConfig.setTestnet(testnet_mode);
-    MinerConfig minerConfig;
-    minerConfig.init(vm);
     RpcServerConfig rpcConfig;
     rpcConfig.init(vm);
 
@@ -563,7 +553,7 @@ int main(int argc, char* argv[])
 
     // initialize core here
     logger(INFO) << "Initializing core...";
-    if (!ccore.init(coreConfig, minerConfig, true)) {
+    if (!ccore.init(coreConfig, true)) {
       logger(ERROR, BRIGHT_RED) << "Failed to initialize core";
       return 1;
     }
@@ -575,7 +565,7 @@ int main(int argc, char* argv[])
         uint32_t _index = 0;
         if (!Common::fromString(rollback_str, _index)) {
           std::cout << "wrong block index parameter" << ENDL;
-          return false;
+          return 0;
         }
         logger(INFO, BRIGHT_YELLOW) << "Rollback blockchain to height " << _index;
         ccore.rollbackBlockchain(_index);

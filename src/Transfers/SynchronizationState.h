@@ -48,6 +48,8 @@ namespace DynexCN {
 class SynchronizationState : public IStreamSerializable {
 public:
 
+  virtual ~SynchronizationState() = default;
+
   struct CheckResult {
     bool detachRequired;
     uint32_t detachHeight;

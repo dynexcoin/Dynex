@@ -210,7 +210,8 @@ bool BlockchainExplorerDataBuilder::fillBlockDetails(const Block &block, BlockDe
   }
 
   if (!core.getGeneratedTransactionsNumber(blockDetails.height, blockDetails.alreadyGeneratedTransactions)) {
-    return false;
+    //return false;
+    blockDetails.alreadyGeneratedTransactions = 0;
   }
 
   uint64_t prevBlockGeneratedCoins = 0;

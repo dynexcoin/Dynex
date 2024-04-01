@@ -47,7 +47,7 @@ public:
   static LoggerAdapter& instance();
   void init();
   Logging::LoggerManager& getLoggerManager();
-  void log(std::string message);
+  void log(const std::string& message);
 
 private:
   Logging::LoggerManager m_logManager;

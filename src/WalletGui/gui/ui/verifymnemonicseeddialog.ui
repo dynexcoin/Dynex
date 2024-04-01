@@ -167,7 +167,7 @@
   </connection>
   <connection>
    <sender>m_languageCombo</sender>
-   <signal>currentIndexChanged(QString)</signal>
+   <signal>currentIndexChanged(int)</signal>
    <receiver>VerifyMnemonicSeedDialog</receiver>
    <slot>languageChanged()</slot>
    <hints>
@@ -184,5 +184,7 @@
  </connections>
  <slots>
   <slot>selectPathClicked()</slot>
+  <slot>languageChanged()</slot>
+  <slot>onTextChanged()</slot>
  </slots>
 </ui>

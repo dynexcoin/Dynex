@@ -48,6 +48,7 @@
 #include <iterator>
 
 #include "Checkpoints.h"
+#include "Auth.h"
 #include "../DynexCNConfig.h"
 #include "Common/StringTools.h"
 #include "Common/DnsTools.h"
@@ -101,7 +102,7 @@ bool Checkpoints::load_checkpoints_from_file(const std::string& fileName) {
 }
 
 //---------------------------------------------------------------------------
-bool Checkpoints::is_in_checkpoint_zone(uint32_t  height) const {
+bool Checkpoints::is_in_checkpoint_zone(uint32_t height) const {
   return !m_points.empty() && (height <= (--m_points.end())->first);
 }
 //---------------------------------------------------------------------------
@@ -161,11 +162,22 @@ std::vector<uint32_t> Checkpoints::getCheckpointHeights() const {
 
   return checkpointHeights;
 }
+
+bool Checkpoints::load_checkpoints_from_remote(bool testnet) {
+  std::string hash;
+  uint32_t height;
+  if (!UpdateLatestCheckpoint(testnet, logger.getLogger(), height, hash)) {
+	return false;
+  }
+  return add_checkpoint(height, hash);
+}
+
+/*
 #ifndef __ANDROID__
 //---------------------------------------------------------------------------
 bool Checkpoints::load_checkpoints_from_dns()
 {
-  /*dm disabled
+  //dm disabled
   std::string domain = "daemon.checkpoints.dynexcoin.org"; //(DynexCN::DNS_CHECKPOINTS_HOST);
   std::vector<std::string>records;
 
@@ -197,8 +209,9 @@ bool Checkpoints::load_checkpoints_from_dns()
 	  logger(DEBUGGING) << "Added DNS checkpoint: " << height_str << ":" << hash_str;
     }
   }
-  */
   return true;
 }
 #endif
+*/
+
 }

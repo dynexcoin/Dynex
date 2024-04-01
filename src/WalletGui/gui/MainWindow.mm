@@ -38,7 +38,7 @@
 #import <objc/runtime.h>
 #import <Cocoa/Cocoa.h>
 
-#include "mainwindow.h"
+#include "MainWindow.h"
 
 namespace WalletGui {
 

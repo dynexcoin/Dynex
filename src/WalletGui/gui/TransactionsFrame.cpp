@@ -54,12 +54,19 @@ TransactionsFrame::TransactionsFrame(QWidget* _parent) : QFrame(_parent), m_ui(n
   m_transactionsModel(new TransactionsListModel) {
   m_ui->setupUi(this);
   m_ui->m_transactionsView->setModel(m_transactionsModel.data());
-  m_ui->m_transactionsView->header()->setSectionResizeMode(TransactionsModel::COLUMN_STATE, QHeaderView::Fixed);
-  m_ui->m_transactionsView->header()->resizeSection(TransactionsModel::COLUMN_STATE, 20);
-  m_ui->m_transactionsView->header()->resizeSection(TransactionsModel::COLUMN_DATE, 90);
-  m_ui->m_transactionsView->header()->resizeSection(TransactionsModel::COLUMN_AMOUNT, 80);
-  m_ui->m_transactionsView->header()->resizeSection(TransactionsModel::COLUMN_ADDRESS, 400);
-  m_ui->m_transactionsView->header()->resizeSection(TransactionsModel::COLUMN_PAYMENT_ID, 150);
+  m_ui->m_transactionsView->verticalHeader()->setDefaultSectionSize(20);
+  m_ui->m_transactionsView->horizontalHeader()->setMinimumSectionSize(20);
+  m_ui->m_transactionsView->horizontalHeader()->resizeSection(TransactionsModel::COLUMN_STATE, 20);
+  m_ui->m_transactionsView->horizontalHeader()->setSectionResizeMode(TransactionsModel::COLUMN_STATE, QHeaderView::Fixed);
+  m_ui->m_transactionsView->horizontalHeader()->resizeSection(TransactionsModel::COLUMN_DATE, 110);
+  m_ui->m_transactionsView->horizontalHeader()->resizeSection(TransactionsModel::COLUMN_AMOUNT, 105);
+  m_ui->m_transactionsView->horizontalHeader()->resizeSection(TransactionsModel::COLUMN_ADDRESS, 385);
+  m_ui->m_transactionsView->horizontalHeader()->resizeSection(TransactionsModel::COLUMN_PAYMENT_ID, 90);
+  m_ui->m_transactionsView->horizontalHeader()->setStretchLastSection(true);
+  m_ui->m_transactionsView->setWordWrap(false);
+  m_ui->m_transactionsView->setTextElideMode(Qt::ElideMiddle);
+  m_ui->m_transactionsView->setSelectionMode(QAbstractItemView::SingleSelection);
+  m_ui->m_transactionsView->setSelectionBehavior(QAbstractItemView::SelectRows);
 
   m_ui->m_transactionsView->setContextMenuPolicy(Qt::CustomContextMenu);
   connect(m_ui->m_transactionsView, SIGNAL(customContextMenuRequested(const QPoint &)), this, SLOT(onCustomContextMenu(const QPoint &)));

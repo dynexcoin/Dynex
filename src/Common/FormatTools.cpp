@@ -178,8 +178,7 @@ std::string formatAmount(const uint64_t amount)
     const uint64_t dollars = amount / divisor;
     const uint64_t cents = amount % divisor;
 
-    return formatDollars(dollars) + "." + formatCents(cents) + " "
-         + "CROAT";
+    return formatDollars(dollars) + "." + formatCents(cents) + " " + DynexCN::CRYPTONOTE_TICKER;
 }
 
 std::string formatAmountBasic(const uint64_t amount)

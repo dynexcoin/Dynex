@@ -237,23 +237,28 @@ QModelIndex AddressBookModel::getAddressIndex(const QString& _label) {
     Qt::MatchFlags(Qt::MatchExactly|Qt::MatchRecursive)).value(0);
 }
 
+void AddressBookModel::reload() {
+  reset();
+
+  QFile addressBookFile(Settings::instance().getAddressBookFile());
+  if (addressBookFile.open(QIODevice::ReadOnly)) {
+    QByteArray file_content = addressBookFile.readAll();
+    QJsonDocument doc = QJsonDocument::fromJson(file_content);
+    if (!doc.isNull()) {
+      m_addressBook = doc.array();
+    }
+
+    addressBookFile.close();
+    if (!m_addressBook.isEmpty()) {
+      beginInsertRows(QModelIndex(), 0, m_addressBook.size() - 1);
+      endInsertRows();
+    }
+  }
+}
 
 void AddressBookModel::walletInitCompleted(int _error, const QString& _error_text) {
   if (!_error) {
-    QFile addressBookFile(Settings::instance().getAddressBookFile());
-    if (addressBookFile.open(QIODevice::ReadOnly)) {
-      QByteArray file_content = addressBookFile.readAll();
-      QJsonDocument doc = QJsonDocument::fromJson(file_content);
-      if (!doc.isNull()) {
-        m_addressBook = doc.array();
-      }
-
-      addressBookFile.close();
-      if (!m_addressBook.isEmpty()) {
-        beginInsertRows(QModelIndex(), 0, m_addressBook.size() - 1);
-        endInsertRows();
-      }
-    }
+    reload();
   }
 }
 

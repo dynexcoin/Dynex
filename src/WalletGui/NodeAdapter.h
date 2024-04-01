@@ -68,18 +68,23 @@ public:
 
   quintptr getPeerCount() const;
   std::string convertPaymentId(const QString& _payment_id_string) const;
-  QString extractPaymentId(const std::string& _extra) const;
+
+  bool extractExtra(const std::string& _extra, std::vector<DynexCN::TransactionExtraField>& _field) const;
+  QString extractPaymentId(const std::vector<DynexCN::TransactionExtraField>& _fields) const;
+  QString extractFromAddress(const std::vector<DynexCN::TransactionExtraField>& _fields) const;
+  std::vector<std::pair<std::string, int64_t>> extractToAddress(const std::vector<DynexCN::TransactionExtraField>& _fields) const;
+
   DynexCN::IWalletLegacy* createWallet() const;
 
   bool init();
   void deinit();
-  quint64 getLastKnownBlockHeight() const;
-  quint64 getLastLocalBlockHeight() const;
+  quint32 getLastKnownBlockHeight() const;
+  quint32 getLastLocalBlockHeight() const;
   quint64 getMinimalFee() const;
   QDateTime getLastLocalBlockTimestamp() const;
   void peerCountUpdated(Node& _node, size_t _count) Q_DECL_OVERRIDE;
-  void localBlockchainUpdated(Node& _node, uint64_t _height) Q_DECL_OVERRIDE;
-  void lastKnownBlockHeightUpdated(Node& _node, uint64_t _height) Q_DECL_OVERRIDE;
+  void localBlockchainUpdated(Node& _node, uint32_t _height) Q_DECL_OVERRIDE;
+  void lastKnownBlockHeightUpdated(Node& _node, uint32_t _height) Q_DECL_OVERRIDE;
 
 private:
   Node* m_node;
@@ -95,12 +100,11 @@ private:
   DynexCN::NetNodeConfig makeNetNodeConfig() const;
 
 Q_SIGNALS:
-  void localBlockchainUpdatedSignal(quint64 _height);
-  void lastKnownBlockHeightUpdatedSignal(quint64 _height);
+  void localBlockchainUpdatedSignal(quint32 _height);
+  void lastKnownBlockHeightUpdatedSignal(quint32 _height);
   void nodeInitCompletedSignal();
   void peerCountUpdatedSignal(quintptr _count);
-  void initNodeSignal(Node** _node, const DynexCN::Currency* currency, INodeCallback* _callback, Logging::LoggerManager* _loggerManager,
-    const DynexCN::CoreConfig& _coreConfig, const DynexCN::NetNodeConfig& _netNodeConfig);
+  void initNodeSignal(Node** _node, INodeCallback* _callback, const DynexCN::CoreConfig& _coreConfig, const DynexCN::NetNodeConfig& _netNodeConfig);
   void deinitNodeSignal(Node** _node);
 };
 

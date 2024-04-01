@@ -66,7 +66,11 @@
 #include "MnemonicSeedDialog.h"
 #include "ConnectionSettings.h"
 #include "CommandLineParser.h"
+#include "AddressBookModel.h"
+#include "BalanceProofDialog.h"
+
 #include "version.h"
+
 #include "ui_mainwindow.h"
 
 
@@ -87,6 +91,7 @@ MainWindow::MainWindow() : QMainWindow(), m_ui(new Ui::MainWindow), m_trayIcon(n
   m_connectionStateIconLabel = new QLabel(this);
   m_encryptionStateIconLabel = new QLabel(this);
   m_synchronizationStateIconLabel = new AnimatedLabel(this);
+  m_syncProgressBar = new QProgressBar();
 
   connectToSignals();
   initUi();
@@ -115,7 +120,7 @@ void MainWindow::initUi() {
   updateTitle(false);
 #ifdef Q_OS_WIN32
   if (QSystemTrayIcon::isSystemTrayAvailable()) {
-    m_trayIcon = new QSystemTrayIcon(QPixmap(":images/cryptonote"), this);
+    m_trayIcon = new QSystemTrayIcon(QPixmap(":images/dynex"), this);
     connect(m_trayIcon, &QSystemTrayIcon::activated, this, &MainWindow::trayActivated);
   }
 #endif
@@ -132,8 +137,24 @@ void MainWindow::initUi() {
   m_tabActionGroup->addAction(m_ui->m_transactionsAction);
   m_tabActionGroup->addAction(m_ui->m_addressBookAction);
 
+  m_syncProgressBar->hide();
+  m_syncProgressBar->setRange(0, 100);
+  m_syncProgressBar->setValue(0);
+  m_syncProgressBar->setFormat("");
+  m_syncProgressBar->setTextVisible(true);
+
+  QString styles(" QProgressBar { border: none; text-align: left; background: transparent; } QProgressBar::chunk { background: #00bfff; }");
+#ifdef Q_OS_MAC
+  const QPalette palette;
+  bool darkMode = palette.color(QPalette::WindowText).lightness() > palette.color(QPalette::Window).lightness();
+  styles.append(darkMode ? " QProgressBar { color: white; }" : " QProgressBar { color: black; }");
+  styles.append(" QProgressBar { margin-left: 2px; } QProgressBar::chunk { border-radius: 6px; }");
+#endif
+  m_syncProgressBar->setStyleSheet(styles);
+
   m_ui->m_overviewAction->toggle();
   encryptedFlagChanged(false);
+  statusBar()->addPermanentWidget(m_syncProgressBar, 1);
   statusBar()->addPermanentWidget(m_connectionStateIconLabel);
   statusBar()->addPermanentWidget(m_encryptionStateIconLabel);
   statusBar()->addPermanentWidget(m_synchronizationStateIconLabel);
@@ -172,6 +193,7 @@ void MainWindow::initUi() {
 
 void MainWindow::restoreCheckboxes() {
   m_ui->m_startOnLoginAction->setChecked(Settings::instance().isStartOnLoginEnabled());
+  m_ui->m_globalAddressBookAction->setChecked(Settings::instance().isGlobalAddressBookEnabled());
 #ifdef Q_OS_WIN
   m_ui->m_minimizeToTrayAction->setChecked(Settings::instance().isMinimizeToTrayEnabled());
   m_ui->m_closeToTrayAction->setChecked(Settings::instance().isCloseToTrayEnabled());
@@ -202,6 +224,9 @@ void MainWindow::quit() {
     ExitWidget* exitWidget = new ExitWidget(nullptr);
     exitWidget->show();
     m_isAboutToQuit = true;
+#ifdef Q_OS_WIN
+    if (m_trayIcon) m_trayIcon->hide();
+#endif
     close();
   }
 }
@@ -412,7 +437,7 @@ void MainWindow::importKeys() {
     DynexCN::AccountKeys keys = dlg.getAccountKeys();
 
     if (WalletAdapter::instance().isOpen()) {
-        WalletAdapter::instance().close();
+      WalletAdapter::instance().close();
     }
     WalletAdapter::instance().setWalletFile(filePath);
 
@@ -464,18 +489,24 @@ void MainWindow::showMnemonicSeed() {
   dlg.exec();
 }
 
+void MainWindow::balanceProof() {
+  BalanceProofDialog dlg(this);
+  dlg.walletOpened();
+  dlg.exec();
+}
+
 void MainWindow::openRecent() {
   QAction *action = qobject_cast<QAction *>(sender());
   if (action) {
     QString filePath = action->data().toString();
     if (!filePath.isEmpty() && QFile::exists(filePath)) {
       if (WalletAdapter::instance().isOpen()) {
-          WalletAdapter::instance().close();
+        WalletAdapter::instance().close();
       }
       WalletAdapter::instance().setWalletFile(filePath);
       WalletAdapter::instance().open("");
     } else {
-       QMessageBox::warning(this, tr("Wallet file not found"), tr("The recent wallet file is missing. Probably it was removed."), QMessageBox::Ok);
+      QMessageBox::warning(this, tr("Wallet file not found"), tr("The recent wallet file is missing. Probably it was removed."), QMessageBox::Ok);
     }
   }
 }
@@ -543,6 +574,11 @@ void MainWindow::setCloseToTray(bool _on) {
 #endif
 }
 
+void MainWindow::setGlobalAddressBook(bool _on) {
+  Settings::instance().setGlobalAddressBookEnabled(_on);
+  AddressBookModel::instance().reload();
+}
+
 void MainWindow::about() {
   const QString translatedTextAboutQtText = tr(
     "<h2>Dynex wallet v%1</h2>"
@@ -558,13 +594,20 @@ void MainWindow::about() {
     "<br>Copyright (c) 2018-2019 The TurtleCoin developers"
     "<br>Copyright (c) 2016-2022 The Karbo developers</p>"
     "<p><a href=\"%4\">%4</a></p>"
-    ).arg(Settings::instance().getVersion(), QStringLiteral(CN_PROJECT_SITE), QStringLiteral(CN_PROJECT_COPYRIGHT), QStringLiteral("http://opensource.org/licenses/MIT"));
+    ).arg(Settings::instance().getVersion(), QStringLiteral(CN_PROJECT_SITE), QStringLiteral(CN_PROJECT_COPYRIGHT), 
+    	QStringLiteral("http://opensource.org/licenses/MIT"));
 
   QMessageBox::about(this, tr("About wallet"), translatedTextAboutQtText);
 }
 
 void MainWindow::setStatusBarText(const QString& _text) {
-  statusBar()->showMessage(_text);
+  m_statusBarText = _text;
+  if (m_syncProgressBar->isHidden()) {
+    statusBar()->showMessage(m_statusBarText);
+  } else {
+    statusBar()->clearMessage();
+    m_syncProgressBar->setFormat(QString("  ") + m_statusBarText);
+  }
 }
 
 void MainWindow::showMessage(const QString& _text, QtMsgType _type) {
@@ -584,6 +627,7 @@ void MainWindow::showMessage(const QString& _text, QtMsgType _type) {
 }
 
 void MainWindow::askForWalletPassword(bool _error) {
+  if (m_isAboutToQuit) return;
   PasswordDialog dlg(_error, this);
   if (dlg.exec() == QDialog::Accepted) {
     QString password = dlg.getPassword();
@@ -608,9 +652,18 @@ void MainWindow::peerCountUpdated(quint64 _peerCount) {
   m_connectionStateIconLabel->setToolTip(QString(tr("%1 peers").arg(_peerCount)));
 }
 
-void MainWindow::walletSynchronizationInProgress() {
+void MainWindow::walletSynchronizationInProgress(uint32_t _current, uint32_t _total) {
   qobject_cast<AnimatedLabel*>(m_synchronizationStateIconLabel)->startAnimation();
   m_synchronizationStateIconLabel->setToolTip(tr("Synchronization in progress"));
+  if (_current < _total) {
+    m_syncProgressBar->setValue(double(_current)/double(_total)*100.0);
+    if (_total - _current > 1000 && m_syncProgressBar->isHidden()) {
+      m_syncProgressBar->setFormat(m_statusBarText);
+      statusBar()->clearMessage();
+      m_syncProgressBar->show();
+    }
+  }
+  m_ui->m_proofAction->setEnabled(false);
 }
 
 void MainWindow::walletSynchronized(int _error, const QString& _error_text) {
@@ -619,6 +672,11 @@ void MainWindow::walletSynchronized(int _error, const QString& _error_text) {
   m_synchronizationStateIconLabel->setPixmap(syncIcon);
   QString syncLabelTooltip = _error > 0 ? tr("Not synchronized") : tr("Synchronized");
   m_synchronizationStateIconLabel->setToolTip(syncLabelTooltip);
+  m_syncProgressBar->hide();
+  statusBar()->showMessage(m_statusBarText);
+  if (WalletAdapter::instance().getActualBalance() > 0) {
+    m_ui->m_proofAction->setEnabled(true);
+  }
 }
 
 void MainWindow::walletOpened(bool _error, const QString& _error_text) {
@@ -632,6 +690,9 @@ void MainWindow::walletOpened(bool _error, const QString& _error_text) {
     m_ui->m_resetAction->setEnabled(true);
     if (WalletAdapter::instance().isDeterministic()) {
        m_ui->m_showMnemonicSeedAction->setEnabled(true);
+    }
+    if (WalletAdapter::instance().getActualBalance() > 0) {
+        m_ui->m_proofAction->setEnabled(true);
     }
     encryptedFlagChanged(Settings::instance().isEncrypted());
     QList<QAction*> tabActions = m_tabActionGroup->actions();
@@ -664,10 +725,13 @@ void MainWindow::walletClosed() {
   m_ui->m_showPrivateKey->setEnabled(false);
   m_ui->m_resetAction->setEnabled(false);
   m_ui->m_showMnemonicSeedAction->setEnabled(false);
+  m_ui->m_proofAction->setEnabled(false);
   m_ui->m_overviewFrame->hide();
   m_ui->m_sendFrame->hide();
   m_ui->m_transactionsFrame->hide();
   m_ui->m_addressBookFrame->hide();
+  m_syncProgressBar->hide();
+  statusBar()->showMessage(m_statusBarText);
   m_encryptionStateIconLabel->hide();
   m_synchronizationStateIconLabel->hide();
   QList<QAction*> tabActions = m_tabActionGroup->actions();

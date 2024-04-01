@@ -61,7 +61,7 @@ int CurrencyAdapter::getNumberOfDecimalPlaces() const {
 }
 
 QString CurrencyAdapter::getCurrencyDisplayName() const {
-  return CN_CURRENCY_DISPLAY_NAME;
+  return DynexCN::CRYPTONOTE_NAME;
 }
 
 QString CurrencyAdapter::getCurrencyName() const {
@@ -69,7 +69,7 @@ QString CurrencyAdapter::getCurrencyName() const {
 }
 
 QString CurrencyAdapter::getCurrencyTicker() const {
-  return CN_CURRENCY_TICKER;
+  return DynexCN::CRYPTONOTE_TICKER;
 }
 
 quint64 CurrencyAdapter::getMinimumFee() const {

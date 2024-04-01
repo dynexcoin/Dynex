@@ -45,6 +45,7 @@
 #include "TransferFrame.h"
 #include "WalletAdapter.h"
 #include "WalletEvents.h"
+#include "DynexCNConfig.h"
 
 #include "ui_sendframe.h"
 
@@ -70,10 +71,10 @@ SendFrame::SendFrame(QWidget* _parent) : QFrame(_parent), m_ui(new Ui::SendFrame
 
   m_ui->m_tickerLabel->setText(CurrencyAdapter::instance().getCurrencyTicker().toUpper());
   m_ui->m_feeSpin->setSuffix(" " + CurrencyAdapter::instance().getCurrencyTicker().toUpper());
-  //double fee = CurrencyAdapter::instance().formatAmount(NodeAdapter::instance().getMinimalFee()).toDouble();
-  //m_ui->m_feeSpin->setValue(fee);
-  //m_ui->m_feeSpin->setMinimum(fee);
-  //m_ui->m_feeSpin->setMaximum(fee*1000);
+  double minfee = CurrencyAdapter::instance().formatAmount(std::max(static_cast<quint64>(DynexCN::parameters::MINIMUM_FEE), NodeAdapter::instance().getMinimalFee())).toDouble();
+  m_ui->m_feeSpin->setValue(CurrencyAdapter::instance().formatAmount(std::max(static_cast<quint64>(DynexCN::parameters::MAXIMUM_FEE), NodeAdapter::instance().getMinimalFee())).toDouble());
+  m_ui->m_feeSpin->setMinimum(minfee);
+  m_ui->m_feeSpin->setMaximum(std::max(1.0, minfee));
 }
 
 SendFrame::~SendFrame() {
@@ -118,7 +119,7 @@ void SendFrame::clearAllClicked() {
   m_transfers.clear();
   addRecipientClicked();
   m_ui->m_paymentIdEdit->clear();
-  m_ui->m_feeSpin->setValue(CurrencyAdapter::instance().formatAmount(NodeAdapter::instance().getMinimalFee()).toDouble());
+  //m_ui->m_feeSpin->setValue(CurrencyAdapter::instance().formatAmount(std::max(static_cast<quint64>(DynexCN::parameters::MAXIMUM_FEE), NodeAdapter::instance().getMinimalFee())).toDouble());
 }
 
 void SendFrame::optimizeClicked() {
@@ -127,9 +128,9 @@ void SendFrame::optimizeClicked() {
 
 void SendFrame::sendClicked() {
 
-  double minfee = CurrencyAdapter::instance().formatAmount(NodeAdapter::instance().getMinimalFee()).toDouble();
+  double minfee = CurrencyAdapter::instance().formatAmount(std::max(static_cast<quint64>(DynexCN::parameters::MINIMUM_FEE), NodeAdapter::instance().getMinimalFee())).toDouble();
 
-  if (m_ui->m_feeSpin->value() > 1.0) { // minfee*1000
+  if (m_ui->m_feeSpin->value() > std::max(1.0, minfee)) {
     QCoreApplication::postEvent(&MainWindow::instance(), new ShowMessageEvent(tr("Fee is too high"), QtCriticalMsg)); 
     return;
   }
@@ -160,7 +161,7 @@ void SendFrame::sendClicked() {
     }
 
     uint64_t amount = CurrencyAdapter::instance().parseAmount(transfer->getAmountString());
-    if (amount < NodeAdapter::instance().getMinimalFee()) {
+    if (amount < DynexCN::parameters::DEFAULT_DUST_THRESHOLD) {
       QCoreApplication::postEvent(&MainWindow::instance(), new ShowMessageEvent(tr("Amount is too low"), QtCriticalMsg));
       return;
     }

@@ -59,7 +59,8 @@ public:
 
   enum Roles{
     ROLE_DATE = Qt::UserRole, ROLE_TYPE, ROLE_HASH, ROLE_ADDRESS, ROLE_AMOUNT, ROLE_PAYMENT_ID, ROLE_ICON,
-    ROLE_TRANSACTION_ID, ROLE_HEIGHT, ROLE_FEE, ROLE_NUMBER_OF_CONFIRMATIONS, ROLE_COLUMN, ROLE_ROW, ROLE_STATE
+    ROLE_TRANSACTION_ID, ROLE_HEIGHT, ROLE_FEE, ROLE_NUMBER_OF_CONFIRMATIONS, ROLE_COLUMN, ROLE_ROW, ROLE_STATE,
+    ROLE_TIMESTAMP, ROLE_RECIPIENTS, ROLE_FROM, ROLE_TO, ROLE_COINBASE
   };
 
   static TransactionsModel& instance();
@@ -70,11 +71,12 @@ public:
   QVariant headerData(int _section, Qt::Orientation _orientation, int _role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
   QVariant data(const QModelIndex& _index, int _role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
   QModelIndex index(int _row, int _column, const QModelIndex& _parent = QModelIndex()) const Q_DECL_OVERRIDE;
-  QModelIndex	parent(const QModelIndex& _index) const Q_DECL_OVERRIDE;
+  QModelIndex parent(const QModelIndex& _index) const Q_DECL_OVERRIDE;
 
   QByteArray toCsv() const;
 
 private:
+  QString m_myAddress;
   QVector<TransactionTransferId> m_transfers;
   QHash<DynexCN::TransactionId, QPair<quint32, quint32> > m_transactionRow;
 

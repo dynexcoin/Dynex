@@ -272,7 +272,7 @@ template<class T> bool SwappedVector<T>::open(const std::string& itemFileName, c
 }
 
 template<class T> void SwappedVector<T>::close() {
-  std::cout << "SwappedVector cache hits: " << m_cacheHits << ", misses: " << m_cacheMisses << " (" << std::fixed << std::setprecision(2) << static_cast<double>(m_cacheMisses) / (m_cacheHits + m_cacheMisses) * 100 << "%)" << std::endl;
+  //std::cout << "SwappedVector cache hits: " << m_cacheHits << ", misses: " << m_cacheMisses << " (" << std::fixed << std::setprecision(2) << static_cast<double>(m_cacheMisses) / (m_cacheHits + m_cacheMisses) * 100 << "%)" << std::endl;
 }
 
 template<class T> bool SwappedVector<T>::empty() const {

@@ -39,7 +39,7 @@
 #include <QApplication>
 #include <QMessageBox>
 #include <QUrl>
-#include <QRegExpValidator>
+#include <QRegularExpression>
 
 #include "ui_connectionsettingsdialog.h"
 #include "ConnectionSettings.h"
@@ -69,10 +69,10 @@ ConnectionSettingsDialog::ConnectionSettingsDialog(QWidget *_parent) : QDialog(_
   m_ui->m_bindPort->setValue(Settings::instance().getP2pBindPort());
   m_ui->m_externalPort->setValue(Settings::instance().getP2pExternalPort());
 
-  QRegExpValidator* ipValidator = new QRegExpValidator(QRegExp("^(?:[0-1]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])(\\.(?:[0-1]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])){3}$"), this);
+  QRegularExpressionValidator* ipValidator = new QRegularExpressionValidator(QRegularExpression("^(?:[0-1]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])(\\.(?:[0-1]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])){3}$"), this);
   m_ui->m_bindIp->setValidator(ipValidator);
 
-  QRegExpValidator* hostValidator = new QRegExpValidator(QRegExp("^((?:[0-1]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])(\\.(?:[0-1]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])){3}|[a-zA-Z0-9-\\.]+)(:[0-9]{1,5})?$"), this);
+  QRegularExpressionValidator* hostValidator = new QRegularExpressionValidator(QRegularExpression("^((?:[0-1]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])(\\.(?:[0-1]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])){3}|[a-zA-Z0-9-\\.]+)(:[0-9]{1,5})?$"), this);
   m_ui->m_remoteNode->setValidator(hostValidator);
 
   // disable options set from cmdline
@@ -107,7 +107,7 @@ void ConnectionSettingsDialog::onAccept() {
 
   QString ip = m_ui->m_bindIp->text().trimmed();
   if (ip.isEmpty()) ip = "0.0.0.0";
-  if (!QRegExp("(?:[0-1]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])(\\.(?:[0-1]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])){3}").exactMatch(ip)) {
+  if (!QRegularExpression("^(?:[0-1]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])(\\.(?:[0-1]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])){3}$").match(ip).hasMatch()) {
     QMessageBox::warning(this, tr("Error"), tr("Invalid bind ip"), QMessageBox::Ok);
     return;
   }

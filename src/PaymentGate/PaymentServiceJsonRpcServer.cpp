@@ -83,6 +83,8 @@ PaymentServiceJsonRpcServer::PaymentServiceJsonRpcServer(System::Dispatcher& sys
   handlers.emplace("validateAddress", jsonHandler<ValidateAddress::Request, ValidateAddress::Response>(std::bind(&PaymentServiceJsonRpcServer::handleValidateAddress, this, std::placeholders::_1, std::placeholders::_2)));
   handlers.emplace("getReserveProof", jsonHandler<GetReserveProof::Request, GetReserveProof::Response>(std::bind(&PaymentServiceJsonRpcServer::handleGetReserveProof, this, std::placeholders::_1, std::placeholders::_2)));
   handlers.emplace("exportOutputs", jsonHandler<ExportOutputs::Request, ExportOutputs::Response>(std::bind(&PaymentServiceJsonRpcServer::handleexportOutputs, this, std::placeholders::_1, std::placeholders::_2)));
+  // example usage:
+  // curl -d '{"jsonrpc":"2.0","id":1,"method":"exportOutputs","params":{"address":"XwoagzupsRa6QVmjhbjwcWQ156qvxHh6p8BakQS1be5ocDLVHeTUssoDsTgeAxXzvs4eJGyt5jXEqJMt5wH4xX1i32gbQvFBk"}}' http://localhost:8070/json_rpc
 }
 
 void PaymentServiceJsonRpcServer::processJsonRpcRequest(const Common::JsonValue& req, Common::JsonValue& resp) {

@@ -40,7 +40,6 @@
 #include <QJsonDocument>
 #include <QSettings>
 #include <QStandardPaths>
-#include <QTextCodec>
 
 #include <Common/Util.h>
 
@@ -48,7 +47,7 @@
 #include "CurrencyAdapter.h"
 #include "Settings.h"
 
-#include "version.h" // cryptonote
+#include "version.h"
 
 namespace WalletGui {
 
@@ -73,15 +72,7 @@ void Settings::load() {
   if (cfgFile.open(QIODevice::ReadOnly)) {
     m_settings = QJsonDocument::fromJson(cfgFile.readAll()).object();
     cfgFile.close();
-    if (!m_settings.contains("walletFile")) {
-      m_addressBookFile = getDataDir().absoluteFilePath(QCoreApplication::applicationName() + ".addressbook");
-    } else {
-      m_addressBookFile = m_settings.value("walletFile").toString();
-      m_addressBookFile.replace(m_addressBookFile.lastIndexOf(".wallet"), 7, ".addressbook");
-    }
-  } else {
-    m_addressBookFile = getDataDir().absoluteFilePath(QCoreApplication::applicationName() + ".addressbook");
-  }
+  } 
 }
 
 bool Settings::isTestnet() const {
@@ -188,7 +179,14 @@ QStringList Settings::getRecentWalletsList() const {
 }
 
 QString Settings::getAddressBookFile() const {
-  return m_addressBookFile;
+  QString addressBookFile;
+  if (isGlobalAddressBookEnabled()) {
+    addressBookFile = getDataDir().absoluteFilePath(QCoreApplication::applicationName() + ".addressbook");
+  } else {
+    addressBookFile = m_settings.value("walletFile").toString();
+    addressBookFile.replace(addressBookFile.lastIndexOf(".wallet"), 7, ".addressbook");
+  } 
+  return addressBookFile;
 }
 
 bool Settings::isEncrypted() const {
@@ -198,7 +196,7 @@ bool Settings::isEncrypted() const {
 QString Settings::getVersion() const {
   static QString version;
   if (version.isEmpty()) {
-    version = PROJECT_VERSION;
+    version = CN_PROJECT_VERSION;
     QString revision = CN_WALLET_REV;
     QString commit = BUILD_COMMIT_ID;
     if (commit != "") version.append("-").append(commit);
@@ -279,8 +277,6 @@ void Settings::setWalletFile(const QString& _file) {
   m_settings.insert("recentWallets", QJsonArray::fromStringList(recentWallets));
 
   saveSettings();
-  m_addressBookFile = m_settings.value("walletFile").toString();
-  m_addressBookFile.replace(m_addressBookFile.lastIndexOf(".wallet"), 7, ".addressbook");
 }
 
 void Settings::setEncrypted(bool _encrypted) {
@@ -412,6 +408,21 @@ QString Settings::getRemoteNode() const {
     node = m_settings.value("remoteNode").toString();
   }
   return node;
+}
+
+bool Settings::isGlobalAddressBookEnabled() const {
+  return m_settings.contains("globalAddressBook") ? m_settings.value("globalAddressBook").toBool() : false;
+}
+
+void Settings::setGlobalAddressBookEnabled(bool _enable) {
+  if (isGlobalAddressBookEnabled() != _enable) {
+    m_settings.insert("globalAddressBook", _enable);
+    saveSettings();
+  }
+}
+
+quint16 Settings::getLogLevel() const {
+  return m_cmdLineParser->getLogLevel();
 }
 
 }

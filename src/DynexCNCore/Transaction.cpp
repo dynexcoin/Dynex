@@ -451,8 +451,7 @@ namespace DynexCN {
 
   void TransactionImpl::appendExtra(const BinaryArray& extraData) {
     checkIfSigning();
-    transaction.extra.insert(
-      transaction.extra.end(), extraData.begin(), extraData.end());
+    transaction.extra.insert(transaction.extra.end(), extraData.begin(), extraData.end());
     // non-privacy:
     SecretKey tx_key;
     getTransactionSecretKey(tx_key);

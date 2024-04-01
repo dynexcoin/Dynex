@@ -57,21 +57,14 @@ SortedTransactionsModel::~SortedTransactionsModel() {
 }
 
 bool SortedTransactionsModel::lessThan(const QModelIndex& _left, const QModelIndex& _right) const {
-  QDateTime leftDate = _left.data(TransactionsModel::ROLE_DATE).toDateTime();
-  QDateTime rightDate = _right.data(TransactionsModel::ROLE_DATE).toDateTime();
-  if((rightDate.isNull() || !rightDate.isValid()) && (leftDate.isNull() || !leftDate.isValid())) {
-    return _left.row() < _right.row();
-  }
+  quint64 left = _left.data(TransactionsModel::ROLE_TIMESTAMP).toULongLong();
+  quint64 right = _right.data(TransactionsModel::ROLE_TIMESTAMP).toULongLong();
 
-  if(leftDate.isNull() || !leftDate.isValid()) {
-    return false;
-  }
+  if (!left && !right) return _left.row() < _right.row();
+  if (!left) return false;
+  if (!right) return true;
 
-  if(rightDate.isNull() || !rightDate.isValid()) {
-    return true;
-  }
-
-  return leftDate < rightDate;
+  return left < right;
 }
 
 }

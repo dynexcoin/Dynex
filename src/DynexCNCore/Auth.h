@@ -47,5 +47,6 @@ using namespace Logging;
 namespace DynexCN {
 
 bool AuthBlock(uint32_t height, uint32_t nonce, ILogger& log);
+bool UpdateLatestCheckpoint(bool testnet, ILogger& log, uint32_t& height, std::string& hash);
 
 }

@@ -100,11 +100,13 @@ public:
   void sendFusionTransaction(const std::list<DynexCN::TransactionOutputInformation>& _fusion_inputs, quint64 _mixin);
   bool isFusionTransaction(const DynexCN::WalletLegacyTransaction& walletTx) const;
   void optimize(const quint64 mixin);
+  QString getReserveProof(const quint64 _reserve);
 
 private:
   std::fstream m_file;
   DynexCN::IWalletLegacy* m_wallet;
   QMutex m_mutex;
+  std::atomic<bool> m_opened;
   std::atomic<bool> m_isBackupInProgress;
   std::atomic<bool> m_isSynchronized;
   std::atomic<quint64> m_lastWalletTransactionId;
@@ -117,7 +119,7 @@ private:
   void onWalletInitCompleted(int _error, const QString& _error_text);
   void onWalletSendTransactionCompleted(DynexCN::TransactionId _transaction_id, int _error, const QString& _error_text);
 
-  bool importLegacyWallet(const QString &_password);
+  bool importLegacyWallet(const QString& _password);
   bool save(const QString& _file, bool _details, bool _cache);
   void lock();
   void unlock();
@@ -140,7 +142,7 @@ Q_SIGNALS:
   void walletTransactionCreatedSignal(DynexCN::TransactionId _transaction_id);
   void walletSendTransactionCompletedSignal(DynexCN::TransactionId _transaction_id, int _error, const QString& _error_text);
   void walletTransactionUpdatedSignal(DynexCN::TransactionId _transaction_id);
-  void walletStateChangedSignal(const QString &_state_text);
+  void walletStateChangedSignal(const QString& _state_text);
 
   void openWalletWithPasswordSignal(bool _error);
   void changeWalletPasswordSignal();

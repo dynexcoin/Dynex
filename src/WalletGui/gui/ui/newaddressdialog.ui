@@ -150,4 +150,7 @@
    </hints>
   </connection>
  </connections>
+ <slots>
+  <slot>checkOK()</slot>
+ </slots>
 </ui>

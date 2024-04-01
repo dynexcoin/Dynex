@@ -47,7 +47,7 @@ namespace DynexCN
   /************************************************************************/
   /*                                                                      */
   /************************************************************************/
-  struct i_cryptonote_protocol {
+  struct i_cn_protocol {
     virtual void relay_block(NOTIFY_NEW_BLOCK_request& arg) = 0;
     virtual void relay_transactions(NOTIFY_NEW_TRANSACTIONS_request& arg) = 0;
     virtual void add_observer(IDynexCNProtocolObserver* observer) = 0;
@@ -56,9 +56,9 @@ namespace DynexCN
   /************************************************************************/
   /*                                                                      */
   /************************************************************************/
-  struct cryptonote_protocol_stub: public i_cryptonote_protocol {
+  struct cn_protocol_stub: public i_cn_protocol {
     virtual void relay_block(NOTIFY_NEW_BLOCK_request& arg) override {}
     virtual void relay_transactions(NOTIFY_NEW_TRANSACTIONS_request& arg) override {}
-    virtual void add_observer(IDynexCNProtocolObserver* observer) {}
+    virtual void add_observer(IDynexCNProtocolObserver* observer) override {}
   };
 }

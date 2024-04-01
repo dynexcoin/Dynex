@@ -83,7 +83,7 @@ namespace WalletConfig
     const uint64_t defaultMixin = 2;
 
     /* The default fee value to use with transactions (in ATOMIC units!) */
-    const uint64_t defaultFee = DynexCN::parameters::MINIMUM_FEE; 
+    const uint64_t defaultFee = DynexCN::parameters::MAXIMUM_FEE;
 
     /* The minimum fee value to allow with transactions (in ATOMIC units!) */
     const uint64_t minimumFee = DynexCN::parameters::MINIMUM_FEE;

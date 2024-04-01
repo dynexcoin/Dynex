@@ -211,5 +211,6 @@
  <slots>
   <slot>selectPathClicked()</slot>
   <slot>onTextChanged(QString)</slot>
+  <slot>onAccept()</slot>
  </slots>
 </ui>

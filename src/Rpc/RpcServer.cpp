@@ -50,7 +50,6 @@
 #include "DynexCNCore/DynexCNFormatUtils.h"
 #include "DynexCNCore/Core.h"
 #include "DynexCNCore/IBlock.h"
-#include "DynexCNCore/Miner.h"
 #include "DynexCNCore/TransactionExtra.h"
 #include "DynexCNProtocol/IDynexCNProtocolQuery.h"
 
@@ -281,7 +280,7 @@ bool RpcServer::restrictRPC(const bool is_restricted) {
   return true;
 }
 
-bool RpcServer::enableCors(const std::string domain) {
+bool RpcServer::enableCors(const std::string& domain) {
   m_cors_domain = domain;
   return true;
 }
@@ -1556,7 +1555,7 @@ bool RpcServer::on_getblocktemplate(const COMMAND_RPC_GETBLOCKTEMPLATE::request&
   blob_reserve.resize(req.reserve_size, 0);
   if (!m_core.get_block_template(b, acc, res.difficulty, res.height, blob_reserve)) {
     logger(ERROR) << "Failed to create block template";
-    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: failed to create block template" };
+    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: failed to create block template - checkpoint 1" };
   }
 
   BinaryArray block_blob = toBinaryArray(b);
@@ -1570,12 +1569,12 @@ bool RpcServer::on_getblocktemplate(const COMMAND_RPC_GETBLOCKTEMPLATE::request&
     res.reserved_offset = slow_memmem((void*)block_blob.data(), block_blob.size(), &tx_pub_key, sizeof(tx_pub_key));
     if (!res.reserved_offset) {
       logger(ERROR) << "Failed to find tx pub key in blockblob";
-      throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: failed to create block template" };
+      throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: failed to create block template - checkpoint 2" };
     }
-    res.reserved_offset += sizeof(tx_pub_key) + 3; //64 + 64 + 8 + 32 + 7; //extra tags TX_EXTRA_TAG_PUBKEY, etc.
+    res.reserved_offset += sizeof(tx_pub_key) + 3; //extra tags TX_EXTRA_TAG_PUBKEY, etc.
     if (res.reserved_offset + req.reserve_size > block_blob.size()) {
       logger(ERROR) << "Failed to calculate offset for reserved bytes";
-      throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: failed to create block template" };
+      throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: failed to create block template checkpoint 3" };
     }
   } else {
     res.reserved_offset = 0;

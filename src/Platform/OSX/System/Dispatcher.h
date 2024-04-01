@@ -75,11 +75,7 @@ public:
   int getTimer();
   void pushTimer(int timer);
 
-#ifdef __LP64__
-  static const int SIZEOF_PTHREAD_MUTEX_T = 56 + sizeof(long);
-#else
-  static const int SIZEOF_PTHREAD_MUTEX_T = 40 + sizeof(long);
-#endif
+static const int SIZEOF_PTHREAD_MUTEX_T = sizeof(pthread_mutex_t);
 
 private:
   void spawn(std::function<void()>&& procedure);
@@ -100,7 +96,7 @@ private:
   size_t runningContextCount;
 
   void contextProcedure(void* uctx);
-  static void contextProcedureStatic(intptr_t context);
+  static void contextProcedureStatic(int i0, int i1);
 };
 
 }

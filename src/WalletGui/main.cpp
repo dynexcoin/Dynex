@@ -46,11 +46,9 @@
 #include <QRegularExpression>
 #include <QFontDatabase>
 #include <QLayout>
-
-#ifndef SIMPLE_SHUTDOWN
+#include <QSystemTrayIcon>
 #include <QtConcurrent/QtConcurrent>
 #include <QFuture>
-#endif
 
 #include "CommandLineParser.h"
 #include "CurrencyAdapter.h"
@@ -73,11 +71,12 @@
 
 using namespace WalletGui;
 
-const QRegularExpression LOG_SPLASH_REG_EXP("\\] ");
-
 QSplashScreen* splash(nullptr);
 
+const QRegularExpression LOG_SPLASH_REG_EXP("\\] ");
+
 void newLogString(const QString& _string) {
+  if (!splash || splash->isHidden()) return;
   QRegularExpressionMatch match = LOG_SPLASH_REG_EXP.match(_string);
   if (match.hasMatch()) {
     QString message = _string.mid(match.capturedEnd());
@@ -85,12 +84,14 @@ void newLogString(const QString& _string) {
   }
 }
 
-void shutdown() {
-  if (WalletAdapter::instance().isOpen()) {
-    WalletAdapter::instance().close();
-  }
-  NodeAdapter::instance().deinit();
+#ifdef Q_OS_WIN
+QSystemTrayIcon* trayIcon(nullptr);
+
+void trayActivated(QSystemTrayIcon::ActivationReason _reason) {
+  //if (trayIcon) trayIcon->hide();
+  if (splash && !splash->isVisible()) splash->show();
 }
+#endif
 
 int main(int argc, char* argv[]) {
   QApplication app(argc, argv);
@@ -143,10 +144,15 @@ int main(int argc, char* argv[]) {
 
   if (splash == nullptr) {
     splash = new QSplashScreen(QPixmap(":images/splash"), Qt::WindowStaysOnTopHint | Qt::X11BypassWindowManagerHint | Qt::FramelessWindowHint); // Qt::WindowTransparentForInput
-    splash->setWindowIcon(QIcon(":images/cryptonote"));
+    splash->setWindowIcon(QIcon(":images/dynex"));
 #if defined (Q_OS_WIN)
     int exstyle = GetWindowLong(reinterpret_cast<HWND>(splash->winId()), GWL_EXSTYLE);
     SetWindowLong(reinterpret_cast<HWND>(splash->winId()), GWL_EXSTYLE, exstyle & ~WS_EX_TOOLWINDOW);
+    if (QSystemTrayIcon::isSystemTrayAvailable()) {
+      trayIcon = new QSystemTrayIcon(QPixmap(":images/dynex"), &app);
+      QObject::connect(trayIcon, &QSystemTrayIcon::activated, &app, trayActivated);
+      trayIcon->show();
+    }
 #endif
   }
   if (!splash->isVisible()) {
@@ -165,6 +171,9 @@ int main(int argc, char* argv[]) {
   if (!NodeAdapter::instance().init()) {
     LoggerAdapter::instance().log("Node init failed");
     splash->hide();
+#if defined (Q_OS_WIN)
+    trayIcon->hide();
+#endif
     QMessageBox::critical(nullptr, QObject::tr("Error"), QObject::tr("Node initialization failed.\nCheck connection settings."));
     ConnectionSettingsDialog dlg(nullptr);
     dlg.exec();
@@ -173,15 +182,18 @@ int main(int argc, char* argv[]) {
 
   QObject::connect(QApplication::instance(), &QApplication::aboutToQuit, []() {
     MainWindow::instance().quit();
-#ifdef SIMPLE_SHUTDOWN
+#if defined (Q_OS_WIN)
+    trayIcon->show();
+#endif
     QCoreApplication::processEvents();
-    shutdown();
-#else
-    QFuture<void> f = QtConcurrent::run(shutdown);
-    while (f.isRunning()) {
-      QCoreApplication::processEvents();
-      QThread::msleep(50);
+    if (WalletAdapter::instance().isOpen()) {
+      WalletAdapter::instance().close();
     }
+    NodeAdapter::instance().deinit();
+#if defined (Q_OS_WIN)
+    trayIcon->hide();
+    trayIcon->deleteLater();
+    trayIcon = nullptr;
 #endif
   });
 
@@ -192,6 +204,9 @@ int main(int argc, char* argv[]) {
   }
   splash->deleteLater();
   splash = nullptr;
+#if defined (Q_OS_WIN)
+  trayIcon->hide();
+#endif
 
   MainWindow::instance().show();
   QString wallet = Settings::instance().getWalletFile();

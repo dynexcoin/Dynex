@@ -65,7 +65,7 @@ struct block_verification_context;
 struct BlockFullInfo;
 struct BlockShortInfo;
 struct core_stat_info;
-struct i_cryptonote_protocol;
+struct i_cn_protocol;
 struct Transaction;
 struct MultisignatureInput;
 struct KeyInput;
@@ -84,8 +84,6 @@ public:
   virtual std::vector<Crypto::Hash> buildSparseChain(const Crypto::Hash& startBlockId) = 0;
   virtual bool get_stat_info(DynexCN::core_stat_info& st_inf) = 0;
   virtual bool on_idle() = 0;
-  virtual void pause_mining() = 0;
-  virtual void update_block_template_and_resume_mining() = 0;
   virtual bool handle_incoming_block_blob(const DynexCN::BinaryArray& block_blob, DynexCN::block_verification_context& bvc, bool control_miner, bool relay_block) = 0;
   virtual bool handle_incoming_block(const Block& b, block_verification_context& bvc, bool control_miner, bool relay_block) = 0;
   virtual bool handle_get_objects(NOTIFY_REQUEST_GET_OBJECTS_request& arg, NOTIFY_RESPONSE_GET_OBJECTS_request& rsp) = 0; //Deprecated. Should be removed with DynexCNProtocolHandler.
@@ -98,7 +96,7 @@ public:
   virtual bool get_random_outs_for_amounts(const COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS_request& req, COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS_response& res) = 0;
   virtual bool get_tx_outputs_gindexs(const Crypto::Hash& tx_id, std::vector<uint32_t>& indexs) = 0;
   virtual bool getOutByMSigGIndex(uint64_t amount, uint64_t gindex, MultisignatureOutput& out) = 0;
-  virtual i_cryptonote_protocol* get_protocol() = 0;
+  virtual i_cn_protocol* get_protocol() = 0;
   virtual bool handle_incoming_tx(const BinaryArray& tx_blob, tx_verification_context& tvc, bool keeped_by_block) = 0; //Deprecated. Should be removed with DynexCNProtocolHandler.
   virtual std::vector<Transaction> getPoolTransactions() = 0;
   virtual bool getPoolChanges(const Crypto::Hash& tailBlockId, const std::vector<Crypto::Hash>& knownTxsIds,

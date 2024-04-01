@@ -191,15 +191,16 @@ void PaymentGateService::runInProcess(Logging::LoggerRef& log) {
   DynexCN::DynexCNProtocolHandler protocol(currency, *dispatcher, core, NULL, logger);
   DynexCN::NodeServer p2pNode(*dispatcher, protocol, logger);
   DynexCN::RpcServer rpcServer(*dispatcher, logger, core, p2pNode, protocol);
-  DynexCN::Checkpoints checkpoints(logger);
-  for (const auto& cp : DynexCN::CHECKPOINTS) {
-    checkpoints.add_checkpoint(cp.height, cp.blockId);
-  }
-  checkpoints.load_checkpoints_from_dns();
-  if (!config.gateConfiguration.testnet) {
-    core.set_checkpoints(std::move(checkpoints));
-  }
 
+  DynexCN::Checkpoints checkpoints(logger);
+  if (!config.gateConfiguration.testnet) {
+    for (const auto& cp : DynexCN::CHECKPOINTS) {
+      checkpoints.add_checkpoint(cp.height, cp.blockId);
+    }
+  }
+  checkpoints.load_checkpoints_from_remote(config.gateConfiguration.testnet);
+  core.set_checkpoints(std::move(checkpoints));
+  
   protocol.set_p2p_endpoint(&p2pNode);
   core.set_cryptonote_protocol(&protocol);
 
@@ -209,8 +210,7 @@ void PaymentGateService::runInProcess(Logging::LoggerRef& log) {
   }
 
   log(Logging::INFO) << "initializing core";
-  DynexCN::MinerConfig emptyMiner;
-  core.init(config.coreConfig, emptyMiner, true);
+  core.init(config.coreConfig, true);
 
   std::promise<std::error_code> initPromise;
   auto initFuture = initPromise.get_future();

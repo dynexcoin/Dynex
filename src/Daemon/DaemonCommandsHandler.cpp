@@ -39,7 +39,6 @@
 
 #include <ctime>
 #include "P2p/NetNode.h"
-#include "DynexCNCore/Miner.h"
 #include "DynexCNCore/Core.h"
 #include "DynexCNProtocol/DynexCNProtocolHandler.h"
 #include "Serialization/SerializationTools.h"
@@ -176,7 +175,7 @@ bool DaemonCommandsHandler::status(const std::vector<std::string>& args) {
     << (synced ? "Dynex BlockChain Synced " : "Syncing Dynex BlockChain") << " - Block: " << height << "/" << last_known_block_index 
     << " (" << get_sync_percentage(height, last_known_block_index) << "%) "
     << "on " << (m_core.currency().isTestnet() ? "testnet, " : "mainnet, ") << std::endl
-    //<< "Network Hashrate: " << get_mining_speed(hashrate)  << std::endl
+    << "Network Hashrate: " << get_mining_speed(hashrate)  << std::endl
     << "Generated coins: " << coins_already_generated << " of " << coins_total_supply << std::endl
     << "Last block hash: " << Common::podToHex(last_block_hash) << std::endl
 	<< "Next difficulty: " << difficulty  << std::endl

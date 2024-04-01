@@ -39,14 +39,14 @@
 
 #include <string.h>
 #include <tuple>
-#include <boost/uuid/uuid.hpp>
 #include "android.h"
 #include "Common/StringTools.h"
+#include "crypto/crypto.h"
 
 namespace DynexCN
 {
-  typedef boost::uuids::uuid uuid;
-  typedef boost::uuids::uuid net_connection_id;
+  typedef Crypto::Uuid uuid;
+  typedef Crypto::Uuid net_connection_id;
   typedef uint64_t PeerIdType;
 
 #pragma pack (push, 1)

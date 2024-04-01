@@ -173,5 +173,6 @@
  <slots>
   <slot>selectPathClicked()</slot>
   <slot>onTextChanged()</slot>
+  <slot>onAccept()</slot>
  </slots>
 </ui>

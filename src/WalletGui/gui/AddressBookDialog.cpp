@@ -44,13 +44,29 @@ namespace WalletGui {
 
 AddressBookDialog::AddressBookDialog(QWidget* _parent) : QDialog(_parent), m_ui(new Ui::AddressBookDialog) {
   m_ui->setupUi(this);
-  m_ui->m_addressBookView->setModel(&AddressBookModel::instance());
+  m_proxyModel = new QSortFilterProxyModel(this);
+  m_proxyModel->setSourceModel(&AddressBookModel::instance());
+  m_ui->m_addressBookView->setModel(m_proxyModel);
+  
+  //m_ui->m_addressBookView->header()->setStretchLastSection(false);
+  m_ui->m_addressBookView->header()->setSectionResizeMode(2, QHeaderView::Stretch);
+  m_ui->m_addressBookView->setSortingEnabled(true);
+  m_ui->m_addressBookView->sortByColumn(0, Qt::AscendingOrder);
+  m_ui->m_addressBookView->setRootIsDecorated(false);
+  m_ui->m_addressBookView->setTextElideMode(Qt::ElideMiddle);
+
+  //m_ui->m_addressBookView->resizeColumnToContents(0);
+  m_ui->m_addressBookView->setColumnWidth(0, 75);
+  m_ui->m_addressBookView->setColumnWidth(1, 500);
+  //m_ui->m_addressBookView->setColumnWidth(2, 300);
+
   if (AddressBookModel::instance().rowCount() > 0) {
     m_ui->m_addressBookView->setCurrentIndex(AddressBookModel::instance().index(0, 0));
   }
 }
 
 AddressBookDialog::~AddressBookDialog() {
+  delete m_proxyModel;
 }
 
 QString AddressBookDialog::getAddress() const {

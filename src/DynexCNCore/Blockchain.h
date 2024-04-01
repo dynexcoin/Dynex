@@ -158,7 +158,7 @@ namespace DynexCN {
     bool isInCheckpointZone(const uint32_t height);
     uint64_t getAvgDifficultyForHeight(uint32_t height, uint32_t window);
     //new functions:
-    bool getTransactionIdsByAddress(const std::string address, std::vector<Crypto::Hash>& transactionHashes);
+    bool getTransactionIdsByAddress(const std::string& address, std::vector<Crypto::Hash>& transactionHashes);
     
 
     template<class visitor_t> bool scanOutputKeysForIndexes(const KeyInput& tx_in_to_key, visitor_t& vis, uint32_t* pmax_related_block_height = NULL);
@@ -397,9 +397,6 @@ namespace DynexCN {
     bool checkCheckpoints(uint32_t& lastValidCheckpointHeight);
     void removeLastBlock();
     bool checkUpgradeHeight(const UpgradeDetector& upgradeDetector);
-
-    bool storeBlockchainIndices();
-    bool loadBlockchainIndices();
 
     bool loadTransactions(const Block& block, std::vector<Transaction>& transactions);
     void saveTransactions(const std::vector<Transaction>& transactions);
