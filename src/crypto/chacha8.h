@@ -42,11 +42,16 @@ namespace Crypto {
   }
 
   inline void generate_chacha8_key(Crypto::cn_context &context, const std::string& password, chacha8_key& key) {
+/*
     static_assert(sizeof(chacha8_key) <= sizeof(Hash), "Size of hash must be at least that of chacha8_key");
     Hash pwd_hash;
     cn_slow_hash(context, password.data(), password.size(), pwd_hash);
     memcpy(&key, &pwd_hash, sizeof(key));
-    memset(&pwd_hash, 0, sizeof(pwd_hash));
+    memset(&pwd_hash, 0, sizeof(pwd_hash)); // better use memset_s
+*/
+    static_assert(sizeof(chacha8_key) == sizeof(Hash), "Size of hash must be equal to chacha8_key");
+    // write directly
+    cn_slow_hash(password.data(), password.size(), reinterpret_cast<char*>(&key.data));
   }
 }
 

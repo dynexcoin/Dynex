@@ -128,8 +128,8 @@ Dispatcher::~Dispatcher() {
 
   auto result = close(kqueue);
   assert(result != -1);
-  result = pthread_mutex_destroy(reinterpret_cast<pthread_mutex_t*>(this->mutex));
-  assert(result != -1);
+  auto result2 = pthread_mutex_destroy(reinterpret_cast<pthread_mutex_t*>(this->mutex));
+  assert(result2 != -1);
 }
 
 void Dispatcher::clear() {

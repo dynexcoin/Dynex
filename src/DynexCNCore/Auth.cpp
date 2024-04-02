@@ -80,7 +80,9 @@ bool AuthBlock(uint32_t height, uint32_t nonce, ILogger& log) {
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
 
 	curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
+#ifdef CURLOPT_MAXAGE_CONN
 	curl_easy_setopt(curl, CURLOPT_MAXAGE_CONN, 1800L);
+#endif
 	curl_easy_setopt(curl, CURLOPT_TCP_KEEPIDLE, 60L);
   	curl_easy_setopt(curl, CURLOPT_TCP_KEEPINTVL, 60L);
 

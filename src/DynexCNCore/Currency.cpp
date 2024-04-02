@@ -870,8 +870,8 @@ bool Currency::checkProofOfWorkV2(Crypto::cn_context& context, const Block& bloc
       bool r = Crypto::generate_key_derivation(targets[i].viewPublicKey, txkey.secretKey, derivation);
       assert(r == true);
 //      CHECK_AND_ASSERT_MES(r, false, "while creating outs: failed to generate_key_derivation(" << targets[i].viewPublicKey << ", " << txkey.sec << ")");
-      r = Crypto::derive_public_key(derivation, i, targets[i].spendPublicKey, outEphemeralPubKey);
-      assert(r == true);
+      bool r2 = Crypto::derive_public_key(derivation, i, targets[i].spendPublicKey, outEphemeralPubKey);
+      assert(r2 == true);
  //     CHECK_AND_ASSERT_MES(r, false, "while creating outs: failed to derive_public_key(" << derivation << ", " << i << ", " << targets[i].spendPublicKey << ")");
       KeyOutput tk;
       tk.key = outEphemeralPubKey;

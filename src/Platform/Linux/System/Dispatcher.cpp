@@ -144,10 +144,10 @@ Dispatcher::~Dispatcher() {
 
   auto result = close(epoll);
   assert(result == 0);
-  result = close(remoteSpawnEvent);
-  assert(result == 0);
-  result = pthread_mutex_destroy(reinterpret_cast<pthread_mutex_t*>(this->mutex));
-  assert(result == 0);
+  auto result2 = close(remoteSpawnEvent);
+  assert(result2 == 0);
+  auto result3 = pthread_mutex_destroy(reinterpret_cast<pthread_mutex_t*>(this->mutex));
+  assert(result3 == 0);
 }
 
 void Dispatcher::clear() {
