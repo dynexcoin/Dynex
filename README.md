@@ -1,6 +1,6 @@
-# Dynex [DNX] - Next Generation Blockchain for Neuromorphic Computing
+# Dynex [DNX] - Next Generation Blockchain for Neuromorphic Quantum Computing
 
-The Dynex platform represents a cutting-edge neuromorphic computing platform, built upon a revolutionary adaptable blockchain system. Comprising of collaborating miners, this decentralized neuromorphic supercomputing network excels in executing calculations with unparalleled speed and efficiency, surpassing quantum computing limitations.
+The Dynex platform represents a cutting-edge neuromorphic quantum computing platform, built upon a revolutionary adaptable blockchain system. Comprising of collaborating miners, this decentralized neuromorphic supercomputing network excels in executing calculations with unparalleled speed and efficiency, surpassing quantum computing limitations.
 
 The Dynex platform is capable of performing quantum computing based algorithms without their limitations, significantly accelerating machine learning training, optimizing feature selection and improving model accuracy. The Dynex Neuromoprohic Computing platform connects mining pool hosts that are running clusters of Neuromorphic chips with users and applications that utilize this next-generation hardware. On the Dynex platform, computation time spent by individuals mining is exchanged for the Dynex native token.
 
