@@ -42,6 +42,7 @@
 #include <assert.h>
 #include <sstream>
 #include <unordered_set>
+#include <chrono>
 
 #include <boost/filesystem/operations.hpp>
 
@@ -437,7 +438,10 @@ WalletService::WalletService(const DynexCN::Currency& currency, System::Dispatch
     logger(logger, "WalletService"),
     dispatcher(sys),
     readyEvent(dispatcher),
-    refreshContext(dispatcher)
+    refreshContext(dispatcher),
+    lastSavedBlockCount(0),
+    lastReportedBlockCount(0),
+    lastReportTime(std::chrono::steady_clock::time_point::min())
 {
   readyEvent.set();
 }
@@ -453,6 +457,14 @@ WalletService::~WalletService() {
 void WalletService::init() {
   loadWallet();
   loadTransactionIdIndex();
+  lastSavedBlockCount = wallet.getBlockCount();
+
+  const uint32_t knownBlockCount = std::max(node.getKnownBlockCount(), node.getLocalBlockCount());
+  if (knownBlockCount >= lastSavedBlockCount) {
+    logger(Logging::INFO, Logging::BRIGHT_WHITE) << "Wallet synchronization status: block " << lastSavedBlockCount << " of " << knownBlockCount;
+  } else {
+    logger(Logging::INFO, Logging::BRIGHT_WHITE) << "Wallet synchronization status: stored block " << lastSavedBlockCount << "; waiting for daemon height";
+  }
 
   refreshContext.spawn([this] { refresh(); });
 
@@ -1515,6 +1527,32 @@ void WalletService::refresh() {
       if (event.type == DynexCN::TRANSACTION_CREATED) {
         size_t transactionId = event.transactionCreated.transactionIndex;
         transactionIdIndex.emplace(Common::podToHex(wallet.getTransaction(transactionId).hash), transactionId);
+      } else if (event.type == DynexCN::SYNC_PROGRESS_UPDATED) {
+        const uint32_t current = event.synchronizationProgressUpdated.processedBlockCount;
+        const uint32_t total = event.synchronizationProgressUpdated.totalBlockCount;
+        const auto now = std::chrono::steady_clock::now();
+
+        if (lastReportedBlockCount == 0 || current >= lastReportedBlockCount + 2000 ||
+            now - lastReportTime >= std::chrono::seconds(10)) {
+          const uint32_t percent = total == 0 ? 0 : static_cast<uint32_t>((static_cast<uint64_t>(current) * 100) / total);
+          logger(Logging::INFO, Logging::BRIGHT_WHITE) << "Wallet synchronization: block " << current << " of " << total << " (" << percent << "%)";
+          lastReportedBlockCount = current;
+          lastReportTime = now;
+        }
+
+        // Persist every 10,000 synchronized blocks. A block-only interval keeps
+        // expensive large-container saves predictable without a time-based
+        // checkpoint repeatedly interrupting dense blockchain regions.
+        if (current >= lastSavedBlockCount + 10000) {
+          logger(Logging::INFO, Logging::BRIGHT_WHITE) << "Wallet checkpoint: saving synchronized state at block " << current << " of " << total;
+          wallet.save();
+          lastSavedBlockCount = current;
+          logger(Logging::INFO, Logging::BRIGHT_WHITE) << "Wallet synchronization checkpoint saved at block " << current;
+        }
+      } else if (event.type == DynexCN::SYNC_COMPLETED) {
+        wallet.save();
+        lastSavedBlockCount = wallet.getBlockCount();
+        logger(Logging::INFO, Logging::BRIGHT_WHITE) << "Wallet synchronization completed and saved at block " << lastSavedBlockCount;
       }
     }
   } catch (std::system_error& e) {

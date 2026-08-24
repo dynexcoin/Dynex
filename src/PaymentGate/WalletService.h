@@ -48,6 +48,7 @@
 #include "Logging/LoggerRef.h"
 
 #include <fstream>
+#include <chrono>
 #include <memory>
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/member.hpp>
@@ -157,6 +158,10 @@ private:
   System::Dispatcher& dispatcher;
   System::Event readyEvent;
   System::ContextGroup refreshContext;
+
+  uint32_t lastSavedBlockCount;
+  uint32_t lastReportedBlockCount;
+  std::chrono::steady_clock::time_point lastReportTime;
 
   std::map<std::string, size_t> transactionIdIndex;
 };
