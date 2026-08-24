@@ -40,10 +40,14 @@
 #include <algorithm>
 #include <ctime>
 #include <cassert>
+#include <chrono>
+#include <condition_variable>
 #include <fstream>
+#include <mutex>
 #include <numeric>
 #include <random>
 #include <set>
+#include <thread>
 #include <tuple>
 #include <utility>
 
@@ -93,6 +97,56 @@ using namespace DynexCN;
 using namespace Logging;
 
 namespace {
+
+std::string formatContainerProgress(size_t current, size_t total) {
+  const size_t width = 20;
+  const size_t percent = total == 0 ? 100 : current * 100 / total;
+  const size_t filled = total == 0 ? width : current * width / total;
+  std::ostringstream out;
+  out << '[' << std::string(filled, '=') << std::string(width - filled, ' ') << "] "
+      << percent << "% (" << current << '/' << total << ')';
+  return out.str();
+}
+
+class ContainerActivityProgress {
+public:
+  ContainerActivityProgress(Logging::LoggerRef& logger, const std::string& operation) :
+      m_logger(logger), m_operation(operation), m_stopped(false), m_worker([this] { run(); }) {
+    m_logger(INFO, BRIGHT_WHITE) << m_operation << " [>                   ] elapsed 0s";
+  }
+
+  ~ContainerActivityProgress() {
+    {
+      std::lock_guard<std::mutex> lock(m_mutex);
+      m_stopped = true;
+    }
+    m_condition.notify_one();
+    m_worker.join();
+  }
+
+private:
+  void run() {
+    std::unique_lock<std::mutex> lock(m_mutex);
+    size_t elapsedSeconds = 0;
+    size_t position = 0;
+    while (!m_condition.wait_for(lock, std::chrono::seconds(5), [this] { return m_stopped; })) {
+      elapsedSeconds += 5;
+      position = (position + 4) % 20;
+      std::string bar(20, ' ');
+      bar[position] = '>';
+      lock.unlock();
+      m_logger(INFO, BRIGHT_WHITE) << m_operation << " [" << bar << "] elapsed " << elapsedSeconds << 's';
+      lock.lock();
+    }
+  }
+
+  Logging::LoggerRef& m_logger;
+  const std::string m_operation;
+  bool m_stopped;
+  std::mutex m_mutex;
+  std::condition_variable m_condition;
+  std::thread m_worker;
+};
 
 void asyncRequestCompletion(System::Event& requestFinished) {
   requestFinished.set();
@@ -404,7 +458,13 @@ void WalletGreen::initWithKeys(const std::string& path, const std::string& passw
 }
 
 void WalletGreen::save(WalletSaveLevel saveLevel, const std::string& extra) {
-  m_logger(INFO, BRIGHT_WHITE) << "Saving container...";
+  const uint32_t currentBlockCount = getBlockCount();
+  const uint32_t knownBlockCount = std::max(m_node.getKnownBlockCount(), m_node.getLocalBlockCount());
+  if (knownBlockCount >= currentBlockCount) {
+    m_logger(INFO, BRIGHT_WHITE) << "Saving container: pausing synchronization at block " << currentBlockCount << " of " << knownBlockCount;
+  } else {
+    m_logger(INFO, BRIGHT_WHITE) << "Saving container: pausing synchronization at stored block " << currentBlockCount << " (daemon height unavailable)";
+  }
 
   throwIfNotInitialized();
   throwIfStopped();
@@ -412,6 +472,7 @@ void WalletGreen::save(WalletSaveLevel saveLevel, const std::string& extra) {
   stopBlockchainSynchronizer();
 
   try {
+    m_logger(INFO, BRIGHT_WHITE) << "Saving container: serializing wallet data...";
     saveWalletCache(m_containerStorage, m_key, saveLevel, extra);
   } catch (const std::exception& e) {
     m_logger(ERROR, BRIGHT_RED) << "Failed to save container: " << e.what();
@@ -420,7 +481,7 @@ void WalletGreen::save(WalletSaveLevel saveLevel, const std::string& extra) {
   }
 
   startBlockchainSynchronizer();
-  m_logger(INFO, BRIGHT_WHITE) << "Container saved";
+  m_logger(INFO, BRIGHT_WHITE) << "Container saved; synchronization resumed at block " << getBlockCount();
 }
 
 void WalletGreen::exportWallet(const std::string& path, bool encrypt, WalletSaveLevel saveLevel, const std::string& extra) {
@@ -525,7 +586,7 @@ void WalletGreen::load(const std::string& path, const std::string& password, std
           saveWalletCache(m_containerStorage, m_key, WalletSaveLevel::SAVE_ALL, extra);
         }
       } catch (const std::exception& e) {
-        m_logger(ERROR, BRIGHT_RED) << "Failed to load cache: " << e.what() << ", reset wallet data";
+        m_logger(WARNING, BRIGHT_YELLOW) << "Container cache cannot be decoded (" << e.what() << "). Wallet keys are intact; discarding only cached synchronization data and resynchronizing.";
         clearCaches(true, true);
         subscribeWallets();
       }
@@ -536,20 +597,26 @@ void WalletGreen::load(const std::string& path, const std::string& password, std
   try {
     std::vector<AccountPublicAddress> subscriptionList;
     m_synchronizer.getSubscriptions(subscriptionList);
-    for (auto& addr : subscriptionList) {
+    size_t knownTransferCount = 0;
+    for (size_t addressIndex = 0; addressIndex < subscriptionList.size(); ++addressIndex) {
+      auto& addr = subscriptionList[addressIndex];
       auto sub = m_synchronizer.getSubscription(addr);
       if (sub != nullptr) {
          std::vector<TransactionOutputInformation> allTransfers;
          ITransfersContainer* container = &sub->getContainer();
          container->getOutputs(allTransfers, ITransfersContainer::IncludeAll);
-         m_logger(INFO, BRIGHT_WHITE) << "Known Transfers " << allTransfers.size();
+         knownTransferCount += allTransfers.size();
          for (auto& o : allTransfers) {
              if (o.type != TransactionTypes::OutputType::Invalid) {
                 m_synchronizer.addPublicKeysSeen(addr, o.transactionHash, o.outputKey);
              }
          }
       }
+      if ((addressIndex + 1) % 100 == 0 || addressIndex + 1 == subscriptionList.size()) {
+        m_logger(INFO, BRIGHT_WHITE) << "Indexing container transfers " << formatContainerProgress(addressIndex + 1, subscriptionList.size());
+      }
     }
+    m_logger(INFO, BRIGHT_WHITE) << "Loaded " << knownTransferCount << " known transfers for " << subscriptionList.size() << " wallet addresses";
   } catch (const std::exception& e) {
     m_logger(ERROR, BRIGHT_RED) << "Failed to read output keys!! Continue without output keys: " << e.what();
   }
@@ -614,7 +681,11 @@ void WalletGreen::loadWalletCache(std::unordered_set<Crypto::PublicKey>& addedKe
   assert(m_containerStorage.isOpened());
 
   BinaryArray contanerData;
-  loadAndDecryptContainerData(m_containerStorage, m_key, contanerData);
+  {
+    ContainerActivityProgress progress(m_logger, "Reading and decrypting container cache");
+    loadAndDecryptContainerData(m_containerStorage, m_key, contanerData);
+  }
+  m_logger(INFO, BRIGHT_WHITE) << "Reading and decrypting container cache [====================] complete";
 
   WalletSerializerV2 s(
     *this,
@@ -819,6 +890,7 @@ void WalletGreen::loadSpendKeys() {
 void WalletGreen::subscribeWallets() {
   try {
     auto& index = m_walletsContainer.get<RandomAccessIndex>();
+    size_t walletIndex = 0;
 
     for (auto it = index.begin(); it != index.end(); ++it) {
       const auto& wallet = *it;
@@ -837,6 +909,11 @@ void WalletGreen::subscribeWallets() {
       assert(r);
 
       subscription.addObserver(this);
+
+      ++walletIndex;
+      if (walletIndex % 100 == 0 || walletIndex == index.size()) {
+        m_logger(INFO, BRIGHT_WHITE) << "Preparing container wallets " << formatContainerProgress(walletIndex, index.size());
+      }
     }
   } catch (const std::exception& e) {
     m_logger(ERROR, BRIGHT_RED) << "Failed to subscribe wallets: " << e.what();
@@ -1410,7 +1487,7 @@ void WalletGreen::deleteAddress(const std::string& address) {
   m_pendingBalance -= it->pendingBalance;
 
   if (it->actualBalance != 0 || it->pendingBalance != 0) {
-    m_logger(INFO, BRIGHT_WHITE) << "Container balance updated, actual " << m_currency.formatAmount(m_actualBalance) <<
+    m_logger(TRACE) << "Container balance updated, actual " << m_currency.formatAmount(m_actualBalance) <<
       ", pending " << m_currency.formatAmount(m_pendingBalance);
   }
 
@@ -3008,12 +3085,16 @@ void WalletGreen::stop() {
 
 WalletEvent WalletGreen::getEvent() {
   throwIfNotInitialized();
-  throwIfStopped();
+  if (m_stopped) {
+    throw std::system_error(make_error_code(error::OPERATION_CANCELLED));
+  }
 
   while (m_events.empty()) {
     m_eventOccurred.wait();
     m_eventOccurred.clear();
-    throwIfStopped();
+    if (m_stopped) {
+      throw std::system_error(make_error_code(error::OPERATION_CANCELLED));
+    }
   }
 
   WalletEvent event = std::move(m_events.front());
@@ -3038,6 +3119,10 @@ void WalletGreen::synchronizationProgressUpdated(uint32_t processedBlockCount, u
 }
 
 void WalletGreen::synchronizationCompleted(std::error_code result) {
+  if (result) {
+    m_logger(DEBUGGING) << "Synchronization stopped without completion: " << result.message();
+    return;
+  }
   m_dispatcher.remoteSpawn([this]() { onSynchronizationCompleted(); });
 }
 
@@ -3214,7 +3299,7 @@ void WalletGreen::transactionUpdated(const TransactionInformation& transactionIn
 
   if (isNew) {
     const auto& tx = m_transactions[transactionId];
-    m_logger(INFO, BRIGHT_WHITE) << "New transaction received, ID " << transactionId <<
+    m_logger(TRACE) << "New transaction received, ID " << transactionId <<
       ", hash " << tx.hash <<
       ", state " << tx.state <<
       ", totalAmount " << m_currency.formatAmount(tx.totalAmount) <<
@@ -3290,7 +3375,7 @@ void WalletGreen::transactionDeleted(ITransfersSubscription* object, const Hash&
   if (updated) {
     auto transactionId = getTransactionId(transactionHash);
     auto tx = m_transactions[transactionId];
-    m_logger(INFO, BRIGHT_WHITE) << "Transaction deleted, ID " << transactionId <<
+    m_logger(TRACE) << "Transaction deleted, ID " << transactionId <<
       ", hash " << transactionHash <<
       ", state " << tx.state <<
       ", block " << tx.blockHeight <<
@@ -3383,10 +3468,10 @@ void WalletGreen::updateBalance(DynexCN::ITransfersContainer* container) {
       wallet.pendingBalance = pending;
     });
 
-    m_logger(INFO, BRIGHT_WHITE) << "Wallet balance updated, address " << m_currency.accountAddressAsString({ it->spendPublicKey, m_viewPublicKey }) <<
+    m_logger(TRACE) << "Wallet balance updated, address " << m_currency.accountAddressAsString({ it->spendPublicKey, m_viewPublicKey }) <<
       ", actual " << m_currency.formatAmount(it->actualBalance) <<
       ", pending " << m_currency.formatAmount(it->pendingBalance);
-    m_logger(INFO, BRIGHT_WHITE) << "Container balance updated, actual " << m_currency.formatAmount(m_actualBalance) <<
+    m_logger(TRACE) << "Container balance updated, actual " << m_currency.formatAmount(m_actualBalance) <<
       ", pending " << m_currency.formatAmount(m_pendingBalance);
   }
 }

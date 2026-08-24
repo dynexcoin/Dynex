@@ -176,20 +176,44 @@ void WalletSerializerV2::load(Common::IInputStream& source, uint8_t version) {
   s(saveLevelValue, "saveLevel");
   WalletSaveLevel saveLevel = static_cast<WalletSaveLevel>(saveLevelValue);
 
-  loadKeyListAndBalances(s, saveLevel == WalletSaveLevel::SAVE_ALL);
+  try {
+    loadKeyListAndBalances(s, saveLevel == WalletSaveLevel::SAVE_ALL);
+  } catch (const std::exception& e) {
+    throw std::runtime_error(std::string("wallet keys and balances: ") + e.what());
+  }
 
   if (saveLevel == WalletSaveLevel::SAVE_KEYS_AND_TRANSACTIONS || saveLevel == WalletSaveLevel::SAVE_ALL) {
-    loadTransactions(s);
-    loadTransfers(s);
+    try {
+      loadTransactions(s);
+    } catch (const std::exception& e) {
+      throw std::runtime_error(std::string("wallet transactions: ") + e.what());
+    }
+    try {
+      loadTransfers(s);
+    } catch (const std::exception& e) {
+      throw std::runtime_error(std::string("wallet transfers: ") + e.what());
+    }
   }
 
   if (saveLevel == WalletSaveLevel::SAVE_ALL) {
-    loadTransfersSynchronizer(s);
-    loadUnlockTransactionsJobs(s);
-    s(m_uncommitedTransactions, "uncommitedTransactions");
+    try {
+      loadTransfersSynchronizer(s);
+    } catch (const std::exception& e) {
+      throw std::runtime_error(std::string("wallet synchronization state: ") + e.what());
+    }
+    try {
+      loadUnlockTransactionsJobs(s);
+      s(m_uncommitedTransactions, "uncommitedTransactions");
+    } catch (const std::exception& e) {
+      throw std::runtime_error(std::string("wallet pending state: ") + e.what());
+    }
   }
 
-  s(m_extra, "extra");
+  try {
+    s(m_extra, "extra");
+  } catch (const std::exception& e) {
+    throw std::runtime_error(std::string("wallet metadata: ") + e.what());
+  }
 }
 
 void WalletSerializerV2::save(Common::IOutputStream& destination, WalletSaveLevel saveLevel) {
