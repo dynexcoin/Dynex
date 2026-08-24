@@ -152,6 +152,7 @@ namespace DynexCN {
 
      void set_cryptonote_protocol(i_cn_protocol* pprotocol);
      void set_checkpoints(Checkpoints&& chk_pts);
+     void setQueryBlocksLimit(size_t blockCount);
 
      std::vector<Transaction> getPoolTransactions() override;
      size_t get_pool_transactions_count();
@@ -231,6 +232,7 @@ namespace DynexCN {
      cn_protocol_stub m_protocol_stub;
      friend class tx_validate_inputs;
      std::atomic<bool> m_starter_message_showed;
+     size_t m_queryBlocksLimit;
      Tools::ObserverManager<ICoreObserver> m_observerManager;
      time_t start_time;
    };

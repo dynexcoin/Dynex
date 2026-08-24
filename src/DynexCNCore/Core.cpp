@@ -96,6 +96,7 @@ logger(logger, "core"),
 m_mempool(currency, m_blockchain, *this, m_timeProvider, logger, blockchainIndexesEnabled),
 m_blockchain(currency, m_mempool, logger, blockchainIndexesEnabled),
 m_starter_message_showed(false),
+m_queryBlocksLimit(BLOCKS_SYNCHRONIZING_DEFAULT_COUNT),
 m_checkpoints(logger) {
   set_cryptonote_protocol(pprotocol);
   m_blockchain.addObserver(this);
@@ -119,6 +120,10 @@ void core::set_cryptonote_protocol(i_cn_protocol* pprotocol) {
 void core::set_checkpoints(Checkpoints&& chk_pts) {
   m_blockchain.setCheckpoints(std::move(chk_pts));
   m_checkpoints = std::move(chk_pts);
+}
+
+void core::setQueryBlocksLimit(size_t blockCount) {
+  m_queryBlocksLimit = std::max<size_t>(1, std::min<size_t>(blockCount, BLOCKS_IDS_SYNCHRONIZING_DEFAULT_COUNT));
 }
 //-----------------------------------------------------------------------------------
 void core::init_options(boost::program_options::options_description& /*desc*/) {
@@ -879,7 +884,7 @@ bool core::queryBlocks(const std::vector<Crypto::Hash>& knownBlockIds, uint64_t 
   resCurrentHeight = currentHeight;
   resStartHeight = startOffset;
 
-  uint32_t blocksLeft = static_cast<uint32_t>(std::min(BLOCKS_IDS_SYNCHRONIZING_DEFAULT_COUNT - entries.size(), size_t(BLOCKS_SYNCHRONIZING_DEFAULT_COUNT)));
+  uint32_t blocksLeft = static_cast<uint32_t>(std::min(BLOCKS_IDS_SYNCHRONIZING_DEFAULT_COUNT - entries.size(), m_queryBlocksLimit));
 
   if (blocksLeft == 0) {
     return true;
@@ -967,7 +972,7 @@ bool core::queryBlocksLite(const std::vector<Crypto::Hash>& knownBlockIds, uint6
     entries.back().blockId = id;
   }
 
-  uint32_t blocksLeft = static_cast<uint32_t>(std::min(BLOCKS_IDS_SYNCHRONIZING_DEFAULT_COUNT - entries.size(), size_t(BLOCKS_SYNCHRONIZING_DEFAULT_COUNT)));
+  uint32_t blocksLeft = static_cast<uint32_t>(std::min(BLOCKS_IDS_SYNCHRONIZING_DEFAULT_COUNT - entries.size(), m_queryBlocksLimit));
 
   if (blocksLeft == 0) {
     return true;
