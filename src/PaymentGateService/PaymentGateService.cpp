@@ -38,6 +38,8 @@
 #include "PaymentGateService.h"
 
 #include <future>
+#include <deque>
+#include <fstream>
 
 #include "Common/SignalHandler.h"
 #include "InProcessNode/InProcessNode.h"
@@ -64,6 +66,37 @@
 #endif
 
 using namespace PaymentService;
+
+namespace {
+
+const size_t WALLET_LOG_RETAINED_LINES = 2000;
+
+void retainLogTail(const std::string& path) {
+  std::ifstream input(path);
+  if (!input) {
+    return;
+  }
+
+  std::deque<std::string> lines;
+  std::string line;
+  while (std::getline(input, line)) {
+    if (lines.size() == WALLET_LOG_RETAINED_LINES) {
+      lines.pop_front();
+    }
+    lines.push_back(std::move(line));
+  }
+  input.close();
+
+  std::ofstream output(path, std::ofstream::trunc);
+  if (!output) {
+    throw std::runtime_error("Couldn't truncate log file");
+  }
+  for (const auto& retainedLine : lines) {
+    output << retainedLine << '\n';
+  }
+}
+
+}
 
 void changeDirectory(const std::string& path) {
   if (chdir(path.c_str())) {
@@ -109,6 +142,7 @@ bool PaymentGateService::init(int argc, char** argv) {
     log(Logging::INFO) << "Current working directory now is " << config.gateConfiguration.serverRoot;
   }
 
+  retainLogTail(config.gateConfiguration.logFile);
   fileStream.open(config.gateConfiguration.logFile, std::ofstream::app);
 
   if (!fileStream) {
@@ -187,6 +221,8 @@ void PaymentGateService::runInProcess(Logging::LoggerRef& log) {
 
   DynexCN::Currency currency = currencyBuilder.currency();
   DynexCN::core core(currency, NULL, logger, true);
+  core.setQueryBlocksLimit(500);
+  log(Logging::INFO) << "Local wallet synchronization batch size: 500 blocks";
 
   DynexCN::DynexCNProtocolHandler protocol(currency, *dispatcher, core, NULL, logger);
   DynexCN::NodeServer p2pNode(*dispatcher, protocol, logger);
