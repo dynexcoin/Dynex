@@ -9,7 +9,7 @@
 #define CN_VER_REMARK "#non-privacy"
 
 // parsed by CMake
-#define CN_VER_BUILD 20240401
+#define CN_VER_BUILD 20260824
 #define CN_VER_MAJOR 2
 #define CN_VER_MINOR 2
 #define CN_VER_REV 2
