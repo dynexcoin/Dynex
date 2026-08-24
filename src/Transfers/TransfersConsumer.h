@@ -101,12 +101,15 @@ private:
   std::error_code getGlobalIndices(const Crypto::Hash& transactionHash, std::vector<uint32_t>& outsGlobalIndices);
 
   void updateSyncStart();
+  void initializeActiveSubscriptions();
 
   SynchronizationStart m_syncStart;
   const Crypto::SecretKey m_viewSecret;
   // map { spend public key -> subscription }
   std::unordered_map<Crypto::PublicKey, std::unique_ptr<TransfersSubscription>> m_subscriptions;
   std::unordered_set<Crypto::PublicKey> m_spendKeys;
+  std::unordered_set<Crypto::PublicKey> m_activeSpendKeys;
+  bool m_activeSubscriptionsInitialized;
   std::unordered_set<Crypto::Hash> m_poolTxs;
 
   INode& m_node;

@@ -39,6 +39,7 @@
 
 #include <numeric>
 #include <future>
+#include <algorithm>
 
 #include "CommonTypes.h"
 #include "Common/StringTools.h"
@@ -138,7 +139,7 @@ std::vector<Crypto::Hash> getBlockHashes(const DynexCN::CompleteBlock* blocks, s
 namespace DynexCN {
 
 TransfersConsumer::TransfersConsumer(const DynexCN::Currency& currency, INode& node, Logging::ILogger& logger, const SecretKey& viewSecret) :
-  m_node(node), m_viewSecret(viewSecret), m_currency(currency), m_logger(logger, "TransfersConsumer") {
+  m_activeSubscriptionsInitialized(false), m_node(node), m_viewSecret(viewSecret), m_currency(currency), m_logger(logger, "TransfersConsumer") {
   updateSyncStart();
 }
 
@@ -152,6 +153,7 @@ ITransfersSubscription& TransfersConsumer::addSubscription(const AccountSubscrip
   if (res.get() == nullptr) {
     res.reset(new TransfersSubscription(m_currency, m_logger.getLogger(), subscription));
     m_spendKeys.insert(subscription.keys.address.spendPublicKey);
+    m_activeSubscriptionsInitialized = false;
     if (m_subscriptions.size() == 1) {
       m_syncStart = res->getSyncStart();
     } else {
@@ -167,6 +169,7 @@ ITransfersSubscription& TransfersConsumer::addSubscription(const AccountSubscrip
 bool TransfersConsumer::removeSubscription(const AccountPublicAddress& address) {
   m_subscriptions.erase(address.spendPublicKey);
   m_spendKeys.erase(address.spendPublicKey);
+  m_activeSpendKeys.erase(address.spendPublicKey);
   updateSyncStart();
   return m_subscriptions.empty();
 }
@@ -210,6 +213,23 @@ void TransfersConsumer::updateSyncStart() {
   m_syncStart = start;
 }
 
+void TransfersConsumer::initializeActiveSubscriptions() {
+  if (m_activeSubscriptionsInitialized) {
+    return;
+  }
+
+  m_activeSpendKeys.clear();
+  for (const auto& subscription : m_subscriptions) {
+    const auto& container = subscription.second->getContainer();
+    if (container.transfersCount() != 0 || container.transactionsCount() != 0) {
+      m_activeSpendKeys.insert(subscription.first);
+    }
+  }
+
+  m_activeSubscriptionsInitialized = true;
+  m_logger(INFO, BRIGHT_WHITE) << "Active wallet scan set: " << m_activeSpendKeys.size() << " of " << m_subscriptions.size() << " wallets";
+}
+
 SynchronizationStart TransfersConsumer::getSyncStart() {
   return m_syncStart;
 }
@@ -236,10 +256,12 @@ bool TransfersConsumer::onNewBlocks(const CompleteBlock* blocks, uint32_t startH
   std::vector<PreprocessedTx> preprocessedTransactions;
   std::mutex preprocessedTransactionsMutex;
 
-  size_t workers = std::thread::hardware_concurrency();
-  if (workers == 0) {
-    workers = 2;
-  }
+  // A new worker group is created for every synchronization batch.  Using all
+  // reported CPUs here causes large transient memory spikes (and scheduler
+  // contention) on walletd hosts with many cores. Four workers keep the batch
+  // parallel while bounding its memory/thread footprint.
+  const size_t hardwareWorkers = std::thread::hardware_concurrency();
+  const size_t workers = std::max<size_t>(1, std::min<size_t>(hardwareWorkers == 0 ? 2 : hardwareWorkers, 4));
 
   BlockingQueue<Tx> inputQueue(workers * 2);
 
@@ -548,16 +570,77 @@ void TransfersConsumer::processTransaction(const TransactionBlockInfo& blockInfo
   std::vector<TransactionOutputInformationIn> emptyOutputs;
   std::vector<ITransfersContainer*> transactionContainers;
   bool someContainerUpdated = false;
-  for (auto& kv : m_subscriptions) {
-    auto it = info.outputs.find(kv.first);
+
+  // Generating transactions have no spendable inputs, so only subscriptions
+  // with a matching output can possibly change. Avoid probing every sub-wallet
+  // for every block; this is especially important for large walletd containers.
+  if (tx.getInputCount() == 1 && tx.getInputType(0) == TransactionTypes::InputType::Generating) {
+    for (const auto& output : info.outputs) {
+      auto subscription = m_subscriptions.find(output.first);
+      if (subscription == m_subscriptions.end()) {
+        continue;
+      }
+
+      bool containerContainsTx;
+      bool containerUpdated;
+      processOutputs(blockInfo, *subscription->second, tx, output.second, info.globalIdxs, containerContainsTx, containerUpdated);
+      someContainerUpdated = someContainerUpdated || containerUpdated;
+      if (containerUpdated) {
+        m_activeSpendKeys.insert(output.first);
+      }
+      if (containerContainsTx) {
+        transactionContainers.emplace_back(&subscription->second->getContainer());
+      }
+    }
+
+    if (someContainerUpdated) {
+      m_observerManager.notify(&IBlockchainConsumerObserver::onTransactionUpdated, this, tx.getTransactionHash(), transactionContainers);
+    }
+    return;
+  }
+
+  initializeActiveSubscriptions();
+
+  // Only wallets with existing transaction/transfer history can own an input
+  // spent by this transaction. Newly matched output recipients are handled in
+  // the second loop and promoted into the active set for future spends.
+  for (const auto& spendKey : m_activeSpendKeys) {
+    auto subscription = m_subscriptions.find(spendKey);
+    if (subscription == m_subscriptions.end()) {
+      continue;
+    }
+
+    auto it = info.outputs.find(spendKey);
     auto& subscriptionOutputs = (it == info.outputs.end()) ? emptyOutputs : it->second;
 
     bool containerContainsTx;
     bool containerUpdated;
-    processOutputs(blockInfo, *kv.second, tx, subscriptionOutputs, info.globalIdxs, containerContainsTx, containerUpdated);
+    processOutputs(blockInfo, *subscription->second, tx, subscriptionOutputs, info.globalIdxs, containerContainsTx, containerUpdated);
     someContainerUpdated = someContainerUpdated || containerUpdated;
     if (containerContainsTx) {
-      transactionContainers.emplace_back(&kv.second->getContainer());
+      transactionContainers.emplace_back(&subscription->second->getContainer());
+    }
+  }
+
+  for (const auto& output : info.outputs) {
+    if (m_activeSpendKeys.count(output.first) != 0) {
+      continue;
+    }
+
+    auto subscription = m_subscriptions.find(output.first);
+    if (subscription == m_subscriptions.end()) {
+      continue;
+    }
+
+    bool containerContainsTx;
+    bool containerUpdated;
+    processOutputs(blockInfo, *subscription->second, tx, output.second, info.globalIdxs, containerContainsTx, containerUpdated);
+    someContainerUpdated = someContainerUpdated || containerUpdated;
+    if (containerUpdated) {
+      m_activeSpendKeys.insert(output.first);
+    }
+    if (containerContainsTx) {
+      transactionContainers.emplace_back(&subscription->second->getContainer());
     }
   }
 

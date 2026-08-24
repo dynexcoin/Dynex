@@ -44,10 +44,26 @@
 #include "Serialization/BinaryInputStreamSerializer.h"
 #include "Serialization/BinaryOutputStreamSerializer.h"
 
+#include <sstream>
+
 using namespace Common;
 using namespace Crypto;
 
 namespace DynexCN {
+
+namespace {
+
+std::string formatContainerProgress(size_t current, size_t total) {
+  const size_t width = 20;
+  const size_t percent = total == 0 ? 100 : current * 100 / total;
+  const size_t filled = total == 0 ? width : current * width / total;
+  std::ostringstream out;
+  out << '[' << std::string(filled, '=') << std::string(width - filled, ' ') << "] "
+      << percent << "% (" << current << '/' << total << ')';
+  return out.str();
+}
+
+}
 
 const uint32_t TRANSFERS_STORAGE_ARCHIVE_VERSION = 0;
 
@@ -202,6 +218,7 @@ void TransfersSyncronizer::save(std::ostream& os) {
     std::vector<AccountPublicAddress> subscriptions;
     consumer.second->getSubscriptions(subscriptions);
     size_t subCount = subscriptions.size();
+    size_t savedSubCount = 0;
 
     s.beginArray(subCount, "subscriptions");
 
@@ -219,6 +236,11 @@ void TransfersSyncronizer::save(std::ostream& os) {
         s(blob, "state");
 
         s.endObject();
+      }
+
+      ++savedSubCount;
+      if (savedSubCount % 100 == 0 || savedSubCount == subCount) {
+        m_logger(Logging::INFO, Logging::BRIGHT_WHITE) << "Saving container " << formatContainerProgress(savedSubCount, subCount);
       }
     }
 
@@ -291,6 +313,8 @@ void TransfersSyncronizer::load(std::istream& is) {
         // load subscriptions
         size_t subCount = 0;
         s.beginArray(subCount, "subscriptions");
+        const size_t totalSubCount = subCount;
+        size_t loadedSubCount = 0;
 
         while (subCount--) {
           s.beginObject("");
@@ -312,6 +336,11 @@ void TransfersSyncronizer::load(std::istream& is) {
           }
 
           s.endObject();
+
+          ++loadedSubCount;
+          if (loadedSubCount % 100 == 0 || loadedSubCount == totalSubCount) {
+            m_logger(Logging::INFO, Logging::BRIGHT_WHITE) << "Loading container state " << formatContainerProgress(loadedSubCount, totalSubCount);
+          }
         }
 
         s.endArray();

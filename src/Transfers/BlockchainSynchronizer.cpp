@@ -525,6 +525,10 @@ void BlockchainSynchronizer::processBlocks(GetBlocksResponse& response) {
         for (const auto& txShortInfo : block.txsShortInfo) {
           completeBlock.transactions.push_back(createTransactionPrefix(txShortInfo.txPrefix, reinterpret_cast<const Hash&>(txShortInfo.txId)));
         }
+        // The transaction readers above own the data needed by consumers. Drop
+        // the RPC prefixes block-by-block so a larger local batch does not keep
+        // both representations alive until the entire response is processed.
+        block.txsShortInfo.clear();
       } catch (const std::exception& e) {
         m_logger(ERROR, BRIGHT_RED) << "Failed to process blocks: " << e.what();
         setFutureStateIf(State::idle, [this] { return m_futureState != State::stopped; });
@@ -575,7 +579,9 @@ void BlockchainSynchronizer::processBlocks(GetBlocksResponse& response) {
   }
 
   if (checkIfShouldStop()) { //Sic!
-    m_logger(WARNING, BRIGHT_YELLOW) << "Block processing is interrupted";
+    // Checkpoints intentionally stop synchronization while the container is
+    // serialized. This is expected lifecycle noise, not a user-facing warning.
+    m_logger(DEBUGGING) << "Block processing is interrupted";
     m_observerManager.notify(&IBlockchainSynchronizerObserver::synchronizationCompleted, std::make_error_code(std::errc::interrupted));
   }
 }
