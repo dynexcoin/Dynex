@@ -216,21 +216,20 @@ std::error_code InProcessNode::doGetNewBlocks(std::vector<Crypto::Hash>&& knownB
 void InProcessNode::getTransactionOutsGlobalIndices(const Crypto::Hash& transactionHash, std::vector<uint32_t>& outsGlobalIndices,
     const Callback& callback)
 {
-  std::unique_lock<std::mutex> lock(mutex);
-  if (state != INITIALIZED) {
-    lock.unlock();
-    callback(make_error_code(DynexCN::error::NOT_INITIALIZED));
-    return;
+  {
+    std::unique_lock<std::mutex> lock(mutex);
+    if (state != INITIALIZED) {
+      lock.unlock();
+      callback(make_error_code(DynexCN::error::NOT_INITIALIZED));
+      return;
+    }
   }
 
-  ioService.post(
-    std::bind(&InProcessNode::getTransactionOutsGlobalIndicesAsync,
-      this,
-      std::cref(transactionHash),
-      std::ref(outsGlobalIndices),
-      callback
-    )
-  );
+  // This is already an in-process, read-only blockchain lookup protected by
+  // the blockchain storage mutex. Running it on the requesting preprocessing
+  // worker avoids queueing every matched transaction through the node's single
+  // io_service thread and then blocking that worker on a future.
+  callback(doGetTransactionOutsGlobalIndices(transactionHash, outsGlobalIndices));
 }
 
 void InProcessNode::getTransactionOutsGlobalIndicesAsync(const Crypto::Hash& transactionHash, std::vector<uint32_t>& outsGlobalIndices,
@@ -568,16 +567,19 @@ std::error_code InProcessNode::doQueryBlocksLite(std::vector<Crypto::Hash>&& kno
   uint32_t currentHeight, fullOffset;
   std::vector<DynexCN::BlockShortInfo> entries;
 
-  if (!core.queryBlocksLite(knownBlockIds, timestamp, startHeight, currentHeight, fullOffset, entries)) {
+  if (!core.queryBlocksLite(knownBlockIds, timestamp, startHeight, currentHeight, fullOffset, entries, true)) {
     return make_error_code(DynexCN::error::INTERNAL_NODE_ERROR);
   }
 
-  for (const auto& entry: entries) {
+  for (auto& entry: entries) {
     BlockShortEntry bse;
     bse.blockHash = entry.blockId;
     bse.hasBlock = false;
 
-    if (!entry.block.empty()) {
+    if (entry.blockObject) {
+      bse.hasBlock = true;
+      bse.block = std::move(*entry.blockObject);
+    } else if (!entry.block.empty()) {
       bse.hasBlock = true;
       if (!fromBinaryArray(bse.block, asBinaryArray(entry.block))) {
         return std::make_error_code(std::errc::invalid_argument);
