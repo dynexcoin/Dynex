@@ -1532,12 +1532,14 @@ void WalletService::refresh() {
       } else if (event.type == DynexCN::SYNC_PROGRESS_UPDATED) {
         const uint32_t current = event.synchronizationProgressUpdated.processedBlockCount;
         const uint32_t total = event.synchronizationProgressUpdated.totalBlockCount;
+        const uint64_t keyCount = event.synchronizationProgressUpdated.inputOwnershipKeyCount;
+        const uint32_t workerCount = event.synchronizationProgressUpdated.preprocessingWorkerCount;
         const auto now = std::chrono::steady_clock::now();
 
         if (lastReportedBlockCount == 0 || current >= lastReportedBlockCount + 2000 ||
             now - lastReportTime >= std::chrono::seconds(10)) {
           const uint32_t percent = total == 0 ? 0 : static_cast<uint32_t>((static_cast<uint64_t>(current) * 100) / total);
-          logger(Logging::INFO, Logging::BRIGHT_WHITE) << "Wallet synchronization: block " << current << " of " << total << " (" << percent << "%)";
+          logger(Logging::INFO, Logging::BRIGHT_WHITE) << "Wallet synchronization: block " << current << " of " << total << " (" << percent << "%) keys: " << keyCount << " workers: " << workerCount;
           lastReportedBlockCount = current;
           lastReportTime = now;
         }
