@@ -175,11 +175,13 @@ DynexCN::WalletEvent makeMoneyUnlockedEvent() {
   return event;
 }
 
-DynexCN::WalletEvent makeSyncProgressUpdatedEvent(uint32_t current, uint32_t total) {
+DynexCN::WalletEvent makeSyncProgressUpdatedEvent(uint32_t current, uint32_t total, uint64_t inputOwnershipKeyCount, uint32_t preprocessingWorkerCount) {
   DynexCN::WalletEvent event;
   event.type = DynexCN::WalletEventType::SYNC_PROGRESS_UPDATED;
   event.synchronizationProgressUpdated.processedBlockCount = current;
   event.synchronizationProgressUpdated.totalBlockCount = total;
+  event.synchronizationProgressUpdated.inputOwnershipKeyCount = inputOwnershipKeyCount;
+  event.synchronizationProgressUpdated.preprocessingWorkerCount = preprocessingWorkerCount;
 
   return event;
 }
@@ -3137,7 +3139,8 @@ void WalletGreen::onSynchronizationProgressUpdated(uint32_t processedBlockCount,
     return;
   }
 
-  pushEvent(makeSyncProgressUpdatedEvent(processedBlockCount, totalBlockCount));
+  pushEvent(makeSyncProgressUpdatedEvent(processedBlockCount, totalBlockCount, m_synchronizer.getInputOwnershipKeyCount(),
+    static_cast<uint32_t>(m_synchronizer.getPreprocessingWorkerCount())));
 
   uint32_t currentHeight = processedBlockCount - 1;
   unlockBalances(currentHeight);
