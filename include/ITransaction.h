@@ -81,6 +81,9 @@ public:
   virtual Crypto::Hash getTransactionHash() const = 0;
   virtual Crypto::Hash getTransactionPrefixHash() const = 0;
   virtual Crypto::PublicKey getTransactionPublicKey() const = 0;
+  // Direct immutable access for high-throughput scanners. Implementations own
+  // the returned prefix for the lifetime of the reader.
+  virtual const TransactionPrefix& getTransactionPrefix() const = 0;
   virtual bool getTransactionSecretKey(Crypto::SecretKey& key) const = 0;
   virtual uint64_t getUnlockTime() const = 0;
 

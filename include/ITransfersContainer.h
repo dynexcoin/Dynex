@@ -88,6 +88,13 @@ struct TransactionSpentOutputInformation: public TransactionOutputInformation {
   uint32_t inputInTransaction;
 };
 
+struct TransferOwnershipInformation {
+  TransactionTypes::OutputType type;
+  uint64_t amount;
+  uint32_t globalOutputIndex;
+  Crypto::KeyImage keyImage; // Used only for key outputs.
+};
+
 class ITransfersContainer : public IStreamSerializable {
 public:
   enum Flags : uint32_t {
@@ -124,6 +131,7 @@ public:
   virtual std::vector<TransactionOutputInformation> getTransactionInputs(const Crypto::Hash& transactionHash, uint32_t flags) const = 0;
   virtual void getUnconfirmedTransactions(std::vector<Crypto::Hash>& transactions) const = 0;
   virtual std::vector<TransactionSpentOutputInformation> getSpentOutputs() const = 0;
+  virtual void getOwnershipInformation(std::vector<TransferOwnershipInformation>& outputs) const = 0;
 };
 
 }

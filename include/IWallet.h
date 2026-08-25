@@ -83,6 +83,8 @@ struct WalletTransactionUpdatedData {
 struct WalletSynchronizationProgressUpdated {
   uint32_t processedBlockCount;
   uint32_t totalBlockCount;
+  uint64_t inputOwnershipKeyCount;
+  uint32_t preprocessingWorkerCount;
 };
 
 struct WalletEvent {

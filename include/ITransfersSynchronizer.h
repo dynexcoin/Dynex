@@ -102,6 +102,8 @@ public:
   // returns nullptr if address is not found
   virtual ITransfersSubscription* getSubscription(const AccountPublicAddress& acc) = 0;
   virtual std::vector<Crypto::Hash> getViewKeyKnownBlocks(const Crypto::PublicKey& publicViewKey) = 0;
+  virtual size_t getInputOwnershipKeyCount() const = 0;
+  virtual size_t getPreprocessingWorkerCount() const = 0;
 };
 
 }
