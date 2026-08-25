@@ -58,6 +58,8 @@ Configuration::Configuration() {
   testnet = false;
   printAddresses = false;
   logLevel = Logging::INFO;
+  walletSyncWorkers = 8;
+  walletSyncBatchSize = 2000;
   bindAddress = "";
   bindPort = 0;
   m_rpcUser = "";
@@ -88,6 +90,8 @@ void Configuration::initOptions(boost::program_options::options_description& des
       ("log-file,l", po::value<std::string>(), "log file")
       ("server-root", po::value<std::string>(), "server root. The service will use it as working directory. Don't set it if don't want to change it")
       ("log-level", po::value<size_t>(), "log level")
+      ("wallet-sync-works", po::value<size_t>()->default_value(8), "wallet synchronization preprocessing workers")
+      ("wallet-sync-batch-size", po::value<size_t>()->default_value(2000), "local wallet synchronization batch size")
       ("address", "print wallet addresses and exit");
 }
 
@@ -123,6 +127,16 @@ void Configuration::init(const boost::program_options::variables_map& options) {
       std::string error = "log-level option must be in " + std::to_string(Logging::FATAL) +  ".." + std::to_string(Logging::TRACE) + " interval";
       throw ConfigurationError(error.c_str());
     }
+  }
+
+  walletSyncWorkers = options["wallet-sync-works"].as<size_t>();
+  if (walletSyncWorkers == 0) {
+    throw ConfigurationError("wallet-sync-works must be at least 1");
+  }
+
+  walletSyncBatchSize = options["wallet-sync-batch-size"].as<size_t>();
+  if (walletSyncBatchSize == 0 || walletSyncBatchSize > 10000) {
+    throw ConfigurationError("wallet-sync-batch-size must be in the range 1..10000");
   }
 
   if (options.count("server-root") != 0) {

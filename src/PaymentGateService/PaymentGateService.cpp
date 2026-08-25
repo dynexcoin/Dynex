@@ -52,6 +52,7 @@
 #include "DynexCNProtocol/DynexCNProtocolHandler.h"
 #include "P2p/NetNode.h"
 #include "Rpc/RpcServer.h"
+#include "Transfers/TransfersConsumer.h"
 #include <System/Context.h>
 #include "Wallet/WalletGreen.h"
 
@@ -131,6 +132,11 @@ bool PaymentGateService::init(int argc, char** argv) {
   logger.addLogger(consoleLogger);
 
   Logging::LoggerRef log(logger, "main");
+
+  DynexCN::TransfersConsumer::setPreprocessingWorkerCount(config.gateConfiguration.walletSyncWorkers);
+  log(Logging::INFO) << "Wallet synchronization preprocessing workers: "
+    << DynexCN::TransfersConsumer::getPreprocessingWorkerCount()
+    << " (requested " << config.gateConfiguration.walletSyncWorkers << ')';
 
   if (config.gateConfiguration.testnet) {
     log(Logging::INFO) << "Starting in testnet mode";
@@ -221,8 +227,9 @@ void PaymentGateService::runInProcess(Logging::LoggerRef& log) {
 
   DynexCN::Currency currency = currencyBuilder.currency();
   DynexCN::core core(currency, NULL, logger, true);
-  core.setQueryBlocksLimit(500);
-  log(Logging::INFO) << "Local wallet synchronization batch size: 500 blocks";
+  core.setQueryBlocksLimit(config.gateConfiguration.walletSyncBatchSize);
+  log(Logging::INFO) << "Local wallet synchronization batch size: "
+    << config.gateConfiguration.walletSyncBatchSize << " blocks";
 
   DynexCN::DynexCNProtocolHandler protocol(currency, *dispatcher, core, NULL, logger);
   DynexCN::NodeServer p2pNode(*dispatcher, protocol, logger);

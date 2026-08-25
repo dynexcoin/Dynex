@@ -84,6 +84,8 @@ struct Configuration {
   bool printAddresses;
 
   size_t logLevel;
+  size_t walletSyncWorkers;
+  size_t walletSyncBatchSize;
 };
 
 } //namespace PaymentService
