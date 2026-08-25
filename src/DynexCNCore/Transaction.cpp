@@ -79,6 +79,7 @@ namespace DynexCN {
     virtual Hash getTransactionHash() const override;
     virtual Hash getTransactionPrefixHash() const override;
     virtual PublicKey getTransactionPublicKey() const override;
+    virtual const TransactionPrefix& getTransactionPrefix() const override;
     virtual uint64_t getUnlockTime() const override;
     virtual bool getPaymentId(Hash& hash) const override;
     virtual bool getExtraNonce(BinaryArray& nonce) const override;
@@ -469,6 +470,10 @@ namespace DynexCN {
 
   BinaryArray TransactionImpl::getExtra() const {
     return transaction.extra;
+  }
+
+  const TransactionPrefix& TransactionImpl::getTransactionPrefix() const {
+    return transaction;
   }
 
   size_t TransactionImpl::getInputCount() const {

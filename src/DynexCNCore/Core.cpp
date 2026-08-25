@@ -953,7 +953,7 @@ std::vector<Crypto::Hash> core::findIdsForShortBlocks(uint32_t startOffset, uint
 }
 
 bool core::queryBlocksLite(const std::vector<Crypto::Hash>& knownBlockIds, uint64_t timestamp, uint32_t& resStartHeight,
-  uint32_t& resCurrentHeight, uint32_t& resFullOffset, std::vector<BlockShortInfo>& entries) {
+  uint32_t& resCurrentHeight, uint32_t& resFullOffset, std::vector<BlockShortInfo>& entries, bool directBlockObjects) {
   LockedBlockchainStorage lbs(m_blockchain);
 
   resCurrentHeight = lbs->getCurrentBlockchainHeight();
@@ -991,14 +991,18 @@ bool core::queryBlocksLite(const std::vector<Crypto::Hash>& knownBlockIds, uint6
       std::list<Crypto::Hash> missedTxs;
       lbs->getTransactions(b.transactionHashes, txs, missedTxs);
 
-      item.block = asString(toBinaryArray(b));
-
       for (const auto& tx: txs) {
         TransactionPrefixInfo info;
         info.txPrefix = tx;
         info.txHash = getObjectHash(tx);
 
         item.txPrefixes.push_back(std::move(info));
+      }
+
+      if (directBlockObjects) {
+        item.blockObject = std::move(b);
+      } else {
+        item.block = asString(toBinaryArray(b));
       }
     }
 

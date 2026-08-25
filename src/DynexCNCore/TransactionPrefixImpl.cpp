@@ -59,6 +59,7 @@ public:
   virtual Hash getTransactionHash() const override;
   virtual Hash getTransactionPrefixHash() const override;
   virtual PublicKey getTransactionPublicKey() const override;
+  virtual const TransactionPrefix& getTransactionPrefix() const override;
   virtual uint64_t getUnlockTime() const override;
 
   // extra
@@ -112,6 +113,10 @@ TransactionPrefixImpl::TransactionPrefixImpl(const TransactionPrefix& prefix, co
 
 Hash TransactionPrefixImpl::getTransactionHash() const {
   return m_txHash;
+}
+
+const TransactionPrefix& TransactionPrefixImpl::getTransactionPrefix() const {
+  return m_txPrefix;
 }
 
 Hash TransactionPrefixImpl::getTransactionPrefixHash() const {

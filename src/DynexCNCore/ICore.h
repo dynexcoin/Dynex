@@ -108,7 +108,8 @@ public:
   virtual bool queryBlocks(const std::vector<Crypto::Hash>& block_ids, uint64_t timestamp,
     uint32_t& start_height, uint32_t& current_height, uint32_t& full_offset, std::vector<BlockFullInfo>& entries) = 0;
   virtual bool queryBlocksLite(const std::vector<Crypto::Hash>& block_ids, uint64_t timestamp,
-    uint32_t& start_height, uint32_t& current_height, uint32_t& full_offset, std::vector<BlockShortInfo>& entries) = 0;
+    uint32_t& start_height, uint32_t& current_height, uint32_t& full_offset, std::vector<BlockShortInfo>& entries,
+    bool directBlockObjects = false) = 0;
 
   virtual Crypto::Hash getBlockIdByHeight(uint32_t height) = 0;
   virtual bool getBlockByHash(const Crypto::Hash &h, Block &blk) = 0;
