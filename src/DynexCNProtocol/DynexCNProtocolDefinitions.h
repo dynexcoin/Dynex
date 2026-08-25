@@ -37,6 +37,7 @@
 
 #pragma once
 
+#include <boost/optional.hpp>
 #include <list>
 #include "DynexCNCore/DynexCNBasic.h"
 
@@ -89,6 +90,9 @@ namespace DynexCN
   struct BlockShortInfo {
     Crypto::Hash blockId;
     std::string block;
+    // Populated only by the in-process wallet path. It is intentionally not
+    // serialized, so remote RPC compatibility is unchanged.
+    boost::optional<Block> blockObject;
     std::vector<TransactionPrefixInfo> txPrefixes;
 
     void serialize(ISerializer& s) {
