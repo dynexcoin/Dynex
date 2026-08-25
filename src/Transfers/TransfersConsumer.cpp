@@ -40,6 +40,7 @@
 #include <numeric>
 #include <future>
 #include <algorithm>
+#include <chrono>
 
 #include "CommonTypes.h"
 #include "Common/StringTools.h"
@@ -57,6 +58,7 @@ using namespace Common;
 std::unordered_set<Crypto::Hash> transactions_hash_seen;
 std::unordered_set<Crypto::PublicKey> public_keys_seen;
 std::mutex seen_mutex;
+std::atomic<size_t> preprocessingWorkerLimit(8);
 
 namespace {
 
@@ -83,44 +85,37 @@ void findMyOutputs(
   const ITransactionReader& tx,
   const SecretKey& viewSecretKey,
   const std::unordered_set<PublicKey>& spendKeys,
-  std::unordered_map<PublicKey, std::vector<uint32_t>>& outputs) {
+  std::unordered_map<PublicKey, std::vector<uint32_t>>& outputs,
+  uint64_t& derivationTimeNs,
+  uint64_t& outputScanTimeNs) {
 
+  const auto derivationStarted = std::chrono::steady_clock::now();
   auto txPublicKey = tx.getTransactionPublicKey();
   KeyDerivation derivation;
 
   if (!generate_key_derivation( txPublicKey, viewSecretKey, derivation)) {
+    derivationTimeNs = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - derivationStarted).count();
     return;
   }
+  derivationTimeNs = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - derivationStarted).count();
 
+  const auto outputScanStarted = std::chrono::steady_clock::now();
   size_t keyIndex = 0;
-  size_t outputCount = tx.getOutputCount();
+  const auto& transactionOutputs = tx.getTransactionPrefix().outputs;
 
-  for (size_t idx = 0; idx < outputCount; ++idx) {
-
-    auto outType = tx.getOutputType(size_t(idx));
-
-    if (outType == TransactionTypes::OutputType::Key) {
-
-      uint64_t amount;
-      KeyOutput out;
-      tx.getOutput(idx, out, amount);
-
-      checkOutputKey(derivation, out.key, keyIndex, idx, spendKeys, outputs);
+  for (size_t idx = 0; idx < transactionOutputs.size(); ++idx) {
+    const auto& target = transactionOutputs[idx].target;
+    if (const auto* out = boost::get<KeyOutput>(&target)) {
+      checkOutputKey(derivation, out->key, keyIndex, idx, spendKeys, outputs);
       ++keyIndex;
-
-    } else if (outType == TransactionTypes::OutputType::Multisignature) {
-
-      uint64_t amount;
-      MultisignatureOutput out;
-      tx.getOutput(idx, out, amount);
-
-      for (const auto& key : out.keys) {
+    } else if (const auto* out = boost::get<MultisignatureOutput>(&target)) {
+      for (const auto& key : out->keys) {
         checkOutputKey(derivation, key, idx, idx, spendKeys, outputs);
-
         ++keyIndex;
       }
     }
   }
+  outputScanTimeNs = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - outputScanStarted).count();
 }
 
 std::vector<Crypto::Hash> getBlockHashes(const DynexCN::CompleteBlock* blocks, size_t count) {
@@ -139,7 +134,7 @@ std::vector<Crypto::Hash> getBlockHashes(const DynexCN::CompleteBlock* blocks, s
 namespace DynexCN {
 
 TransfersConsumer::TransfersConsumer(const DynexCN::Currency& currency, INode& node, Logging::ILogger& logger, const SecretKey& viewSecret) :
-  m_activeSubscriptionsInitialized(false), m_node(node), m_viewSecret(viewSecret), m_currency(currency), m_logger(logger, "TransfersConsumer") {
+  m_viewSecret(viewSecret), m_inputOwnershipInitialized(false), m_inputOwnershipKeyCount(0), m_node(node), m_currency(currency), m_logger(logger, "TransfersConsumer") {
   updateSyncStart();
 }
 
@@ -153,7 +148,8 @@ ITransfersSubscription& TransfersConsumer::addSubscription(const AccountSubscrip
   if (res.get() == nullptr) {
     res.reset(new TransfersSubscription(m_currency, m_logger.getLogger(), subscription));
     m_spendKeys.insert(subscription.keys.address.spendPublicKey);
-    m_activeSubscriptionsInitialized = false;
+    m_inputOwnershipInitialized = false;
+    m_inputOwnershipKeyCount.store(0, std::memory_order_relaxed);
     if (m_subscriptions.size() == 1) {
       m_syncStart = res->getSyncStart();
     } else {
@@ -169,7 +165,8 @@ ITransfersSubscription& TransfersConsumer::addSubscription(const AccountSubscrip
 bool TransfersConsumer::removeSubscription(const AccountPublicAddress& address) {
   m_subscriptions.erase(address.spendPublicKey);
   m_spendKeys.erase(address.spendPublicKey);
-  m_activeSpendKeys.erase(address.spendPublicKey);
+  m_inputOwnershipInitialized = false;
+  m_inputOwnershipKeyCount.store(0, std::memory_order_relaxed);
   updateSyncStart();
   return m_subscriptions.empty();
 }
@@ -183,6 +180,20 @@ void TransfersConsumer::getSubscriptions(std::vector<AccountPublicAddress>& subs
   for (const auto& kv : m_subscriptions) {
     subscriptions.push_back(kv.second->getAddress());
   }
+}
+
+size_t TransfersConsumer::getInputOwnershipKeyCount() const {
+  return m_inputOwnershipKeyCount.load(std::memory_order_relaxed);
+}
+
+size_t TransfersConsumer::getPreprocessingWorkerCount() {
+  const size_t hardwareWorkers = std::thread::hardware_concurrency();
+  const size_t availableWorkers = hardwareWorkers == 0 ? preprocessingWorkerLimit.load(std::memory_order_relaxed) : hardwareWorkers;
+  return std::max<size_t>(1, std::min<size_t>(availableWorkers, preprocessingWorkerLimit.load(std::memory_order_relaxed)));
+}
+
+void TransfersConsumer::setPreprocessingWorkerCount(size_t workers) {
+  preprocessingWorkerLimit.store(std::max<size_t>(1, workers), std::memory_order_relaxed);
 }
 
 void TransfersConsumer::initTransactionPool(const std::unordered_set<Crypto::Hash>& uncommitedTransactions) {
@@ -213,21 +224,48 @@ void TransfersConsumer::updateSyncStart() {
   m_syncStart = start;
 }
 
-void TransfersConsumer::initializeActiveSubscriptions() {
-  if (m_activeSubscriptionsInitialized) {
+void TransfersConsumer::initializeInputOwnership() {
+  if (m_inputOwnershipInitialized) {
     return;
   }
 
-  m_activeSpendKeys.clear();
+  m_keyImageOwners.clear();
+  m_multisignatureOwners.clear();
+  size_t indexedWallets = 0;
   for (const auto& subscription : m_subscriptions) {
-    const auto& container = subscription.second->getContainer();
-    if (container.transfersCount() != 0 || container.transactionsCount() != 0) {
-      m_activeSpendKeys.insert(subscription.first);
+    std::vector<TransferOwnershipInformation> outputs;
+    subscription.second->getContainer().getOwnershipInformation(outputs);
+    for (const auto& output : outputs) {
+      if (output.type == TransactionTypes::OutputType::Key) {
+        m_keyImageOwners.emplace(output.keyImage, subscription.first);
+      } else if (output.type == TransactionTypes::OutputType::Multisignature) {
+        m_multisignatureOwners.emplace(MultisignatureOutputId{output.amount, output.globalOutputIndex}, subscription.first);
+      }
+    }
+
+    ++indexedWallets;
+    if (indexedWallets % 1000 == 0 || indexedWallets == m_subscriptions.size()) {
+      m_logger(INFO, BRIGHT_WHITE) << "Building wallet input ownership index: " << indexedWallets << '/' << m_subscriptions.size()
+        << " wallets, " << m_keyImageOwners.size() << " key images";
     }
   }
 
-  m_activeSubscriptionsInitialized = true;
-  m_logger(INFO, BRIGHT_WHITE) << "Active wallet scan set: " << m_activeSpendKeys.size() << " of " << m_subscriptions.size() << " wallets";
+  m_inputOwnershipInitialized = true;
+  m_inputOwnershipKeyCount.store(m_keyImageOwners.size(), std::memory_order_relaxed);
+  m_logger(INFO, BRIGHT_WHITE) << "Wallet input ownership index: " << m_keyImageOwners.size() << " key images, "
+    << m_multisignatureOwners.size() << " multisignature outputs across " << m_subscriptions.size() << " wallets";
+}
+
+void TransfersConsumer::indexOwnedOutputs(const PublicKey& spendKey, const std::vector<TransactionOutputInformationIn>& outputs) {
+  for (const auto& output : outputs) {
+    if (output.type == TransactionTypes::OutputType::Key) {
+      m_keyImageOwners.emplace(output.keyImage, spendKey);
+    } else if (output.type == TransactionTypes::OutputType::Multisignature &&
+               output.globalOutputIndex != UNCONFIRMED_TRANSACTION_GLOBAL_OUTPUT_INDEX) {
+      m_multisignatureOwners.emplace(MultisignatureOutputId{output.amount, output.globalOutputIndex}, spendKey);
+    }
+  }
+  m_inputOwnershipKeyCount.store(m_keyImageOwners.size(), std::memory_order_relaxed);
 }
 
 SynchronizationStart TransfersConsumer::getSyncStart() {
@@ -240,6 +278,8 @@ void TransfersConsumer::onBlockchainDetach(uint32_t height) {
   for (const auto& kv : m_subscriptions) {
     kv.second->onBlockchainDetach(height);
   }
+  m_inputOwnershipInitialized = false;
+  m_inputOwnershipKeyCount.store(0, std::memory_order_relaxed);
 }
 
 bool TransfersConsumer::onNewBlocks(const CompleteBlock* blocks, uint32_t startHeight, uint32_t count) {
@@ -255,13 +295,13 @@ bool TransfersConsumer::onNewBlocks(const CompleteBlock* blocks, uint32_t startH
 
   std::vector<PreprocessedTx> preprocessedTransactions;
   std::mutex preprocessedTransactionsMutex;
+  const auto preprocessingStarted = std::chrono::steady_clock::now();
 
   // A new worker group is created for every synchronization batch.  Using all
   // reported CPUs here causes large transient memory spikes (and scheduler
   // contention) on walletd hosts with many cores. Four workers keep the batch
   // parallel while bounding its memory/thread footprint.
-  const size_t hardwareWorkers = std::thread::hardware_concurrency();
-  const size_t workers = std::max<size_t>(1, std::min<size_t>(hardwareWorkers == 0 ? 2 : hardwareWorkers, 4));
+  const size_t workers = getPreprocessingWorkerCount();
 
   BlockingQueue<Tx> inputQueue(workers * 2);
 
@@ -338,8 +378,10 @@ bool TransfersConsumer::onNewBlocks(const CompleteBlock* blocks, uint32_t startH
       processingError = std::make_error_code(std::errc::operation_canceled);
     }
   }
+  const auto preprocessingFinished = std::chrono::steady_clock::now();
 
   std::vector<Crypto::Hash> blockHashes = getBlockHashes(blocks, count);
+  const auto applyStarted = std::chrono::steady_clock::now();
   if (!processingError) {
     m_observerManager.notify(&IBlockchainConsumerObserver::onBlocksAdded, this, blockHashes);
 
@@ -363,6 +405,27 @@ bool TransfersConsumer::onNewBlocks(const CompleteBlock* blocks, uint32_t startH
   forEachSubscription([newHeight](TransfersSubscription& sub) {
     sub.advanceHeight(newHeight);
   });
+  const auto applyFinished = std::chrono::steady_clock::now();
+  uint64_t derivationTimeNs = 0;
+  uint64_t outputScanTimeNs = 0;
+  uint64_t matchedOutputTimeNs = 0;
+  uint64_t globalIndicesTimeNs = 0;
+  uint64_t createTransfersTimeNs = 0;
+  for (const auto& tx : preprocessedTransactions) {
+    derivationTimeNs += tx.derivationTimeNs;
+    outputScanTimeNs += tx.outputScanTimeNs;
+    matchedOutputTimeNs += tx.matchedOutputTimeNs;
+    globalIndicesTimeNs += tx.globalIndicesTimeNs;
+    createTransfersTimeNs += tx.createTransfersTimeNs;
+  }
+  m_logger(DEBUGGING) << "Wallet consumer timing: blocks " << count << ", transactions " << preprocessedTransactions.size()
+    << ", preprocess " << std::chrono::duration_cast<std::chrono::milliseconds>(preprocessingFinished - preprocessingStarted).count() << " ms"
+    << ", apply-and-advance " << std::chrono::duration_cast<std::chrono::milliseconds>(applyFinished - applyStarted).count() << " ms"
+    << ", worker-cpu derivation " << derivationTimeNs / 1000000 << " ms"
+    << ", output-scan " << outputScanTimeNs / 1000000 << " ms"
+    << ", matched-output " << matchedOutputTimeNs / 1000000 << " ms"
+    << ", global-indices " << globalIndicesTimeNs / 1000000 << " ms"
+    << ", create-transfers " << createTransfersTimeNs / 1000000 << " ms";
 
   return true;
 }
@@ -437,7 +500,6 @@ std::error_code TransfersConsumer::createTransfers(
   auto txPubKey = tx.getTransactionPublicKey();
   auto txHash = tx.getTransactionHash();
   std::vector<PublicKey> temp_keys;
-  std::lock_guard<std::mutex> lk(seen_mutex);
 
   for (auto idx : outputs) {
 
@@ -476,19 +538,7 @@ std::error_code TransfersConsumer::createTransfers(
 
       assert(out.key == reinterpret_cast<const PublicKey&>(in_ephemeral.publicKey));
 
-      std::unordered_set<Crypto::Hash>::iterator it = transactions_hash_seen.find(txHash);
-	  if (it == transactions_hash_seen.end()) {
-        std::unordered_set<Crypto::PublicKey>::iterator key_it = public_keys_seen.find(out.key);
-        if (key_it != public_keys_seen.end()) {
-          m_logger(ERROR, BRIGHT_RED) << "Failed to process transaction " << Common::podToHex(txHash) << ": duplicate output key is found!";
-          return std::error_code();
-        }
-        if (std::find(temp_keys.begin(), temp_keys.end(), out.key) != temp_keys.end()) {
-          m_logger(ERROR, BRIGHT_RED) << "Failed to process transaction " << Common::podToHex(txHash) << ": the same output key is present more than once";
-          return std::error_code();
-        }
-        temp_keys.push_back(out.key);
-	  }
+      temp_keys.push_back(out.key);
       info.amount = amount;
       info.outputKey = out.key;
 
@@ -497,20 +547,8 @@ std::error_code TransfersConsumer::createTransfers(
       MultisignatureOutput out;
       tx.getOutput(idx, out, amount);
 
-	  for (const auto& key : out.keys) {
-        std::unordered_set<Crypto::Hash>::iterator it = transactions_hash_seen.find(txHash);
-        if (it == transactions_hash_seen.end()) {
-          std::unordered_set<Crypto::PublicKey>::iterator key_it = public_keys_seen.find(key);
-          if (key_it != public_keys_seen.end()) {
-			  m_logger(ERROR, BRIGHT_RED) << "Failed to process transaction " << Common::podToHex(txHash) << ": duplicate multisignature output key is found";
-            return std::error_code();
-          }
-          if (std::find(temp_keys.begin(), temp_keys.end(), key) != temp_keys.end()) {
-            m_logger(ERROR, BRIGHT_RED) << "Failed to process transaction " << Common::podToHex(txHash) << ": the same multisignature output key is present more than once";
-            return std::error_code();
-          }
-          temp_keys.push_back(key);
-        }
+      for (const auto& key : out.keys) {
+        temp_keys.push_back(key);
       }
       info.amount = amount;
       info.requiredSignatures = out.requiredSignatureCount;
@@ -519,28 +557,53 @@ std::error_code TransfersConsumer::createTransfers(
     transfers.push_back(info);
   }
 
-  transactions_hash_seen.emplace(txHash);
-  std::copy(temp_keys.begin(), temp_keys.end(), std::inserter(public_keys_seen, public_keys_seen.end()));
+  // Key-image generation above is expensive and independent per transaction.
+  // Serialize only the cross-transaction duplicate check and insertion, not
+  // the cryptographic transfer construction performed by all four workers.
+  {
+    std::lock_guard<std::mutex> lk(seen_mutex);
+    if (transactions_hash_seen.find(txHash) == transactions_hash_seen.end()) {
+      std::unordered_set<PublicKey> transactionKeys;
+      transactionKeys.reserve(temp_keys.size());
+      for (const auto& key : temp_keys) {
+        if (public_keys_seen.find(key) != public_keys_seen.end()) {
+          m_logger(ERROR, BRIGHT_RED) << "Failed to process transaction " << Common::podToHex(txHash) << ": duplicate output key is found";
+          return std::error_code();
+        }
+        if (!transactionKeys.emplace(key).second) {
+          m_logger(ERROR, BRIGHT_RED) << "Failed to process transaction " << Common::podToHex(txHash) << ": the same output key is present more than once";
+          return std::error_code();
+        }
+      }
+
+      public_keys_seen.insert(transactionKeys.begin(), transactionKeys.end());
+    }
+    transactions_hash_seen.emplace(txHash);
+  }
 
   return std::error_code();
 }
 
 std::error_code TransfersConsumer::preprocessOutputs(const TransactionBlockInfo& blockInfo, const ITransactionReader& tx, PreprocessInfo& info) {
   std::unordered_map<PublicKey, std::vector<uint32_t>> outputs;
-  findMyOutputs(tx, m_viewSecret, m_spendKeys, outputs);
+  findMyOutputs(tx, m_viewSecret, m_spendKeys, outputs, info.derivationTimeNs, info.outputScanTimeNs);
   if (outputs.empty()) {
     return std::error_code();
   }
 
+  const auto matchedOutputStarted = std::chrono::steady_clock::now();
   std::error_code errorCode;
   auto txHash = tx.getTransactionHash();
   if (blockInfo.height != WALLET_UNCONFIRMED_TRANSACTION_HEIGHT) {
+    const auto globalIndicesStarted = std::chrono::steady_clock::now();
     errorCode = getGlobalIndices(reinterpret_cast<const Hash&>(txHash), info.globalIdxs);
+    info.globalIndicesTimeNs = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - globalIndicesStarted).count();
     if (errorCode) {
       return errorCode;
     }
   }
 
+  const auto createTransfersStarted = std::chrono::steady_clock::now();
   for (const auto& kv : outputs) {
     auto it = m_subscriptions.find(kv.first);
     if (it != m_subscriptions.end()) {
@@ -551,6 +614,9 @@ std::error_code TransfersConsumer::preprocessOutputs(const TransactionBlockInfo&
       }
     }
   }
+  info.createTransfersTimeNs = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - createTransfersStarted).count();
+
+  info.matchedOutputTimeNs = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - matchedOutputStarted).count();
 
   return std::error_code();
 }
@@ -585,8 +651,8 @@ void TransfersConsumer::processTransaction(const TransactionBlockInfo& blockInfo
       bool containerUpdated;
       processOutputs(blockInfo, *subscription->second, tx, output.second, info.globalIdxs, containerContainsTx, containerUpdated);
       someContainerUpdated = someContainerUpdated || containerUpdated;
-      if (containerUpdated) {
-        m_activeSpendKeys.insert(output.first);
+      if (containerUpdated && m_inputOwnershipInitialized) {
+        indexOwnedOutputs(output.first, output.second);
       }
       if (containerContainsTx) {
         transactionContainers.emplace_back(&subscription->second->getContainer());
@@ -599,12 +665,46 @@ void TransfersConsumer::processTransaction(const TransactionBlockInfo& blockInfo
     return;
   }
 
-  initializeActiveSubscriptions();
+  initializeInputOwnership();
 
-  // Only wallets with existing transaction/transfer history can own an input
-  // spent by this transaction. Newly matched output recipients are handled in
-  // the second loop and promoted into the active set for future spends.
-  for (const auto& spendKey : m_activeSpendKeys) {
+  // Route inputs directly to the subscription that owns the referenced output
+  // instead of probing every wallet with transaction history.
+  std::unordered_set<PublicKey> affectedSpendKeys;
+  std::vector<KeyImage> confirmedSpentKeyImages;
+  std::vector<MultisignatureOutputId> confirmedSpentMultisignatureOutputs;
+  for (size_t inputIndex = 0; inputIndex < tx.getInputCount(); ++inputIndex) {
+    const auto inputType = tx.getInputType(inputIndex);
+    if (inputType == TransactionTypes::InputType::Key) {
+      KeyInput input;
+      tx.getInput(inputIndex, input);
+      auto owner = m_keyImageOwners.find(input.keyImage);
+      if (owner != m_keyImageOwners.end()) {
+        affectedSpendKeys.insert(owner->second);
+        if (blockInfo.height != WALLET_UNCONFIRMED_TRANSACTION_HEIGHT) {
+          confirmedSpentKeyImages.push_back(input.keyImage);
+        }
+      }
+    } else if (inputType == TransactionTypes::InputType::Multisignature) {
+      MultisignatureInput input;
+      tx.getInput(inputIndex, input);
+      const MultisignatureOutputId outputId{input.amount, input.outputIndex};
+      auto owner = m_multisignatureOwners.find(outputId);
+      if (owner != m_multisignatureOwners.end()) {
+        affectedSpendKeys.insert(owner->second);
+        if (blockInfo.height != WALLET_UNCONFIRMED_TRANSACTION_HEIGHT) {
+          confirmedSpentMultisignatureOutputs.push_back(outputId);
+        }
+      }
+    }
+  }
+
+  // Incoming-output detection is still global in preprocessOutputs. Add every
+  // matched recipient so transactions that only receive funds are processed.
+  for (const auto& output : info.outputs) {
+    affectedSpendKeys.insert(output.first);
+  }
+
+  for (const auto& spendKey : affectedSpendKeys) {
     auto subscription = m_subscriptions.find(spendKey);
     if (subscription == m_subscriptions.end()) {
       continue;
@@ -617,32 +717,25 @@ void TransfersConsumer::processTransaction(const TransactionBlockInfo& blockInfo
     bool containerUpdated;
     processOutputs(blockInfo, *subscription->second, tx, subscriptionOutputs, info.globalIdxs, containerContainsTx, containerUpdated);
     someContainerUpdated = someContainerUpdated || containerUpdated;
-    if (containerContainsTx) {
-      transactionContainers.emplace_back(&subscription->second->getContainer());
-    }
-  }
-
-  for (const auto& output : info.outputs) {
-    if (m_activeSpendKeys.count(output.first) != 0) {
-      continue;
-    }
-
-    auto subscription = m_subscriptions.find(output.first);
-    if (subscription == m_subscriptions.end()) {
-      continue;
-    }
-
-    bool containerContainsTx;
-    bool containerUpdated;
-    processOutputs(blockInfo, *subscription->second, tx, output.second, info.globalIdxs, containerContainsTx, containerUpdated);
-    someContainerUpdated = someContainerUpdated || containerUpdated;
-    if (containerUpdated) {
-      m_activeSpendKeys.insert(output.first);
+    if (containerUpdated && it != info.outputs.end()) {
+      indexOwnedOutputs(spendKey, it->second);
     }
     if (containerContainsTx) {
       transactionContainers.emplace_back(&subscription->second->getContainer());
     }
   }
+
+  // Keep the routing index proportional to currently relevant outputs. The
+  // containers retain complete transaction history; only confirmed-spent
+  // lookup entries are removed here. A detach invalidates and rebuilds this
+  // index from container state.
+  for (const auto& keyImage : confirmedSpentKeyImages) {
+    m_keyImageOwners.erase(keyImage);
+  }
+  for (const auto& outputId : confirmedSpentMultisignatureOutputs) {
+    m_multisignatureOwners.erase(outputId);
+  }
+  m_inputOwnershipKeyCount.store(m_keyImageOwners.size(), std::memory_order_relaxed);
 
   if (someContainerUpdated) {
     m_observerManager.notify(&IBlockchainConsumerObserver::onTransactionUpdated, this, tx.getTransactionHash(), transactionContainers);

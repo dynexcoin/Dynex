@@ -869,6 +869,33 @@ std::vector<TransactionSpentOutputInformation> TransfersContainer::getSpentOutpu
   return spentOutputs;
 }
 
+void TransfersContainer::getOwnershipInformation(std::vector<TransferOwnershipInformation>& outputs) const {
+  std::lock_guard<std::mutex> lk(m_mutex);
+
+  outputs.reserve(outputs.size() + m_availableTransfers.size());
+  auto appendOutput = [&outputs](const TransactionOutputInformationEx& output) {
+    TransferOwnershipInformation ownership;
+    ownership.type = output.type;
+    ownership.amount = output.amount;
+    ownership.globalOutputIndex = output.globalOutputIndex;
+    ownership.keyImage = output.type == TransactionTypes::OutputType::Key ? output.keyImage : Crypto::KeyImage{};
+    outputs.push_back(ownership);
+  };
+
+  for (const auto& output : m_availableTransfers) {
+    appendOutput(output);
+  }
+
+  // Inputs of locally stored unconfirmed transactions must remain routable
+  // when the same transaction is later confirmed. Historical spent outputs
+  // cannot validly be spent again and would only inflate the global index.
+  for (const auto& output : m_spentTransfers) {
+    if (output.spendingBlock.height == WALLET_LEGACY_UNCONFIRMED_TRANSACTION_HEIGHT) {
+      appendOutput(output);
+    }
+  }
+}
+
 void TransfersContainer::save(std::ostream& os) {
   std::lock_guard<std::mutex> lk(m_mutex);
   StdOutputStream stream(os);

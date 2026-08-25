@@ -48,6 +48,8 @@
 #include "IObservableImpl.h"
 
 #include <unordered_set>
+#include <unordered_map>
+#include <atomic>
 
 namespace DynexCN {
 
@@ -77,6 +79,10 @@ public:
   virtual std::error_code addUnconfirmedTransaction(const ITransactionReader& transaction) override;
   virtual void removeUnconfirmedTransaction(const Crypto::Hash& transactionHash) override;
 
+  size_t getInputOwnershipKeyCount() const;
+  static size_t getPreprocessingWorkerCount();
+  static void setPreprocessingWorkerCount(size_t workers);
+
 private:
 
   template <typename F>
@@ -89,6 +95,11 @@ private:
   struct PreprocessInfo {
     std::unordered_map<Crypto::PublicKey, std::vector<TransactionOutputInformationIn>> outputs;
     std::vector<uint32_t> globalIdxs;
+    uint64_t derivationTimeNs = 0;
+    uint64_t outputScanTimeNs = 0;
+    uint64_t matchedOutputTimeNs = 0;
+    uint64_t globalIndicesTimeNs = 0;
+    uint64_t createTransfersTimeNs = 0;
   };
 
   std::error_code preprocessOutputs(const TransactionBlockInfo& blockInfo, const ITransactionReader& tx, PreprocessInfo& info);
@@ -101,15 +112,34 @@ private:
   std::error_code getGlobalIndices(const Crypto::Hash& transactionHash, std::vector<uint32_t>& outsGlobalIndices);
 
   void updateSyncStart();
-  void initializeActiveSubscriptions();
+  struct MultisignatureOutputId {
+    uint64_t amount;
+    uint32_t globalOutputIndex;
+
+    bool operator==(const MultisignatureOutputId& other) const {
+      return amount == other.amount && globalOutputIndex == other.globalOutputIndex;
+    }
+  };
+
+  struct MultisignatureOutputIdHasher {
+    size_t operator()(const MultisignatureOutputId& value) const {
+      size_t hash = std::hash<uint64_t>()(value.amount);
+      return hash ^ (std::hash<uint32_t>()(value.globalOutputIndex) + 0x9e3779b9 + (hash << 6) + (hash >> 2));
+    }
+  };
+
+  void initializeInputOwnership();
+  void indexOwnedOutputs(const Crypto::PublicKey& spendKey, const std::vector<TransactionOutputInformationIn>& outputs);
 
   SynchronizationStart m_syncStart;
   const Crypto::SecretKey m_viewSecret;
   // map { spend public key -> subscription }
   std::unordered_map<Crypto::PublicKey, std::unique_ptr<TransfersSubscription>> m_subscriptions;
   std::unordered_set<Crypto::PublicKey> m_spendKeys;
-  std::unordered_set<Crypto::PublicKey> m_activeSpendKeys;
-  bool m_activeSubscriptionsInitialized;
+  std::unordered_map<Crypto::KeyImage, Crypto::PublicKey> m_keyImageOwners;
+  std::unordered_map<MultisignatureOutputId, Crypto::PublicKey, MultisignatureOutputIdHasher> m_multisignatureOwners;
+  bool m_inputOwnershipInitialized;
+  std::atomic<size_t> m_inputOwnershipKeyCount;
   std::unordered_set<Crypto::Hash> m_poolTxs;
 
   INode& m_node;

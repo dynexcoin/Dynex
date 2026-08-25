@@ -141,6 +141,18 @@ std::vector<Crypto::Hash> TransfersSyncronizer::getViewKeyKnownBlocks(const Cryp
   return m_sync.getConsumerKnownBlocks(*it->second);
 }
 
+size_t TransfersSyncronizer::getInputOwnershipKeyCount() const {
+  size_t count = 0;
+  for (const auto& consumer : m_consumers) {
+    count += consumer.second->getInputOwnershipKeyCount();
+  }
+  return count;
+}
+
+size_t TransfersSyncronizer::getPreprocessingWorkerCount() const {
+  return TransfersConsumer::getPreprocessingWorkerCount();
+}
+
 void TransfersSyncronizer::onBlocksAdded(IBlockchainConsumer* consumer, const std::vector<Crypto::Hash>& blockHashes) {
   auto it = findSubscriberForConsumer(consumer);
   if (it != m_subscribers.end()) {

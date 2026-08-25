@@ -70,6 +70,8 @@ public:
   virtual void getSubscriptions(std::vector<AccountPublicAddress>& subscriptions) override;
   virtual ITransfersSubscription* getSubscription(const AccountPublicAddress& acc) override;
   virtual std::vector<Crypto::Hash> getViewKeyKnownBlocks(const Crypto::PublicKey& publicViewKey) override;
+  virtual size_t getInputOwnershipKeyCount() const override;
+  virtual size_t getPreprocessingWorkerCount() const override;
 
   void subscribeConsumerNotifications(const Crypto::PublicKey& viewPublicKey, ITransfersSynchronizerObserver* observer);
   void unsubscribeConsumerNotifications(const Crypto::PublicKey& viewPublicKey, ITransfersSynchronizerObserver* observer);

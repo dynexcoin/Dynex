@@ -387,6 +387,8 @@ void BlockchainSynchronizer::stop() {
     workingThread->join();
   }
 
+  drainBlocksPrefetch();
+
   workingThread.reset();
   m_logger(DEBUGGING, BRIGHT_WHITE) << "Stopped";
 }
@@ -467,10 +469,42 @@ void BlockchainSynchronizer::startBlockchainSync() {
   m_logger(DEBUGGING) << "Starting blockchain synchronization...";
 
   GetBlocksResponse response;
-  GetBlocksRequest req = getCommonHistory();
+  GetBlocksRequest req;
 
   try {
+    if (m_prefetchedBlocks) {
+      const auto waitStarted = std::chrono::steady_clock::now();
+      std::error_code ec = m_prefetchFuture.get();
+      const auto waitFinished = std::chrono::steady_clock::now();
+      const auto fetchStarted = m_prefetchStarted;
+      const auto fetchFinished = m_prefetchFinished;
+      response = std::move(*m_prefetchedBlocks);
+      const uint64_t syncTimestamp = m_prefetchSyncTimestamp;
+      m_prefetchedBlocks.reset();
+      m_prefetchPromise.reset();
+
+      if (ec) {
+        m_logger(ERROR, BRIGHT_RED) << "Failed to prefetch blocks: " << ec << ", " << ec.message();
+        setFutureStateIf(State::idle, [this] { return m_futureState != State::stopped; });
+        m_observerManager.notify(&IBlockchainSynchronizerObserver::synchronizationCompleted, ec);
+        return;
+      }
+
+      const size_t receivedBlockCount = response.newBlocks.size();
+      const auto processingStarted = std::chrono::steady_clock::now();
+      processBlocks(response, syncTimestamp);
+      const auto processingFinished = std::chrono::steady_clock::now();
+      m_logger(DEBUGGING) << "Wallet sync timing: blocks " << receivedBlockCount
+        << ", fetch " << std::chrono::duration_cast<std::chrono::milliseconds>(fetchFinished - fetchStarted).count() << " ms"
+        << ", prefetch-wait " << std::chrono::duration_cast<std::chrono::milliseconds>(waitFinished - waitStarted).count() << " ms"
+        << ", local-total " << std::chrono::duration_cast<std::chrono::milliseconds>(processingFinished - processingStarted).count() << " ms";
+      return;
+    }
+
+    req = getCommonHistory();
     if (!req.knownBlocks.empty()) {
+      const uint64_t syncTimestamp = req.syncStart.timestamp;
+      const auto fetchStarted = std::chrono::steady_clock::now();
       auto queryBlocksCompleted = std::promise<std::error_code>();
       auto queryBlocksWaitFuture = queryBlocksCompleted.get_future();
 
@@ -485,6 +519,7 @@ void BlockchainSynchronizer::startBlockchainSync() {
         });
 
       std::error_code ec = queryBlocksWaitFuture.get();
+      const auto fetchFinished = std::chrono::steady_clock::now();
 
       if (ec) {
         m_logger(ERROR, BRIGHT_RED) << "Failed to query blocks: " << ec << ", " << ec.message();
@@ -492,7 +527,13 @@ void BlockchainSynchronizer::startBlockchainSync() {
         m_observerManager.notify(&IBlockchainSynchronizerObserver::synchronizationCompleted, ec);
       } else {
         m_logger(DEBUGGING) << "Blocks received, start index " << response.startHeight << ", count " << response.newBlocks.size();
-        processBlocks(response);
+        const size_t receivedBlockCount = response.newBlocks.size();
+        const auto processingStarted = std::chrono::steady_clock::now();
+        processBlocks(response, syncTimestamp);
+        const auto processingFinished = std::chrono::steady_clock::now();
+        m_logger(DEBUGGING) << "Wallet sync timing: blocks " << receivedBlockCount
+          << ", fetch " << std::chrono::duration_cast<std::chrono::milliseconds>(fetchFinished - fetchStarted).count() << " ms"
+          << ", local-total " << std::chrono::duration_cast<std::chrono::milliseconds>(processingFinished - processingStarted).count() << " ms";
       }
     }
   } catch (const std::exception& e) {
@@ -502,8 +543,9 @@ void BlockchainSynchronizer::startBlockchainSync() {
   }
 }
 
-void BlockchainSynchronizer::processBlocks(GetBlocksResponse& response) {
+void BlockchainSynchronizer::processBlocks(GetBlocksResponse& response, uint64_t syncTimestamp) {
   m_logger(DEBUGGING) << "Process blocks, start index " << response.startHeight << ", count " << response.newBlocks.size();
+  const auto decodeStarted = std::chrono::steady_clock::now();
 
   BlockchainInterval interval;
   interval.startHeight = response.startHeight;
@@ -539,13 +581,27 @@ void BlockchainSynchronizer::processBlocks(GetBlocksResponse& response) {
 
     blocks.push_back(std::move(completeBlock));
   }
+  const auto decodeFinished = std::chrono::steady_clock::now();
+
+  // Prepare exactly one following batch while the current batch is processed
+  // by wallet consumers. The last received hash plus genesis is sufficient
+  // synchronization history and remains reorg-safe through the normal node
+  // supplement lookup.
+  if (!interval.blocks.empty() && response.newBlocks.size() > 1 && !checkIfShouldStop()) {
+    startBlocksPrefetch(interval, syncTimestamp);
+  }
 
   uint32_t processedBlockCount = response.startHeight + static_cast<uint32_t>(response.newBlocks.size());
   if (!checkIfShouldStop()) {
     response.newBlocks.clear();
     std::unique_lock<std::mutex> lk(m_consumersMutex);
+    const auto consumersStarted = std::chrono::steady_clock::now();
     auto result = updateConsumers(interval, blocks);
+    const auto consumersFinished = std::chrono::steady_clock::now();
     lk.unlock();
+    m_logger(DEBUGGING) << "Wallet sync local timing: blocks " << blocks.size()
+      << ", decode " << std::chrono::duration_cast<std::chrono::milliseconds>(decodeFinished - decodeStarted).count() << " ms"
+      << ", consumers " << std::chrono::duration_cast<std::chrono::milliseconds>(consumersFinished - consumersStarted).count() << " ms";
 
     switch (result) {
     case UpdateConsumersResult::errorOccurred:
@@ -584,6 +640,51 @@ void BlockchainSynchronizer::processBlocks(GetBlocksResponse& response) {
     m_logger(DEBUGGING) << "Block processing is interrupted";
     m_observerManager.notify(&IBlockchainSynchronizerObserver::synchronizationCompleted, std::make_error_code(std::errc::interrupted));
   }
+}
+
+void BlockchainSynchronizer::startBlocksPrefetch(const BlockchainInterval& interval, uint64_t syncTimestamp) {
+  if (m_prefetchedBlocks || interval.blocks.empty()) {
+    return;
+  }
+
+  std::vector<Crypto::Hash> knownBlocks;
+  knownBlocks.reserve(2);
+  knownBlocks.push_back(interval.blocks.back());
+  if (interval.blocks.back() != m_genesisBlockHash) {
+    knownBlocks.push_back(m_genesisBlockHash);
+  }
+
+  m_prefetchedBlocks.reset(new GetBlocksResponse());
+  m_prefetchPromise = std::make_shared<std::promise<std::error_code>>();
+  m_prefetchFuture = m_prefetchPromise->get_future();
+  m_prefetchStarted = std::chrono::steady_clock::now();
+  m_prefetchSyncTimestamp = syncTimestamp;
+  auto completion = m_prefetchPromise;
+
+  m_node.queryBlocks(
+    std::move(knownBlocks),
+    syncTimestamp,
+    m_prefetchedBlocks->newBlocks,
+    m_prefetchedBlocks->startHeight,
+    [this, completion](std::error_code ec) {
+      m_prefetchFinished = std::chrono::steady_clock::now();
+      completion->set_value(ec);
+    });
+}
+
+void BlockchainSynchronizer::drainBlocksPrefetch() {
+  if (!m_prefetchedBlocks) {
+    return;
+  }
+
+  try {
+    if (m_prefetchFuture.valid()) {
+      m_prefetchFuture.get();
+    }
+  } catch (...) {
+  }
+  m_prefetchedBlocks.reset();
+  m_prefetchPromise.reset();
 }
 
 /// \pre m_consumersMutex is locked

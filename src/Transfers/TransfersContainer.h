@@ -192,6 +192,7 @@ public:
   virtual std::vector<TransactionOutputInformation> getTransactionInputs(const Crypto::Hash& transactionHash, uint32_t flags) const override;
   virtual void getUnconfirmedTransactions(std::vector<Crypto::Hash>& transactions) const override;
   virtual std::vector<TransactionSpentOutputInformation> getSpentOutputs() const override;
+  virtual void getOwnershipInformation(std::vector<TransferOwnershipInformation>& outputs) const override;
 
   // IStreamSerializable
   virtual void save(std::ostream& os) override;

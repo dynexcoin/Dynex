@@ -44,6 +44,7 @@
 #include "IStreamSerializable.h"
 
 #include <condition_variable>
+#include <chrono>
 #include <mutex>
 #include <atomic>
 #include <future>
@@ -127,7 +128,9 @@ private:
   void startPoolSync();
   void startBlockchainSync();
 
-  void processBlocks(GetBlocksResponse& response);
+  void processBlocks(GetBlocksResponse& response, uint64_t syncTimestamp);
+  void startBlocksPrefetch(const BlockchainInterval& interval, uint64_t syncTimestamp);
+  void drainBlocksPrefetch();
   UpdateConsumersResult updateConsumers(const BlockchainInterval& interval, const std::vector<CompleteBlock>& blocks);
   std::error_code processPoolTxs(GetPoolResponse& response);
   std::error_code getPoolSymmetricDifferenceSync(GetPoolRequest&& request, GetPoolResponse& response);
@@ -156,6 +159,13 @@ private:
   const Crypto::Hash m_genesisBlockHash;
 
   Crypto::Hash lastBlockId;
+
+  std::unique_ptr<GetBlocksResponse> m_prefetchedBlocks;
+  std::shared_ptr<std::promise<std::error_code>> m_prefetchPromise;
+  std::future<std::error_code> m_prefetchFuture;
+  std::chrono::steady_clock::time_point m_prefetchStarted;
+  std::chrono::steady_clock::time_point m_prefetchFinished;
+  uint64_t m_prefetchSyncTimestamp = 0;
 
   State m_currentState;
   State m_futureState;
