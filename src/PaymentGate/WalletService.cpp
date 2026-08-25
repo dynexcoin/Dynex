@@ -441,6 +441,7 @@ WalletService::WalletService(const DynexCN::Currency& currency, System::Dispatch
     refreshContext(dispatcher),
     lastSavedBlockCount(0),
     lastReportedBlockCount(0),
+    lastSaveTime(std::chrono::steady_clock::now()),
     lastReportTime(std::chrono::steady_clock::time_point::min())
 {
   readyEvent.set();
@@ -458,6 +459,7 @@ void WalletService::init() {
   loadWallet();
   loadTransactionIdIndex();
   lastSavedBlockCount = wallet.getBlockCount();
+  lastSaveTime = std::chrono::steady_clock::now();
 
   const uint32_t knownBlockCount = std::max(node.getKnownBlockCount(), node.getLocalBlockCount());
   if (knownBlockCount >= lastSavedBlockCount) {
@@ -1540,19 +1542,18 @@ void WalletService::refresh() {
           lastReportTime = now;
         }
 
-        // Persist every 10,000 synchronized blocks. A block-only interval keeps
-        // expensive large-container saves predictable without a time-based
-        // checkpoint repeatedly interrupting dense blockchain regions.
-        if (current >= lastSavedBlockCount + 10000) {
+        // Persist long synchronizations every 250,000 blocks. Once running,
+        // also save at most once every 24 hours when synchronization activity
+        // supplies an event on which to perform the check.
+        const bool blockCheckpointDue = current >= lastSavedBlockCount + 250000;
+        const bool dailySaveDue = now - lastSaveTime >= std::chrono::hours(24);
+        if (blockCheckpointDue || dailySaveDue) {
           logger(Logging::INFO, Logging::BRIGHT_WHITE) << "Wallet checkpoint: saving synchronized state at block " << current << " of " << total;
           wallet.save();
           lastSavedBlockCount = current;
+          lastSaveTime = std::chrono::steady_clock::now();
           logger(Logging::INFO, Logging::BRIGHT_WHITE) << "Wallet synchronization checkpoint saved at block " << current;
         }
-      } else if (event.type == DynexCN::SYNC_COMPLETED) {
-        wallet.save();
-        lastSavedBlockCount = wallet.getBlockCount();
-        logger(Logging::INFO, Logging::BRIGHT_WHITE) << "Wallet synchronization completed and saved at block " << lastSavedBlockCount;
       }
     }
   } catch (std::system_error& e) {
