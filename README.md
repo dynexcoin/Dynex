@@ -93,20 +93,10 @@ sudo apt-get install libboost-all-dev (Ubuntu)
 sudo apt-get -y install libcurl4-openssl-dev (libcurl Ubuntu)
 ```
 
-To compile and build the Dynex node:
+To compile and build all binaries (release versions):
 ```
-mkdir build 
-cd build
-cmake ..
-make Daemon -j 8
-```
-
-To compile and build the Dynex CLI wallet:
-```
-mkdir build 
-cd build
-cmake ..
-make SimpleWallet -j 8
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel 8
 ```
 
 To compile and build the Dynex GUI wallet:
@@ -120,15 +110,6 @@ cd build
 cmake .. -DGUI=True
 make WalletGui -j 8
 ```
-
-To compile and build the Dynex wallet service:
-```
-mkdir build 
-cd build
-cmake ..
-make PaymentGateService -j 8
-```
-
 
 ### MacOS
 
